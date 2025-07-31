@@ -1,5 +1,5 @@
 // URL của API backend (thay bằng URL deployment của bạn)
-const API_BASE = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbzK034VDCfzxBhEpKYirPjZO1PnDTKZ7VZ1SxVysIIK_2fkCt5gK790hY0Qr-cD-S50/exec";
 
 /**
  * Gửi yêu cầu POST tới backend GAS
