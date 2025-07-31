@@ -5,8 +5,7 @@
  * @returns {Promise<object>} - Kết quả: { success, token, user, error }
  */
 async function loginUser(sdt, password) {
-  const res = await apiPost("auth/login", { sdt, password });
-  return res;
+  return await apiPost("auth/login", { sdt, password });
 }
 
 /**
