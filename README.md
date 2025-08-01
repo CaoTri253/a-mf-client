@@ -7,6 +7,7 @@ Bước 4: Tạo thư mục chứa toàn bộ Frontend dưới Local. Nhờ Chat
 Bước 5: Tại thư mục chứa Frontend nhấp phải chuột chạy lệnh cmd: 
 
 📌  Lưu ý nếu chạy lệnh bị lỗi: error: remote origin already exists. Cách khắc phục là chạy lệnh: git remote remove origin
+    + git remote add origin https://github.com/CaoTri253/abt-medu-frontend.git
     + git add .
     + git commit -m "First commit: ABT Medu frontend"
     + git branch -M main
