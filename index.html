@@ -99,7 +99,7 @@
         if (res.success) {
           showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
-          setTimeout(() => { window.location.href = "views/dashboard"; }, 1200);
+          setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
         } else { showModal("Lỗi đăng nhập", res.message); }
       }
       async function handleRegister() {

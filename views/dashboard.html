@@ -98,12 +98,14 @@
         </div>`;
     }
     function logout() {
-      localStorage.removeItem("user");
-      window.location.href = "index.html";
-    }
-    function goToBHYT() {
-      window.location.href = "views/bhyt.html";
-    }
+  localStorage.removeItem("user");
+    window.location.href = "../index.html";  // quay lại thư mục gốc chứa index.html
+  }
+
+  function goToBHYT() {
+    window.location.href = "bhyt.html";  // vẫn đúng vì bhyt.html nằm cùng thư mục với dashboard.html
+  }
+
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
