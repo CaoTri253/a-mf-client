@@ -1,17 +1,15 @@
-const API_BASE = "https://script.google.com/macros/s/AKfycbzK034VDCfzxBhEpKYirPjZO1PnDTKZ7VZ1SxVysIIK_2fkCt5gK790hY0Qr-cD-S50/exec"; // <-- Điền link Apps Script API
+const API_BASE = "https://script.google.com/macros/s/AKfycbzK034VDCfzxBhEpKYirPjZO1PnDTKZ7VZ1SxVysIIK_2fkCt5gK790hY0Qr-cD-S50/exec"; // Đổi thành link Apps Script của bạn
 
-async function apiRequest(path, method = "GET", data = null) {
-  let token = localStorage.getItem("token");
-  let headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = "Bearer " + token;
+// Đăng nhập
+async function login(sdt, password) {
+  const url = `${API_BASE}?func=Login&sdt=${encodeURIComponent(sdt)}&password=${encodeURIComponent(password)}`;
+  const res = await fetch(url, { method: "GET" });
+  return await res.json();
+}
 
-  let url = `${API_BASE}?path=${encodeURIComponent(path)}&method=${method}`;
-  let options = {
-    method: method === "GET" ? "GET" : "POST",
-    headers,
-  };
-  if (method !== "GET" && data) options.body = JSON.stringify(data);
-
-  let res = await fetch(url, options);
-  return res.json();
+// Đọc dữ liệu (ví dụ)
+async function readAll(sheetName) {
+  const url = `${API_BASE}?func=ReadAll&SH=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url, { method: "GET" });
+  return await res.text();
 }
