@@ -46,7 +46,7 @@
   <script>
     // Lấy user từ localStorage
     let user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!user.sdt) { window.location.href = "LoginRegister.html"; }
+    if (!user.sdt) { window.location.href = "index.html"; }
     document.getElementById("user-name").innerText = user.ho_ten || "";
     document.getElementById("user-school").innerText = user.ten_truong || "";
     document.getElementById("user-province").innerText = user.tinh || "";
@@ -99,10 +99,10 @@
     }
     function logout() {
       localStorage.removeItem("user");
-      window.location.href = "LoginRegister.html";
+      window.location.href = "index.html";
     }
     function goToBHYT() {
-      window.location.href = "BHYT.html";
+      window.location.href = "views/bhyt.html";
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

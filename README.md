@@ -18,3 +18,8 @@ Bước 5: Tại thư mục chứa Frontend nhấp phải chuột chạy lệnh 
     + Trong phần Source chọn Deploy From a branch
     + Trong phần Branch chọn main, root. Nhấn Save
     + Trang web được Public và trỏ về index.html
+
+
+
+
+    git mv views/Dashboard.html views/temp_dashboard.html
