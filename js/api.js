@@ -1,16 +1,17 @@
-// Địa chỉ Google Apps Script Web App
-const API_BASE = "https://script.google.com/macros/s/AKfycbzK034VDCfzxBhEpKYirPjZO1PnDTKZ7VZ1SxVysIIK_2fkCt5gK790hY0Qr-cD-S50/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbwfsTcpgpduAP6bsQnDu1vsUTzMrtYNRMyZLsqKDJu-5j910xP69GXmdS1OaOAdKbNJ/exec"; // Đổi thành link Web App của bạn
 
-// Hàm đăng nhập dùng GET, KHÔNG headers, KHÔNG body, KHÔNG POST!
+// Hàm đăng nhập: chỉ dùng GET, không headers!
 async function login(sdt, password) {
   const url = `${API_BASE}?func=Login&sdt=${encodeURIComponent(sdt)}&password=${encodeURIComponent(password)}`;
-  const res = await fetch(url); // Simple GET, không header!
+  const res = await fetch(url);
   return await res.json();
 }
 
-// Hàm đọc toàn bộ dữ liệu (ví dụ)
-async function readAll(sheetName) {
-  const url = `${API_BASE}?func=ReadAll&SH=${encodeURIComponent(sheetName)}`;
+// Hàm đọc toàn bộ Users
+async function readAllUsers() {
+  const url = `${API_BASE}?func=ReadAll&SH=Users`;
   const res = await fetch(url);
-  return await res.text();
+  const text = await res.text();
+  // Parse nếu muốn
+  return text;
 }
