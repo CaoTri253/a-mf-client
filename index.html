@@ -83,8 +83,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/api.js"></script>
     <script>
-      function showRegister() { document.getElementById("login-section").style.display = "none"; document.getElementById("register-section").style.display = "block";}
-      function showLogin() { document.getElementById("register-section").style.display = "none"; document.getElementById("login-section").style.display = "block";}
+      function showRegister() { 
+        document.getElementById("login-section").style.display = "none"; 
+        document.getElementById("register-section").style.display = "block";
+      }
+      function showLogin() { 
+        document.getElementById("register-section").style.display = "none"; 
+        document.getElementById("login-section").style.display = "block";
+      }
       function showModal(title, message) {
         document.getElementById("modalTitle").innerText = title;
         document.getElementById("modalMessage").innerText = message;
@@ -94,13 +100,18 @@
       async function handleLogin() {
         const sdt = document.getElementById("login-sdt").value.trim();
         const password = document.getElementById("login-password").value;
-        if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
+        if (!sdt || !password) { 
+          showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); 
+          return; 
+        }
         const res = await login(sdt, password);
         if (res.success) {
           showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
           setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
-        } else { showModal("Lỗi đăng nhập", res.message); }
+        } else { 
+          showModal("Lỗi đăng nhập", res.message); 
+        }
       }
       async function handleRegister() {
         const hoTen = document.getElementById("reg-ho-ten").value.trim();
@@ -108,15 +119,27 @@
         const password = document.getElementById("reg-password").value;
         const maTruong = document.getElementById("reg-ma-truong").value.trim();
         const loaiUser = document.querySelector('input[name="reg-loai-user"]:checked').value;
-        if (!hoTen || !sdt || !password || !maTruong) { showModal("Cảnh báo", "Vui lòng nhập đầy đủ thông tin."); return; }
-        const phoneRegex = /^[0-9]{9,11}$/; if (!phoneRegex.test(sdt)) { showModal("Cảnh báo", "Số điện thoại không hợp lệ."); return; }
-        if (password.length < 6) { showModal("Cảnh báo", "Mật khẩu phải từ 6 ký tự trở lên."); return; }
+        if (!hoTen || !sdt || !password || !maTruong) { 
+          showModal("Cảnh báo", "Vui lòng nhập đầy đủ thông tin."); 
+          return; 
+        }
+        const phoneRegex = /^[0-9]{9,11}$/; 
+        if (!phoneRegex.test(sdt)) { 
+          showModal("Cảnh báo", "Số điện thoại không hợp lệ."); 
+          return; 
+        }
+        if (password.length < 6) { 
+          showModal("Cảnh báo", "Mật khẩu phải từ 6 ký tự trở lên."); 
+          return; 
+        }
         const user = { ho_ten: hoTen, sdt: sdt, password: password, ma_truong: maTruong, loai_user: loaiUser };
-        const res = await register(user); // Gọi qua api.js
+        const res = await register(user);
         if (res.success) {
           showModal("Thành công", "Tạo tài khoản thành công. Vui lòng đăng nhập!");
           setTimeout(() => { showLogin(); }, 1500);
-        } else { showModal("Lỗi đăng ký", res.message); }
+        } else {
+          showModal("Lỗi đăng ký", res.message);
+        }
       }
       function showForgotPassword() {
         const modal = new bootstrap.Modal(document.getElementById("forgotModal"));
@@ -127,14 +150,22 @@
         const errorDiv = document.getElementById("forgot-error");
         errorDiv.innerText = "";
         const phoneRegex = /^[0-9]{9,11}$/;
-        if (!sdt) { errorDiv.innerText = "Vui lòng nhập số điện thoại."; return; }
-        if (!phoneRegex.test(sdt)) { errorDiv.innerText = "Số điện thoại không hợp lệ."; return; }
-        const res = await forgotPassword(sdt); // Gọi qua api.js
+        if (!sdt) { 
+          errorDiv.innerText = "Vui lòng nhập số điện thoại."; 
+          return; 
+        }
+        if (!phoneRegex.test(sdt)) { 
+          errorDiv.innerText = "Số điện thoại không hợp lệ."; 
+          return; 
+        }
+        const res = await forgotPassword(sdt);
         if (res.success) {
           const forgotModal = bootstrap.Modal.getInstance(document.getElementById("forgotModal"));
           forgotModal.hide();
           setTimeout(() => { showModal("Thành công", res.message); }, 300);
-        } else { errorDiv.innerText = res.message; }
+        } else {
+          errorDiv.innerText = res.message;
+        }
       }
     </script>
   </body>
