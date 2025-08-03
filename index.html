@@ -94,13 +94,16 @@
       async function handleLogin() {
         const sdt = document.getElementById("login-sdt").value.trim();
         const password = document.getElementById("login-password").value;
+
+        showLoading();   // <-- Thêm dòng này
         if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
         const res = await login(sdt, password);
         if (res.success) {
           showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
+          hideLoading(); // <-- Thêm dòng này
           setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
-        } else { showModal("Lỗi đăng nhập", res.message); }
+        } else { showModal("Lỗi đăng nhập", res.message); hideLoading(); }
       }
       async function handleRegister() {
         const hoTen = document.getElementById("reg-ho-ten").value.trim();
@@ -145,6 +148,31 @@
           setTimeout(() => { showModal("Thành công", res.message); }, 300);
         } else { errorDiv.innerText = res.message; }
       }
+
+
+
+
+      function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'flex';
+      }
+      function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+      }
+
     </script>
+
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" style="
+      display:none;
+      position:fixed;
+      top:0; left:0; width:100vw; height:100vh; z-index:9999;
+      background:rgba(255,255,255,0.5); 
+      align-items:center; justify-content:center;">
+      <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
   </body>
 </html>
