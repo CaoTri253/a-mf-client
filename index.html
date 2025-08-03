@@ -108,16 +108,25 @@
         const password = document.getElementById("reg-password").value;
         const maTruong = document.getElementById("reg-ma-truong").value.trim();
         const loaiUser = document.querySelector('input[name="reg-loai-user"]:checked').value;
+
         if (!hoTen || !sdt || !password || !maTruong) { showModal("Cảnh báo", "Vui lòng nhập đầy đủ thông tin."); return; }
         const phoneRegex = /^[0-9]{9,11}$/; if (!phoneRegex.test(sdt)) { showModal("Cảnh báo", "Số điện thoại không hợp lệ."); return; }
         if (password.length < 6) { showModal("Cảnh báo", "Mật khẩu phải từ 6 ký tự trở lên."); return; }
         const user = { ho_ten: hoTen, sdt: sdt, password: password, ma_truong: maTruong, loai_user: loaiUser };
-        const res = await register(user); // Gọi qua api.js
+        const res = await register(user);
         if (res.success) {
           showModal("Thành công", "Tạo tài khoản thành công. Vui lòng đăng nhập!");
           setTimeout(() => { showLogin(); }, 1500);
-        } else { showModal("Lỗi đăng ký", res.message); }
+        } else {
+          // Hiển thị lỗi mã trường không hợp lệ riêng biệt (nếu muốn UX tốt hơn)
+          if (res.message && res.message.indexOf("Mã trường không hợp lệ") !== -1) {
+            showModal("Lỗi đăng ký", "Mã trường không hợp lệ, vui lòng kiểm tra lại!");
+          } else {
+            showModal("Lỗi đăng ký", res.message || "Đăng ký thất bại.");
+          }
+        }
       }
+
       function showForgotPassword() {
         const modal = new bootstrap.Modal(document.getElementById("forgotModal"));
         modal.show();
