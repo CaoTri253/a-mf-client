@@ -19,11 +19,18 @@ async function forgotPassword(sdt) {
 
 
 // Lấy danh sách học sinh phân trang + tìm kiếm
-async function getDanhSachHocsinhPaginated(ma_truong, lop, start, limit, query) {
-  const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated&ma_truong=${encodeURIComponent(ma_truong)}&lop=${encodeURIComponent(lop)}&start=${start}&limit=${limit}&query=${encodeURIComponent(query||"")}`;
+// Lấy danh sách học sinh phân trang và có lọc
+async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10, query = "") {
+  const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop=${encodeURIComponent(lop)}`
+    + `&start=${start}`
+    + `&limit=${limit}`
+    + `&query=${encodeURIComponent(query)}`;
   const res = await fetch(url);
   return await res.json();
 }
+
 
 // Thêm học sinh đơn lẻ
 async function themHocsinh(hs) {
