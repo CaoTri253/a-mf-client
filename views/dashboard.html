@@ -81,7 +81,7 @@
     } else if (user.phan_quyen === "giao_vien") {
       container.innerHTML = `
         <div class="flower-grid">
-          <div class="flower-item flower-top-left">YTTH</div>
+          <div class="flower-item flower-top-left" onclick="goToDSHocsinh()">DS Học sinh</div>
           <div class="flower-item flower-top-right">BHYT</div>
           <div class="flower-item flower-bottom-left">BHTN</div>
           <div class="flower-item flower-bottom-right">KHÁC</div>
@@ -101,6 +101,14 @@
   localStorage.removeItem("user");
     window.location.href = "../index.html";  // quay lại thư mục gốc chứa index.html
   }
+
+
+
+  function goToDSHocsinh() {
+    showLoading();
+    window.location.href = "ds_hocsinh.html";
+  }
+
 
   function goToBHYT() {
     showLoading();
