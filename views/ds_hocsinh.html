@@ -104,7 +104,7 @@
 
     // Render danh sách học sinh ra bảng
     function renderDanhSachHS(ds) {
-      let html = `<table class="table table-bordered table-hs">
+      let html = `<div class="table-responsive"><table class="table table-bordered table-hs">
         <thead>
         <tr>
           <th>STT</th><th>Mã số BHXH</th><th>Họ tên</th><th>Ngày sinh</th>
@@ -124,7 +124,7 @@
           <td>${hs.so_dinh_danh||""}</td>
         </tr>`;
       });
-      html += "</tbody></table>";
+      html += "</tbody></table></div>";
       document.getElementById('ds-actions').innerHTML = `
           <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
           <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
