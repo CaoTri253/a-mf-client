@@ -41,13 +41,31 @@ async function themHocsinh(hs) {
   return await res.json();
 }
 
-// Import danh sách học sinh từ array object
+// Gửi từng học sinh bằng GET (có thể dùng Promise.all nếu muốn chờ hết)
 async function importDanhSachHocsinh(listHS) {
-  const url = `${API_BASE}?func=ImportDanhSachHocsinh`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ listHS })
-  });
-  return await res.json();
+  let okCount = 0, failCount = 0, errors = [];
+  for (const hs of listHS) {
+    const url = `${API_BASE}?func=ThemHocsinh`
+      + `&ma_so_bhxh=${encodeURIComponent(hs.ma_so_bhxh)}`
+      + `&ho_ten_hoc_sinh=${encodeURIComponent(hs.ho_ten_hoc_sinh)}`
+      + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
+      + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
+      + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
+      + `&lop=${encodeURIComponent(hs.lop)}`
+      + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
+      + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+      + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.success) okCount++;
+      else { failCount++; errors.push(json.message || "Lỗi không xác định"); }
+    } catch (err) {
+      failCount++;
+      errors.push(err.message);
+    }
+  }
+  if (failCount === 0) return { success: true, imported: okCount };
+  else return { success: false, imported: okCount, errors };
 }
+
