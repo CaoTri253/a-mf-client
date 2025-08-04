@@ -85,21 +85,22 @@
 
     // Khởi tạo trang: lấy danh sách học sinh
     window.onload = async function() {
-      showLoading();
-      const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
-      hideLoading();
-      if (res.success && res.data.length > 0) {
-        renderDanhSachHS(res.data);
-      } else {
-        // Nếu chưa có học sinh, show các nút thêm/import + tải mẫu
-        document.getElementById('ds-actions').innerHTML = `
-          <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
-          <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
-          <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
-        `;
-        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
-      }
-    };
+    showLoading();
+    const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+    hideLoading();
+    if (res.success && res.hocsinhs && res.hocsinhs.length > 0) {
+      renderDanhSachHS(res.hocsinhs);
+    } else {
+      // Nếu chưa có học sinh, show các nút thêm/import + tải mẫu
+      document.getElementById('ds-actions').innerHTML = `
+        <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
+        <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
+        <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
+      `;
+      document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
+    }
+  };
+
 
     // Render danh sách học sinh ra bảng
     function renderDanhSachHS(ds) {
