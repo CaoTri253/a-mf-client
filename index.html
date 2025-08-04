@@ -98,8 +98,8 @@
         if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
         const res = await login(sdt, password);
         if (res.success) {
-          showModal("Thành công", "Đăng nhập thành công!");
           showLoading();   // <-- Thêm dòng này
+          showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
           hideLoading(); // <-- Thêm dòng này
           setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
