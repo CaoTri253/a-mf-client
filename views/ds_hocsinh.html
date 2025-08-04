@@ -10,12 +10,13 @@
     .btn-main { margin: 5px 8px 10px 0; }
     .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002;}
     .download-link { margin-left: 15px; color: #007bff; cursor: pointer;}
+    .table-responsive { overflow-x: auto; }
   </style>
 </head>
 <body>
   <div class="header">DANH SÁCH HỌC SINH LỚP <span id="lop-hoc"></span></div>
   <div id="ds-actions" style="margin-bottom:18px;"></div>
-  <div id="ds-container"></div>
+  <div class="table-responsive" id="ds-container"></div>
 
   <!-- Modal thêm mới học sinh -->
   <div class="modal fade" id="modalThemHS" tabindex="-1" aria-hidden="true">
@@ -75,28 +76,51 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
-    // --- BỔ SUNG: Hàm chuyển ngày cho mọi trường hợp ---
-    function excelDateToString(excelDate) {
-      if (!excelDate) return "";
-      if (typeof excelDate === "number") {
-        // Excel serial date
-        const d = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
-        // dd/mm/yyyy
-        return d.toLocaleDateString('vi-VN');
-      }
-      if (/^\d{4}-\d{2}-\d{2}/.test(excelDate)) {
-        // yyyy-mm-dd hoặc yyyy-mm-ddTHH:MM:SSZ
-        const parts = excelDate.split('T')[0].split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return excelDate;
-    }
-
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    // Show loading helpers
+    // Chuyển đổi ngày từ Excel serial/chuỗi sang dd/mm/yyyy
+    function excelDateToString(dateCell) {
+      if (typeof dateCell === 'string') {
+        if (dateCell.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return dateCell;
+        if (dateCell.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
+          let [y,m,d] = dateCell.split('-');
+          return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`;
+        }
+        return dateCell;
+      }
+      if (typeof dateCell === 'number') {
+        var utc_days = Math.floor(dateCell - 25569);
+        var date = new Date(utc_days * 86400 * 1000);
+        date.setUTCHours(0,0,0,0);
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      return "";
+    }
+
+    // Khi hiển thị bảng, luôn format ngày về dd/mm/yyyy
+    function displayNgaySinh(raw) {
+      if (!raw) return "";
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        let d = new Date(raw);
+        let day = String(d.getDate()).padStart(2, '0');
+        let month = String(d.getMonth() + 1).padStart(2, '0');
+        let year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      if (raw.match && raw.match(/^\d{2}\/\d{2}\/\d{4}$/)) return raw;
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        let [y,m,d] = raw.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      if (!isNaN(Number(raw))) return excelDateToString(Number(raw));
+      return raw;
+    }
+
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
@@ -105,8 +129,7 @@
       showLoading();
       const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
       hideLoading();
-      // *** ĐỔI 'data' thành 'hocsinhs' nếu backend trả về đúng property
-      const ds = res.data || res.hocsinhs || [];
+      let ds = res.hocsinhs || res.data || [];
       if (res.success && ds.length > 0) {
         renderDanhSachHS(ds);
       } else {
@@ -119,9 +142,8 @@
       }
     };
 
-    // Render danh sách học sinh ra bảng
     function renderDanhSachHS(ds) {
-      let html = `<div style="overflow-x:auto"><table class="table table-bordered table-hs">
+      let html = `<table class="table table-bordered table-hs">
         <thead>
         <tr>
           <th>STT</th><th>Mã số BHXH</th><th>Họ tên</th><th>Ngày sinh</th>
@@ -133,7 +155,7 @@
           <td>${i+1}</td>
           <td>${hs.ma_so_bhxh||""}</td>
           <td>${hs.ho_ten_hoc_sinh||""}</td>
-          <td>${hs.ngay_sinh||""}</td>
+          <td>${displayNgaySinh(hs.ngay_sinh)}</td>
           <td>${hs.gioi_tinh||""}</td>
           <td>${hs.dia_chi||""}</td>
           <td>${hs.lop||""}</td>
@@ -141,7 +163,7 @@
           <td>${hs.so_dinh_danh||""}</td>
         </tr>`;
       });
-      html += "</tbody></table></div>";
+      html += "</tbody></table>";
       document.getElementById('ds-actions').innerHTML = `
           <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
           <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
@@ -157,20 +179,29 @@
 
     // Thêm mới học sinh đơn lẻ (show modal)
     function showModalThemHS() {
-      document.getElementById('form-themhs').reset?.();
+      document.getElementById('form-themhs').reset?.(); 
       document.getElementById('themhs-error').innerText = "";
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
-    // Xử lý submit thêm mới
     async function handleThemHS() {
+      // Xử lý ngày sinh chuyển về dd/mm/yyyy
+      let ngaySinhRaw = document.getElementById('inp-ngay-sinh').value;
+      let ngaySinh = "";
+      if (ngaySinhRaw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        let [y, m, d] = ngaySinhRaw.split("-");
+        ngaySinh = `${d}/${m}/${y}`;
+      } else ngaySinh = ngaySinhRaw;
+
+      let sdt = document.getElementById('inp-sdt-lienhe').value.trim();
+      if (sdt && !sdt.startsWith("'") && sdt.startsWith("0")) sdt = "'" + sdt;
       const hs = {
         ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
         ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
-        ngay_sinh: excelDateToString(document.getElementById('inp-ngay-sinh').value),
+        ngay_sinh: ngaySinh,
         gioi_tinh: document.getElementById('inp-gioi-tinh').value.trim(),
         dia_chi: document.getElementById('inp-dia-chi').value.trim(),
         lop: user.lop_hoc,
-        sdt_lienhe: String(document.getElementById('inp-sdt-lienhe').value.trim()),
+        sdt_lienhe: sdt,
         so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
         ma_truong: user.ma_truong
       };
@@ -207,33 +238,32 @@
       const file = fileInput.files[0];
       showLoading();
       try {
-        // Đọc file excel bằng SheetJS
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        // Bỏ header
         rows.shift();
-        // Map thành object (chú ý ép String và chuyển ngày)
         const ds = rows.map(row => ({
-          ma_so_bhxh: row[1] ? String(row[1]) : "",
+          ma_so_bhxh: String(row[1] || ""),
           ho_ten_hoc_sinh: row[2] || "",
           ngay_sinh: excelDateToString(row[3]),
           gioi_tinh: row[4] || "",
           dia_chi: row[5] || "",
           lop: row[6] || user.lop_hoc,
-          sdt_lienhe: row[7] ? String(row[7]) : "",
-          so_dinh_danh: row[8] ? String(row[8]) : "",
+          sdt_lienhe: (() => {
+            let s = String(row[7] || "");
+            return s && !s.startsWith("'") && s.startsWith("0") ? ("'" + s) : s;
+          })(),
+          so_dinh_danh: String(row[8] || ""),
           ma_truong: user.ma_truong
         }));
-        // Gửi lên backend
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
           location.reload();
         } else {
-          errorDiv.innerText = (res.errors && res.errors.join("; ")) || res.message || "Lỗi import dữ liệu!";
+          errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
         }
       } catch (err) {
         hideLoading();
