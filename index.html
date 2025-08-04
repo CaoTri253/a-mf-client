@@ -95,15 +95,15 @@
         const sdt = document.getElementById("login-sdt").value.trim();
         const password = document.getElementById("login-password").value;
 
-        showLoading();   // <-- Thêm dòng này
         if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
         const res = await login(sdt, password);
         if (res.success) {
           showModal("Thành công", "Đăng nhập thành công!");
+          showLoading();   // <-- Thêm dòng này
           localStorage.setItem("user", JSON.stringify(res.user));
           hideLoading(); // <-- Thêm dòng này
           setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
-        } else { showModal("Lỗi đăng nhập", res.message); hideLoading(); }
+        } else {showModal("Lỗi đăng nhập", res.message); hideLoading(); }
       }
       async function handleRegister() {
         const hoTen = document.getElementById("reg-ho-ten").value.trim();
@@ -118,8 +118,10 @@
         const user = { ho_ten: hoTen, sdt: sdt, password: password, ma_truong: maTruong, loai_user: loaiUser };
         const res = await register(user);
         if (res.success) {
+          showLoading(); // <-- Thêm dòng này
           showModal("Thành công", "Tạo tài khoản thành công. Vui lòng đăng nhập!");
           setTimeout(() => { showLogin(); }, 1500);
+          hideLoading(); // <-- Thêm dòng này
         } else {
           // Hiển thị lỗi mã trường không hợp lệ riêng biệt (nếu muốn UX tốt hơn)
           if (res.message && res.message.indexOf("Mã trường không hợp lệ") !== -1) {
@@ -145,7 +147,9 @@
         if (res.success) {
           const forgotModal = bootstrap.Modal.getInstance(document.getElementById("forgotModal"));
           forgotModal.hide();
+          showLoading(); // <-- Thêm dòng này
           setTimeout(() => { showModal("Thành công", res.message); }, 300);
+          hideLoading(); // <-- Thêm dòng này
         } else { errorDiv.innerText = res.message; }
       }
 
