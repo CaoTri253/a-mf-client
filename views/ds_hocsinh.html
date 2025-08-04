@@ -75,6 +75,23 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
+    // --- BỔ SUNG: Hàm chuyển ngày cho mọi trường hợp ---
+    function excelDateToString(excelDate) {
+      if (!excelDate) return "";
+      if (typeof excelDate === "number") {
+        // Excel serial date
+        const d = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+        // dd/mm/yyyy
+        return d.toLocaleDateString('vi-VN');
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(excelDate)) {
+        // yyyy-mm-dd hoặc yyyy-mm-ddTHH:MM:SSZ
+        const parts = excelDate.split('T')[0].split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return excelDate;
+    }
+
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
@@ -85,26 +102,26 @@
 
     // Khởi tạo trang: lấy danh sách học sinh
     window.onload = async function() {
-    showLoading();
-    const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
-    hideLoading();
-    if (res.success && res.hocsinhs && res.hocsinhs.length > 0) {
-      renderDanhSachHS(res.hocsinhs);
-    } else {
-      // Nếu chưa có học sinh, show các nút thêm/import + tải mẫu
-      document.getElementById('ds-actions').innerHTML = `
-        <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
-        <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
-        <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
-      `;
-      document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
-    }
-  };
-
+      showLoading();
+      const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+      hideLoading();
+      // *** ĐỔI 'data' thành 'hocsinhs' nếu backend trả về đúng property
+      const ds = res.data || res.hocsinhs || [];
+      if (res.success && ds.length > 0) {
+        renderDanhSachHS(ds);
+      } else {
+        document.getElementById('ds-actions').innerHTML = `
+          <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
+          <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
+          <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
+        `;
+        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
+      }
+    };
 
     // Render danh sách học sinh ra bảng
     function renderDanhSachHS(ds) {
-      let html = `<div class="table-responsive"><table class="table table-bordered table-hs">
+      let html = `<div style="overflow-x:auto"><table class="table table-bordered table-hs">
         <thead>
         <tr>
           <th>STT</th><th>Mã số BHXH</th><th>Họ tên</th><th>Ngày sinh</th>
@@ -140,21 +157,21 @@
 
     // Thêm mới học sinh đơn lẻ (show modal)
     function showModalThemHS() {
-      document.getElementById('form-themhs').reset?.(); // Nếu là form
+      document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
     // Xử lý submit thêm mới
     async function handleThemHS() {
       const hs = {
-        ma_so_bhxh: document.getElementById('inp-ma-so-bhxh').value.trim(),
+        ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
         ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
-        ngay_sinh: document.getElementById('inp-ngay-sinh').value,
+        ngay_sinh: excelDateToString(document.getElementById('inp-ngay-sinh').value),
         gioi_tinh: document.getElementById('inp-gioi-tinh').value.trim(),
         dia_chi: document.getElementById('inp-dia-chi').value.trim(),
         lop: user.lop_hoc,
-        sdt_lienhe: document.getElementById('inp-sdt-lienhe').value.trim(),
-        so_dinh_danh: document.getElementById('inp-so-dinh-danh').value.trim(),
+        sdt_lienhe: String(document.getElementById('inp-sdt-lienhe').value.trim()),
+        so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
         ma_truong: user.ma_truong
       };
       if (!hs.ho_ten_hoc_sinh || !hs.lop) {
@@ -198,16 +215,16 @@
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
         // Bỏ header
         rows.shift();
-        // Map thành object
+        // Map thành object (chú ý ép String và chuyển ngày)
         const ds = rows.map(row => ({
-          ma_so_bhxh: row[1],
-          ho_ten_hoc_sinh: row[2],
-          ngay_sinh: row[3],
-          gioi_tinh: row[4],
-          dia_chi: row[5],
+          ma_so_bhxh: row[1] ? String(row[1]) : "",
+          ho_ten_hoc_sinh: row[2] || "",
+          ngay_sinh: excelDateToString(row[3]),
+          gioi_tinh: row[4] || "",
+          dia_chi: row[5] || "",
           lop: row[6] || user.lop_hoc,
-          sdt_lienhe: row[7],
-          so_dinh_danh: row[8],
+          sdt_lienhe: row[7] ? String(row[7]) : "",
+          so_dinh_danh: row[8] ? String(row[8]) : "",
           ma_truong: user.ma_truong
         }));
         // Gửi lên backend
@@ -216,7 +233,7 @@
         if (res.success) {
           location.reload();
         } else {
-          errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
+          errorDiv.innerText = (res.errors && res.errors.join("; ")) || res.message || "Lỗi import dữ liệu!";
         }
       } catch (err) {
         hideLoading();
