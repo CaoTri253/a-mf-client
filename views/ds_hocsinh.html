@@ -192,8 +192,6 @@
         ngaySinh = `${d}/${m}/${y}`;
       } else ngaySinh = ngaySinhRaw;
 
-      let sdt = document.getElementById('inp-sdt-lienhe').value.trim();
-      if (sdt && !sdt.startsWith("'") && sdt.startsWith("0")) sdt = "'" + sdt;
       const hs = {
         ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
         ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
@@ -201,10 +199,11 @@
         gioi_tinh: document.getElementById('inp-gioi-tinh').value.trim(),
         dia_chi: document.getElementById('inp-dia-chi').value.trim(),
         lop: user.lop_hoc,
-        sdt_lienhe: sdt,
+        sdt_lienhe: document.getElementById('inp-sdt-lienhe').value.trim(),
         so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
         ma_truong: user.ma_truong
       };
+      
       if (!hs.ho_ten_hoc_sinh || !hs.lop) {
         document.getElementById('themhs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
         return;
@@ -251,10 +250,7 @@
           gioi_tinh: row[4] || "",
           dia_chi: row[5] || "",
           lop: row[6] || user.lop_hoc,
-          sdt_lienhe: (() => {
-            let s = String(row[7] || "");
-            return s && !s.startsWith("'") && s.startsWith("0") ? ("'" + s) : s;
-          })(),
+          sdt_lienhe: row[7] || "",
           so_dinh_danh: String(row[8] || ""),
           ma_truong: user.ma_truong
         }));
