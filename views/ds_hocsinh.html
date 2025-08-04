@@ -7,16 +7,36 @@
   <style>
     body { background: #f8f9fa; min-height: 100vh; padding: 20px; }
     .header { font-size: 22px; font-weight: bold; margin-bottom: 18px; }
+    .total-count { font-size: 17px; font-weight: normal; color: #007bff; margin-left: 8px; }
     .btn-main { margin: 5px 8px 10px 0; }
     .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002;}
     .download-link { margin-left: 15px; color: #007bff; cursor: pointer;}
     .table-responsive { overflow-x: auto; }
+    .pagination-wrapper { display: flex; justify-content: center; align-items: center; margin-top: 18px; gap: 10px; flex-wrap: wrap;}
+    .pagination-btn { min-width: 36px; border-radius: 6px !important;}
+    .pagination-btn.active, .pagination-btn.btn-primary { background: #0d6efd !important; color: #fff !important; border-color: #0d6efd !important;}
+    .pagination-info { font-weight: 500; color: #444; }
+    .pagination-quick { min-width: 70px;}
+    @media (max-width: 600px) {
+      .header { font-size: 17px;}
+      .table-hs th, .table-hs td { font-size: 13px;}
+      .btn-main, .btn, .pagination-btn { font-size: 13px !important; padding: 7px 8px;}
+      .pagination-info { font-size: 12px;}
+    }
   </style>
 </head>
 <body>
-  <div class="header">DANH SÁCH HỌC SINH LỚP <span id="lop-hoc"></span></div>
+  <div class="header">
+    DANH SÁCH HỌC SINH LỚP <span id="lop-hoc"></span>
+    <span class="total-count" id="total-count"></span>
+  </div>
+  <!-- Thanh tìm kiếm -->
+  <div class="mb-3">
+    <input type="text" id="searchInput" class="form-control" placeholder="Tìm tên, số định danh, mã BHXH, SĐT..." oninput="onSearchChange()">
+  </div>
   <div id="ds-actions" style="margin-bottom:18px;"></div>
   <div class="table-responsive" id="ds-container"></div>
+  <div id="pagination" class="pagination-wrapper"></div>
 
   <!-- Modal thêm mới học sinh -->
   <div class="modal fade" id="modalThemHS" tabindex="-1" aria-hidden="true">
@@ -71,7 +91,6 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/api.js"></script>
@@ -79,6 +98,47 @@
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
+
+    // Pagination state
+    let dsHocsinhAll = [];
+    let page = 1, pageSize = 20, total = 0, lastQuery = "";
+
+    function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
+    function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
+
+    // Lấy danh sách tất cả (áp dụng search trên frontend)
+    async function fetchAndRenderAll(query = "", gotoPage = 1) {
+      showLoading();
+      let res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+      hideLoading();
+      dsHocsinhAll = res.hocsinhs || res.data || [];
+      // Filter theo search
+      if (query && query.length > 0) {
+        let q = query.toLowerCase();
+        dsHocsinhAll = dsHocsinhAll.filter(hs =>
+          (hs.ho_ten_hoc_sinh || "").toLowerCase().includes(q) ||
+          (hs.so_dinh_danh || "").toLowerCase().includes(q) ||
+          (hs.ma_so_bhxh || "").toLowerCase().includes(q) ||
+          (hs.sdt_lienhe || "").toLowerCase().includes(q)
+        );
+      }
+      total = dsHocsinhAll.length;
+      page = gotoPage || 1;
+      renderDanhSachHS();
+      renderPagination();
+    }
+
+    function onSearchChange() {
+      lastQuery = document.getElementById('searchInput').value.trim();
+      fetchAndRenderAll(lastQuery, 1);
+    }
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+      if (e.key === "Enter") onSearchChange();
+    });
+
+    window.onload = function() {
+      fetchAndRenderAll();
+    };
 
     // Chuyển đổi ngày từ Excel serial/chuỗi sang dd/mm/yyyy
     function excelDateToString(dateCell) {
@@ -101,8 +161,6 @@
       }
       return "";
     }
-
-    // Khi hiển thị bảng, luôn format ngày về dd/mm/yyyy
     function displayNgaySinh(raw) {
       if (!raw) return "";
       if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
@@ -121,28 +179,9 @@
       return raw;
     }
 
-    function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
-    function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
-
-    // Khởi tạo trang: lấy danh sách học sinh
-    window.onload = async function() {
-      showLoading();
-      const res = await getDanhSachHocsinh(user.ma_truong, user.lop_hoc);
-      hideLoading();
-      let ds = res.hocsinhs || res.data || [];
-      if (res.success && ds.length > 0) {
-        renderDanhSachHS(ds);
-      } else {
-        document.getElementById('ds-actions').innerHTML = `
-          <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
-          <button class="btn btn-primary btn-main" onclick="showModalImportHS()">Thêm học sinh từ danh sách có sẵn</button>
-          <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
-        `;
-        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
-      }
-    };
-
-    function renderDanhSachHS(ds) {
+    function renderDanhSachHS() {
+      document.getElementById('total-count').innerText = `(Tổng số: ${total})`;
+      let ds = dsHocsinhAll.slice((page-1)*pageSize, page*pageSize);
       let html = `<table class="table table-bordered table-hs">
         <thead>
         <tr>
@@ -152,7 +191,7 @@
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
         html += `<tr>
-          <td>${i+1}</td>
+          <td>${(page-1)*pageSize + i + 1}</td>
           <td>${hs.ma_so_bhxh||""}</td>
           <td>${hs.ho_ten_hoc_sinh||""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
@@ -172,26 +211,51 @@
       document.getElementById('ds-container').innerHTML = html;
     }
 
-    // Tải file mẫu nhập học sinh
+    function renderPagination() {
+      const pagDiv = document.getElementById('pagination');
+      pagDiv.innerHTML = "";
+      if (total <= pageSize) return;
+      const totalPages = Math.ceil(total / pageSize);
+      let html = `
+        <button class="btn btn-secondary pagination-btn pagination-quick" ${page==1?"disabled":""} onclick="goPage(1)">« Đầu</button>
+        <button class="btn btn-secondary pagination-btn" ${page==1?"disabled":""} onclick="goPage(${page-1})">← Trước</button>`;
+      // Hiển thị tối đa 5 trang lân cận
+      let start = Math.max(1, page-2), end = Math.min(totalPages, page+2);
+      if (page <= 3) end = Math.min(5, totalPages);
+      if (page >= totalPages-2) start = Math.max(1, totalPages-4);
+      for (let i = start; i <= end; i++) {
+        html += `<button class="btn pagination-btn ${i==page?'active btn-primary':''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      html += `
+        <button class="btn btn-secondary pagination-btn" ${page==totalPages?"disabled":""} onclick="goPage(${page+1})">Tiếp →</button>
+        <button class="btn btn-secondary pagination-btn pagination-quick" ${page==totalPages?"disabled":""} onclick="goPage(${totalPages})">Cuối »</button>
+        <span class="pagination-info ms-2">Trang ${page}/${totalPages}</span>
+        `;
+      pagDiv.innerHTML = html;
+    }
+    function goPage(p) {
+      page = p;
+      renderDanhSachHS();
+      renderPagination();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    // Các chức năng thêm/import
     function downloadMauHS() {
       window.open("../mau_nhap_hocsinh.xlsx", "_blank");
     }
-
-    // Thêm mới học sinh đơn lẻ (show modal)
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.(); 
       document.getElementById('themhs-error').innerText = "";
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
     async function handleThemHS() {
-      // Xử lý ngày sinh chuyển về dd/mm/yyyy
       let ngaySinhRaw = document.getElementById('inp-ngay-sinh').value;
       let ngaySinh = "";
       if (ngaySinhRaw.match(/^\d{4}-\d{2}-\d{2}$/)) {
         let [y, m, d] = ngaySinhRaw.split("-");
         ngaySinh = `${d}/${m}/${y}`;
       } else ngaySinh = ngaySinhRaw;
-
       const hs = {
         ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
         ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
@@ -203,7 +267,6 @@
         so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
         ma_truong: user.ma_truong
       };
-      
       if (!hs.ho_ten_hoc_sinh || !hs.lop) {
         document.getElementById('themhs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
         return;
@@ -211,21 +274,14 @@
       showLoading();
       const res = await themHocsinh(hs);
       hideLoading();
-      if (res.success) {
-        location.reload();
-      } else {
-        document.getElementById('themhs-error').innerText = res.message || "Lỗi thêm học sinh!";
-      }
+      if (res.success) location.reload();
+      else document.getElementById('themhs-error').innerText = res.message || "Lỗi thêm học sinh!";
     }
-
-    // Thêm học sinh từ file (show modal)
     function showModalImportHS() {
       document.getElementById('import-error').innerText = "";
       document.getElementById('import-file').value = "";
       new bootstrap.Modal(document.getElementById('modalImportHS')).show();
     }
-
-    // Xử lý import danh sách học sinh
     async function handleImportHS() {
       const fileInput = document.getElementById('import-file');
       const errorDiv = document.getElementById('import-error');
@@ -256,11 +312,8 @@
         }));
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
-        if (res.success) {
-          location.reload();
-        } else {
-          errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
-        }
+        if (res.success) location.reload();
+        else errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
       } catch (err) {
         hideLoading();
         errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!";

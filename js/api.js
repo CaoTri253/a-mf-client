@@ -18,9 +18,9 @@ async function forgotPassword(sdt) {
 }
 
 
-// Lấy danh sách học sinh của trường + lớp
-async function getDanhSachHocsinh(ma_truong, lop) {
-  const url = `${API_BASE}?func=GetDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop=${encodeURIComponent(lop)}`;
+// Lấy danh sách học sinh phân trang + tìm kiếm
+async function getDanhSachHocsinhPaginated(ma_truong, lop, start, limit, query) {
+  const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated&ma_truong=${encodeURIComponent(ma_truong)}&lop=${encodeURIComponent(lop)}&start=${start}&limit=${limit}&query=${encodeURIComponent(query||"")}`;
   const res = await fetch(url);
   return await res.json();
 }
