@@ -22,19 +22,6 @@
       .btn-main { width: 100%; }
       .th-action { min-width: 70px; }
     }
-    .btn-back {
-      position: fixed;
-      bottom: 26px; right: 20px; z-index: 1099;
-      border-radius: 50%; width: 54px; height: 54px;
-      box-shadow: 0 2px 14px #0003;
-      font-size: 25px;
-      display: flex; align-items: center; justify-content: center;
-      background: #fff;
-      border: 2px solid #eee;
-      color: #2563eb;
-      transition: box-shadow 0.12s;
-    }
-    .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
   </style>
 </head>
 <body>
@@ -48,7 +35,7 @@
     <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh...">
     <button class="btn btn-outline-primary" onclick="doSearch()">Tìm kiếm</button>
     <button class="btn btn-outline-secondary" onclick="clearSearch()">Xóa tìm</button>
-    <button class="btn btn-danger d-none" id="btn-delete-multi" onclick="showConfirmDeleteMany()">Xóa các dòng đã chọn</button>
+    <button class="btn btn-danger d-none" id="btn-delete-multi" onclick="confirmDeleteMany()">Xóa các dòng đã chọn</button>
   </div>
   <div class="table-responsive" id="ds-container"></div>
   <nav>
@@ -147,39 +134,6 @@
     </div></div>
   </div>
 
-  <!-- Modal xác nhận xóa -->
-  <div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title" id="modalConfirmTitle">Xác nhận</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" id="modalConfirmBody"></div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button class="btn btn-danger" id="btnConfirmAction">Đồng ý</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast thông báo -->
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-    <div id="toastNoti" class="toast align-items-center text-white bg-primary border-0" role="alert">
-      <div class="d-flex">
-        <div class="toast-body" id="toastNotiBody"></div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Nút quay về -->
-  <button class="btn btn-back" onclick="history.back()" title="Quay về">
-    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
-      <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
-    </svg>
-  </button>
-
   <div id="loadingSpinner" style="
       display:none;
       position:fixed;
@@ -195,7 +149,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
-    // --- Realtime/Pagination State ---
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
@@ -207,9 +160,9 @@
     let sortField = "";
     let sortDir = 1;
     let selectedRows = [];
-    let lastFetchedDs = [];
+    let allData = []; // danh sách toàn bộ học sinh đã load về
+    let lastPageData = []; // lưu data trang hiện tại để truy cập khi sửa/xóa
 
-    // --- Utility: Date, Excel, Show/Hide Spinner ---
     function excelDateToString(dateCell) {
       if (typeof dateCell === 'string') {
         if (dateCell.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return dateCell;
@@ -247,48 +200,63 @@
       if (!isNaN(Number(raw))) return excelDateToString(Number(raw));
       return raw;
     }
+
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
-    // --- Toast/Confirm Helper ---
-    function showToast(msg, type="primary") {
-      const toast = document.getElementById('toastNoti');
-      document.getElementById('toastNotiBody').innerText = msg;
-      toast.className = `toast align-items-center text-white bg-${type} border-0`;
-      new bootstrap.Toast(toast, { delay: 3500 }).show();
-    }
-    function showConfirm(msg, onConfirm, title="Xác nhận") {
-      document.getElementById('modalConfirmTitle').innerText = title;
-      document.getElementById('modalConfirmBody').innerHTML = msg;
-      const btn = document.getElementById('btnConfirmAction');
-      btn.onclick = function() {
-        bootstrap.Modal.getInstance(document.getElementById('modalConfirm')).hide();
-        onConfirm?.();
-      };
-      new bootstrap.Modal(document.getElementById('modalConfirm')).show();
-    }
-
-    // --- Danh sách, Phân trang, Sort ---
+    // ==== Load toàn bộ danh sách học sinh 1 lần ====
     async function fetchAllHocsinhOnce() {
       showLoading();
-      const start = (currentPage - 1) * pageSize;
-      const query = document.getElementById('search-box').value.trim();
-      const res = await getDanhSachHocsinhPaginated(user.ma_truong, user.lop_hoc, start, pageSize, query, sortField, sortDir);
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
+      let res = await fetch(url);
+      let data = await res.json();
       hideLoading();
-      const ds = res.data || [];
-      lastFetchedDs = ds;
-      totalRecords = res.total || 0;
+      if (data.success && Array.isArray(data.data)) {
+        allData = data.data;
+      } else {
+        allData = [];
+      }
+      currentPage = 1;
+      renderAllView();
+    }
+
+    function getFilteredSortedData() {
+      let q = document.getElementById('search-box').value.trim().toLowerCase();
+      let filtered = allData.filter(hs =>
+        !q ||
+        (hs.ho_ten_hoc_sinh || "").toLowerCase().includes(q) ||
+        (hs.ma_so_bhxh || "").toLowerCase().includes(q) ||
+        (hs.sdt_lienhe || "").toLowerCase().includes(q) ||
+        (hs.so_dinh_danh || "").toLowerCase().includes(q) ||
+        (hs.ten_cha_me || "").toLowerCase().includes(q)
+      );
+      // Sort
+      if (sortField) {
+        filtered.sort(function(a, b) {
+          let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+          if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+          if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+        });
+      }
+      return filtered;
+    }
+
+    function renderAllView() {
+      let filtered = getFilteredSortedData();
+      totalRecords = filtered.length;
       totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
       document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+      let start = (currentPage - 1) * pageSize;
+      let ds = filtered.slice(start, start + pageSize);
+      lastPageData = ds;
       renderDanhSachHS(ds, start);
       renderPagination();
       renderActions();
     }
-    function doSearch() { currentPage = 1; fetchAllHocsinhOnce(); }
-    function clearSearch() {
-      document.getElementById('search-box').value = "";
-      doSearch();
-    }
+
+    function doSearch() { currentPage = 1; renderAllView(); }
+    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
+
     function renderDanhSachHS(ds, offset) {
       selectedRows = [];
       if (!ds || ds.length === 0) {
@@ -336,11 +304,13 @@
       document.getElementById('ds-container').innerHTML = html;
       document.getElementById('btn-delete-multi').classList.add('d-none');
     }
+
     function doSort(field) {
       if (sortField === field) sortDir = -sortDir;
       else { sortField = field; sortDir = 1; }
-      fetchAllHocsinhOnce();
+      renderAllView();
     }
+
     function renderPagination() {
       const pagin = document.getElementById('pagination');
       pagin.innerHTML = '';
@@ -359,8 +329,9 @@
     window.gotoPage = function(p) {
       if (p<1||p>totalPages||p===currentPage) return;
       currentPage = p;
-      fetchAllHocsinhOnce();
+      renderAllView();
     };
+
     function renderActions() {
       document.getElementById('ds-actions').innerHTML = `
         <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
@@ -368,11 +339,11 @@
         <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
       `;
     }
+
     function downloadMauHS() {
       window.open("../mau_nhap_hocsinh.xlsx", "_blank");
     }
 
-    // --- Thêm mới ---
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
@@ -413,15 +384,14 @@
       if (res.success) {
         await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalThemHS')).hide();
-        showToast("Thêm học sinh thành công!", "success");
       } else {
         document.getElementById('themhs-error').innerText = res.message || "Lỗi thêm học sinh!";
       }
     }
 
-    // --- Sửa ---
+    // === SỬA ===
     function showModalSuaHSByIndex(i) {
-      const hs = lastFetchedDs[i];
+      const hs = lastPageData[i];
       if (!hs) return;
       document.getElementById('form-suahs').reset?.();
       document.getElementById('suahs-error').innerText = "";
@@ -472,18 +442,17 @@
       if (res.success) {
         await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalSuaHS')).hide();
-        showToast("Cập nhật học sinh thành công!", "success");
       } else {
         document.getElementById('suahs-error').innerText = res.message || "Lỗi cập nhật!";
       }
     }
 
-    // --- Import excel ---
     function showModalImportHS() {
       document.getElementById('import-error').innerText = "";
       document.getElementById('import-file').value = "";
       new bootstrap.Modal(document.getElementById('modalImportHS')).show();
     }
+
     async function handleImportHS() {
       const fileInput = document.getElementById('import-file');
       const errorDiv = document.getElementById('import-error');
@@ -518,7 +487,6 @@
         if (res.success) {
           await fetchAllHocsinhOnce();
           bootstrap.Modal.getInstance(document.getElementById('modalImportHS')).hide();
-          showToast("Nhập danh sách thành công!", "success");
         } else {
           errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
         }
@@ -528,39 +496,6 @@
       }
     }
 
-    // --- Xóa/xóa nhiều ---
-    window.confirmDelete = function(stt) {
-      showConfirm('Bạn có chắc chắn muốn xóa học sinh này?', () => doDelete(stt), "Xác nhận xóa");
-    }
-    function showConfirmDeleteMany() {
-      if (selectedRows.length === 0) return;
-      showConfirm(`Bạn có chắc chắn muốn xóa <b>${selectedRows.length}</b> học sinh đã chọn?`, doDeleteMany, "Xác nhận xóa nhiều");
-    }
-    async function doDeleteMany() {
-      showLoading();
-      const res = await xoaNhieuHocsinh(selectedRows);
-      hideLoading();
-      if (res.success) {
-        await fetchAllHocsinhOnce();
-        selectedRows = [];
-        showToast("Đã xóa các học sinh đã chọn!", "success");
-      } else {
-        showToast(res.message || "Xóa nhiều học sinh thất bại!", "danger");
-      }
-    }
-    async function doDelete(stt) {
-      showLoading();
-      const res = await xoaHocsinh(stt);
-      hideLoading();
-      if (res.success) {
-        await fetchAllHocsinhOnce();
-        showToast("Đã xóa học sinh!", "success");
-      } else {
-        showToast(res.message || "Xóa học sinh thất bại!", "danger");
-      }
-    }
-
-    // --- Checkbox chọn dòng/xóa nhiều ---
     window.onSelectRow = function(stt, cb) {
       if (cb.checked) selectedRows.push(stt);
       else selectedRows = selectedRows.filter(x => x !== stt);
@@ -580,9 +515,39 @@
       if (selectedRows.length > 0) btn.classList.remove('d-none');
       else btn.classList.add('d-none');
     }
+    function confirmDeleteMany() {
+      if (selectedRows.length === 0) return;
+      if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedRows.length} học sinh đã chọn?`)) return;
+      doDeleteMany();
+    }
+    async function doDeleteMany() {
+      showLoading();
+      const res = await xoaNhieuHocsinh(selectedRows);
+      hideLoading();
+      if (res.success) {
+        await fetchAllHocsinhOnce();
+        selectedRows = [];
+      } else {
+        alert(res.message || "Xóa nhiều học sinh thất bại!");
+      }
+    }
+    window.confirmDelete = function(stt) {
+      if (confirm('Bạn có chắc chắn muốn xóa dòng này?')) doDelete(stt);
+    }
+    async function doDelete(stt) {
+      showLoading();
+      const res = await xoaHocsinh(stt);
+      hideLoading();
+      if (res.success) {
+        await fetchAllHocsinhOnce();
+      } else {
+        alert(res.message || "Xóa học sinh thất bại!");
+      }
+    }
 
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = fetchAllHocsinhOnce;
   </script>
 </body>
 </html>
+
