@@ -43,6 +43,7 @@ async function themHocsinh(hs) {
     + `&lop=${encodeURIComponent(hs.lop)}`
     + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
     + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
     + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
   const res = await fetch(url);
   return await res.json();
@@ -61,6 +62,7 @@ async function importDanhSachHocsinh(listHS) {
       + `&lop=${encodeURIComponent(hs.lop)}`
       + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
       + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+      + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
       + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
     try {
       const res = await fetch(url);

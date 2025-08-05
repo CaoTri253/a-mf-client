@@ -66,6 +66,7 @@
           <input class="form-control mb-2" id="inp-lop" placeholder="Lớp" disabled/>
           <input class="form-control mb-2" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
           <input class="form-control mb-2" id="inp-so-dinh-danh" placeholder="Số định danh"/>
+          <input class="form-control mb-2" id="inp-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
         </form>
         <div id="themhs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
@@ -196,7 +197,7 @@
         <tr>
           <th>STT</th><th>Mã số BHXH</th><th>Họ tên</th><th>Ngày sinh</th>
           <th>Giới tính</th><th>Địa chỉ</th><th>Lớp</th>
-          <th>SĐT liên hệ</th><th>Số định danh</th>
+          <th>SĐT liên hệ</th><th>Số định danh</th><th>Tên cha/mẹ</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
         html += `<tr>
@@ -209,8 +210,10 @@
           <td>${hs.lop||""}</td>
           <td>${hs.sdt_lienhe||""}</td>
           <td>${hs.so_dinh_danh||""}</td>
+          <td>${hs.ten_cha_me||""}</td>
         </tr>`;
       });
+
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
     }
@@ -277,6 +280,7 @@
         lop: user.lop_hoc,
         sdt_lienhe: document.getElementById('inp-sdt-lienhe').value.trim(),
         so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
+        ten_cha_me: document.getElementById('inp-ten-cha-me').value.trim(),
         ma_truong: user.ma_truong
       };
       
@@ -327,6 +331,7 @@
           lop: row[6] || user.lop_hoc,
           sdt_lienhe: row[7] || "",
           so_dinh_danh: String(row[8] || ""),
+          ten_cha_me: row[9] || "",
           ma_truong: user.ma_truong
         }));
         const res = await importDanhSachHocsinh(ds);
