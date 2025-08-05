@@ -14,10 +14,13 @@
     .search-row { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 10px; gap: 12px;}
     .search-input { flex: 1; min-width: 180px;}
     .total-count { font-size: 1rem; font-weight: 400; color: #444;}
+    th.sortable { cursor: pointer; user-select: none; }
+    .th-action { min-width: 90px; }
     @media (max-width: 600px) {
       .header { font-size: 18px; }
       .search-row { flex-direction: column; align-items: stretch; }
       .btn-main { width: 100%; }
+      .th-action { min-width: 70px; }
     }
   </style>
 </head>
@@ -32,6 +35,7 @@
     <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh...">
     <button class="btn btn-outline-primary" onclick="doSearch()">Tìm kiếm</button>
     <button class="btn btn-outline-secondary" onclick="clearSearch()">Xóa tìm</button>
+    <button class="btn btn-danger d-none" id="btn-delete-multi" onclick="confirmDeleteMany()">Xóa các dòng đã chọn</button>
   </div>
   <div class="table-responsive" id="ds-container"></div>
   <nav>
@@ -49,7 +53,6 @@
           <input class="form-control mb-2" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
           <input class="form-control mb-2" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
           <input class="form-control mb-2" id="inp-ngay-sinh" type="date" placeholder="Ngày sinh"/>
-
           <label class="mb-1">Giới tính:</label>
           <div class="mb-2" style="display: flex; gap: 16px;">
             <div class="form-check">
@@ -61,7 +64,6 @@
               <label class="form-check-label" for="gt-nu">Nữ</label>
             </div>
           </div>
-
           <input class="form-control mb-2" id="inp-dia-chi" placeholder="Địa chỉ"/>
           <input class="form-control mb-2" id="inp-lop" placeholder="Lớp" disabled/>
           <input class="form-control mb-2" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
@@ -73,6 +75,44 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
         <button class="btn btn-primary" onclick="handleThemHS()">Thêm mới</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Modal sửa học sinh -->
+  <div class="modal fade" id="modalSuaHS" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Sửa thông tin học sinh</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-suahs" onsubmit="event.preventDefault();handleSuaHS();">
+          <input type="hidden" id="sua-stt"/>
+          <input class="form-control mb-2" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
+          <input class="form-control mb-2" id="sua-ho-ten-hs" placeholder="Họ tên học sinh"/>
+          <input class="form-control mb-2" id="sua-ngay-sinh" type="date" placeholder="Ngày sinh"/>
+          <label class="mb-1">Giới tính:</label>
+          <div class="mb-2" style="display: flex; gap: 16px;">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nam" value="Nam">
+              <label class="form-check-label" for="sua-gt-nam">Nam</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nu" value="Nữ">
+              <label class="form-check-label" for="sua-gt-nu">Nữ</label>
+            </div>
+          </div>
+          <input class="form-control mb-2" id="sua-dia-chi" placeholder="Địa chỉ"/>
+          <input class="form-control mb-2" id="sua-lop" placeholder="Lớp" disabled/>
+          <input class="form-control mb-2" id="sua-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
+          <input class="form-control mb-2" id="sua-so-dinh-danh" placeholder="Số định danh"/>
+          <input class="form-control mb-2" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+        </form>
+        <div id="suahs-error" class="text-danger" style="min-height:20px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" onclick="handleSuaHS()">Lưu thay đổi</button>
       </div>
     </div></div>
   </div>
@@ -113,11 +153,14 @@
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    // ==== Cấu hình phân trang ====
+    // ==== Cấu hình phân trang, sort, select ==== 
     let pageSize = 10;
     let currentPage = 1;
     let totalPages = 1;
     let totalRecords = 0;
+    let sortField = "";
+    let sortDir = 1;
+    let selectedRows = [];
 
     // ==== Hàm tiện ích ngày/tháng ====
     function excelDateToString(dateCell) {
@@ -162,12 +205,12 @@
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
-    // ==== Tìm kiếm & phân trang ====
+    // ==== Tìm kiếm & phân trang & sort ====
     async function fetchAndRenderAll() {
       showLoading();
       const start = (currentPage - 1) * pageSize;
       const query = document.getElementById('search-box').value.trim();
-      const res = await getDanhSachHocsinhPaginated(user.ma_truong, user.lop_hoc, start, pageSize, query);
+      const res = await getDanhSachHocsinhPaginated(user.ma_truong, user.lop_hoc, start, pageSize, query, sortField, sortDir);
       hideLoading();
       const ds = res.data || [];
       totalRecords = res.total || 0;
@@ -187,21 +230,40 @@
       doSearch();
     }
 
+    // ==== Render table với sort, select, thao tác ====
     function renderDanhSachHS(ds, offset) {
+      selectedRows = []; // reset select
       if (!ds || ds.length === 0) {
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
+        document.getElementById('btn-delete-multi').classList.add('d-none');
         return;
       }
-      let html = `<table class="table table-bordered table-hs">
-        <thead>
+      // Header sort
+      function sortIcon(field) {
+        if (sortField !== field) return '';
+        return sortDir === 1 ? ' ▲' : ' ▼';
+      }
+      let html = `<table class="table table-bordered table-hs align-middle"><thead>
         <tr>
-          <th>STT</th><th>Mã số BHXH</th><th>Họ tên</th><th>Ngày sinh</th>
-          <th>Giới tính</th><th>Địa chỉ</th><th>Lớp</th>
-          <th>SĐT liên hệ</th><th>Số định danh</th><th>Tên cha/mẹ</th>
+          <th><input type="checkbox" id="chk-all" onclick="toggleSelectAll(this)"></th>
+          <th class="th-action">Thao tác</th>
+          <th class="sortable" onclick="doSort('ma_so_bhxh')">Mã số BHXH${sortIcon('ma_so_bhxh')}</th>
+          <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên${sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
+          <th class="sortable" onclick="doSort('gioi_tinh')">Giới tính${sortIcon('gioi_tinh')}</th>
+          <th class="sortable" onclick="doSort('dia_chi')">Địa chỉ${sortIcon('dia_chi')}</th>
+          <th class="sortable" onclick="doSort('lop')">Lớp${sortIcon('lop')}</th>
+          <th class="sortable" onclick="doSort('sdt_lienhe')">SĐT liên hệ${sortIcon('sdt_lienhe')}</th>
+          <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh${sortIcon('so_dinh_danh')}</th>
+          <th class="sortable" onclick="doSort('ten_cha_me')">Tên cha/mẹ${sortIcon('ten_cha_me')}</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
         html += `<tr>
-          <td>${offset + i + 1}</td>
+          <td><input type="checkbox" class="chk-row" value="${hs.stt}" onchange="onSelectRow('${hs.stt}', this)"></td>
+          <td>
+            <button class="btn btn-sm btn-warning" onclick="showModalSuaHS(${encodeURIComponent(JSON.stringify(hs))})">Sửa</button>
+            <button class="btn btn-sm btn-danger" onclick="confirmDelete('${hs.stt}')">Xóa</button>
+          </td>
           <td>${hs.ma_so_bhxh||""}</td>
           <td>${hs.ho_ten_hoc_sinh||""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
@@ -213,9 +275,15 @@
           <td>${hs.ten_cha_me||""}</td>
         </tr>`;
       });
-
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
+      document.getElementById('btn-delete-multi').classList.add('d-none');
+    }
+
+    function doSort(field) {
+      if (sortField === field) sortDir = -sortDir;
+      else { sortField = field; sortDir = 1; }
+      fetchAndRenderAll();
     }
 
     function renderPagination() {
@@ -251,11 +319,10 @@
       window.open("../mau_nhap_hocsinh.xlsx", "_blank");
     }
 
-    // ==== Thêm mới/Import ====
+    // ==== Thêm mới/Import/Sửa/Xóa ==== 
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
-      // Thiết lập lại lớp mặc định và radio giới tính mặc định
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
@@ -268,7 +335,6 @@
         ngaySinh = `${d}/${m}/${y}`;
       } else ngaySinh = ngaySinhRaw;
 
-      // Lấy giới tính từ radio
       let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
 
       const hs = {
@@ -283,7 +349,7 @@
         ten_cha_me: document.getElementById('inp-ten-cha-me').value.trim(),
         ma_truong: user.ma_truong
       };
-      
+
       if (!hs.ho_ten_hoc_sinh || !hs.lop) {
         document.getElementById('themhs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
         return;
@@ -299,6 +365,65 @@
       }
     }
 
+    // === SỬA ===
+    window.showModalSuaHS = function(hs) {
+      // nhận json đã encode, giải mã
+      if (typeof hs === "string") hs = JSON.parse(decodeURIComponent(hs));
+      document.getElementById('form-suahs').reset?.();
+      document.getElementById('suahs-error').innerText = "";
+      document.getElementById('sua-stt').value = hs.stt;
+      document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
+      document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
+      // Hiển thị ngày sinh về yyyy-mm-dd để edit
+      let ddmmyyyy = displayNgaySinh(hs.ngay_sinh);
+      let parts = ddmmyyyy.split("/");
+      document.getElementById('sua-ngay-sinh').value = parts.length===3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
+      if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
+      else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
+      document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
+      document.getElementById('sua-lop').value = hs.lop || "";
+      document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
+      document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
+      document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
+      new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
+    }
+    async function handleSuaHS() {
+      let ngaySinhRaw = document.getElementById('sua-ngay-sinh').value;
+      let ngaySinh = "";
+      if (ngaySinhRaw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        let [y, m, d] = ngaySinhRaw.split("-");
+        ngaySinh = `${d}/${m}/${y}`;
+      } else ngaySinh = ngaySinhRaw;
+      let gioiTinh = document.querySelector('input[name="sua_gioi_tinh"]:checked')?.value || "";
+      const hs = {
+        stt: document.getElementById('sua-stt').value,
+        ma_so_bhxh: String(document.getElementById('sua-ma-so-bhxh').value.trim()),
+        ho_ten_hoc_sinh: document.getElementById('sua-ho-ten-hs').value.trim(),
+        ngay_sinh: ngaySinh,
+        gioi_tinh: gioiTinh,
+        dia_chi: document.getElementById('sua-dia-chi').value.trim(),
+        lop: document.getElementById('sua-lop').value.trim(),
+        sdt_lienhe: document.getElementById('sua-sdt-lienhe').value.trim(),
+        so_dinh_danh: String(document.getElementById('sua-so-dinh-danh').value.trim()),
+        ten_cha_me: document.getElementById('sua-ten-cha-me').value.trim(),
+        ma_truong: user.ma_truong
+      };
+      if (!hs.ho_ten_hoc_sinh || !hs.lop) {
+        document.getElementById('suahs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
+        return;
+      }
+      showLoading();
+      const res = await suaHocsinh(hs);
+      hideLoading();
+      if (res.success) {
+        await fetchAndRenderAll();
+        bootstrap.Modal.getInstance(document.getElementById('modalSuaHS')).hide();
+      } else {
+        document.getElementById('suahs-error').innerText = res.message || "Lỗi cập nhật!";
+      }
+    }
+
+    // ==== Import Excel ====
     function showModalImportHS() {
       document.getElementById('import-error').innerText = "";
       document.getElementById('import-file').value = "";
@@ -345,6 +470,56 @@
       } catch (err) {
         hideLoading();
         errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!";
+      }
+    }
+
+    // ==== Checkboxes chọn nhiều ====
+    window.onSelectRow = function(stt, cb) {
+      if (cb.checked) selectedRows.push(stt);
+      else selectedRows = selectedRows.filter(x => x !== stt);
+      updateDeleteMultiButton();
+    }
+    function toggleSelectAll(mainCb) {
+      let all = document.querySelectorAll('.chk-row');
+      selectedRows = [];
+      all.forEach(cb => {
+        cb.checked = mainCb.checked;
+        if (mainCb.checked) selectedRows.push(cb.value);
+      });
+      updateDeleteMultiButton();
+    }
+    function updateDeleteMultiButton() {
+      let btn = document.getElementById('btn-delete-multi');
+      if (selectedRows.length > 0) btn.classList.remove('d-none');
+      else btn.classList.add('d-none');
+    }
+    function confirmDeleteMany() {
+      if (selectedRows.length === 0) return;
+      if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedRows.length} học sinh đã chọn?`)) return;
+      doDeleteMany();
+    }
+    async function doDeleteMany() {
+      showLoading();
+      const res = await xoaNhieuHocsinh(selectedRows);
+      hideLoading();
+      if (res.success) {
+        await fetchAndRenderAll();
+        selectedRows = [];
+      } else {
+        alert(res.message || "Xóa nhiều học sinh thất bại!");
+      }
+    }
+    window.confirmDelete = function(stt) {
+      if (confirm('Bạn có chắc chắn muốn xóa dòng này?')) doDelete(stt);
+    }
+    async function doDelete(stt) {
+      showLoading();
+      const res = await xoaHocsinh(stt);
+      hideLoading();
+      if (res.success) {
+        await fetchAndRenderAll();
+      } else {
+        alert(res.message || "Xóa học sinh thất bại!");
       }
     }
 

@@ -18,15 +18,16 @@ async function forgotPassword(sdt) {
 }
 
 
-// Lấy danh sách học sinh phân trang + tìm kiếm
-// Lấy danh sách học sinh phân trang và có lọc
-async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10, query = "") {
+// Lấy danh sách học sinh phân trang + tìm kiếm + sort
+async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10, query = "", sortField = "", sortDir = 1) {
   const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated`
     + `&ma_truong=${encodeURIComponent(ma_truong)}`
     + `&lop=${encodeURIComponent(lop)}`
     + `&start=${start}`
     + `&limit=${limit}`
-    + `&query=${encodeURIComponent(query)}`;
+    + `&query=${encodeURIComponent(query)}`
+    + `&sortField=${encodeURIComponent(sortField)}`
+    + `&sortDir=${sortDir}`;
   const res = await fetch(url);
   return await res.json();
 }
@@ -78,3 +79,36 @@ async function importDanhSachHocsinh(listHS) {
   else return { success: false, imported: okCount, errors };
 }
 
+
+// Sửa học sinh
+async function suaHocsinh(hs) {
+  const url = `${API_BASE}?func=UpdateHocsinh`
+    + `&stt=${encodeURIComponent(hs.stt)}`
+    + `&ma_so_bhxh=${encodeURIComponent(hs.ma_so_bhxh)}`
+    + `&ho_ten_hoc_sinh=${encodeURIComponent(hs.ho_ten_hoc_sinh)}`
+    + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
+    + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
+    + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
+    + `&lop=${encodeURIComponent(hs.lop)}`
+    + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
+    + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+    + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa học sinh (theo stt hoặc số định danh)
+async function xoaHocsinh(id) {
+  const url = `${API_BASE}?func=DeleteHocsinh&id=${encodeURIComponent(id)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa nhiều học sinh
+async function xoaNhieuHocsinh(ids) {
+  // ids là mảng stt hoặc số định danh
+  const url = `${API_BASE}?func=DeleteManyHocsinh&ids=${encodeURIComponent(ids.join(","))}`;
+  const res = await fetch(url);
+  return await res.json();
+}
