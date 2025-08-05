@@ -153,7 +153,6 @@
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    // ==== Cấu hình phân trang, sort, select ==== 
     let pageSize = 10;
     let currentPage = 1;
     let totalPages = 1;
@@ -161,8 +160,8 @@
     let sortField = "";
     let sortDir = 1;
     let selectedRows = [];
+    let lastFetchedDs = [];
 
-    // ==== Hàm tiện ích ngày/tháng ====
     function excelDateToString(dateCell) {
       if (typeof dateCell === 'string') {
         if (dateCell.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return dateCell;
@@ -201,11 +200,9 @@
       return raw;
     }
 
-    // ==== Hiện/tắt loading ====
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
-    // ==== Tìm kiếm & phân trang & sort ====
     async function fetchAndRenderAll() {
       showLoading();
       const start = (currentPage - 1) * pageSize;
@@ -213,6 +210,7 @@
       const res = await getDanhSachHocsinhPaginated(user.ma_truong, user.lop_hoc, start, pageSize, query, sortField, sortDir);
       hideLoading();
       const ds = res.data || [];
+      lastFetchedDs = ds;
       totalRecords = res.total || 0;
       totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
       document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
@@ -230,15 +228,13 @@
       doSearch();
     }
 
-    // ==== Render table với sort, select, thao tác ====
     function renderDanhSachHS(ds, offset) {
-      selectedRows = []; // reset select
+      selectedRows = [];
       if (!ds || ds.length === 0) {
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Chưa có dữ liệu học sinh cho lớp này.</div>`;
         document.getElementById('btn-delete-multi').classList.add('d-none');
         return;
       }
-      // Header sort
       function sortIcon(field) {
         if (sortField !== field) return '';
         return sortDir === 1 ? ' ▲' : ' ▼';
@@ -261,7 +257,7 @@
         html += `<tr>
           <td><input type="checkbox" class="chk-row" value="${hs.stt}" onchange="onSelectRow('${hs.stt}', this)"></td>
           <td>
-            <button class="btn btn-sm btn-warning" onclick="showModalSuaHS(${encodeURIComponent(JSON.stringify(hs))})">Sửa</button>
+            <button class="btn btn-sm btn-warning" onclick="showModalSuaHSByIndex(${i})">Sửa</button>
             <button class="btn btn-sm btn-danger" onclick="confirmDelete('${hs.stt}')">Xóa</button>
           </td>
           <td>${hs.ma_so_bhxh||""}</td>
@@ -319,7 +315,6 @@
       window.open("../mau_nhap_hocsinh.xlsx", "_blank");
     }
 
-    // ==== Thêm mới/Import/Sửa/Xóa ==== 
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
@@ -366,15 +361,14 @@
     }
 
     // === SỬA ===
-    window.showModalSuaHS = function(hs) {
-      // nhận json đã encode, giải mã
-      if (typeof hs === "string") hs = JSON.parse(decodeURIComponent(hs));
+    function showModalSuaHSByIndex(i) {
+      const hs = lastFetchedDs[i];
+      if (!hs) return;
       document.getElementById('form-suahs').reset?.();
       document.getElementById('suahs-error').innerText = "";
       document.getElementById('sua-stt').value = hs.stt;
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
-      // Hiển thị ngày sinh về yyyy-mm-dd để edit
       let ddmmyyyy = displayNgaySinh(hs.ngay_sinh);
       let parts = ddmmyyyy.split("/");
       document.getElementById('sua-ngay-sinh').value = parts.length===3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
@@ -387,6 +381,7 @@
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
       new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
     }
+
     async function handleSuaHS() {
       let ngaySinhRaw = document.getElementById('sua-ngay-sinh').value;
       let ngaySinh = "";
@@ -423,7 +418,6 @@
       }
     }
 
-    // ==== Import Excel ====
     function showModalImportHS() {
       document.getElementById('import-error').innerText = "";
       document.getElementById('import-file').value = "";
@@ -473,7 +467,6 @@
       }
     }
 
-    // ==== Checkboxes chọn nhiều ====
     window.onSelectRow = function(stt, cb) {
       if (cb.checked) selectedRows.push(stt);
       else selectedRows = selectedRows.filter(x => x !== stt);
@@ -523,7 +516,7 @@
       }
     }
 
-    // Khởi tạo trang
+    window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = fetchAndRenderAll;
   </script>
 </body>
