@@ -160,7 +160,8 @@
     let sortField = "";
     let sortDir = 1;
     let selectedRows = [];
-    let lastFetchedDs = [];
+    let allData = []; // danh sách toàn bộ học sinh đã load về
+    let lastPageData = []; // lưu data trang hiện tại để truy cập khi sửa/xóa
 
     function excelDateToString(dateCell) {
       if (typeof dateCell === 'string') {
@@ -203,30 +204,58 @@
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
-    async function fetchAndRenderAll() {
+    // ==== Load toàn bộ danh sách học sinh 1 lần ====
+    async function fetchAllHocsinhOnce() {
       showLoading();
-      const start = (currentPage - 1) * pageSize;
-      const query = document.getElementById('search-box').value.trim();
-      const res = await getDanhSachHocsinhPaginated(user.ma_truong, user.lop_hoc, start, pageSize, query, sortField, sortDir);
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
+      let res = await fetch(url);
+      let data = await res.json();
       hideLoading();
-      const ds = res.data || [];
-      lastFetchedDs = ds;
-      totalRecords = res.total || 0;
+      if (data.success && Array.isArray(data.data)) {
+        allData = data.data;
+      } else {
+        allData = [];
+      }
+      currentPage = 1;
+      renderAllView();
+    }
+
+    function getFilteredSortedData() {
+      let q = document.getElementById('search-box').value.trim().toLowerCase();
+      let filtered = allData.filter(hs =>
+        !q ||
+        (hs.ho_ten_hoc_sinh || "").toLowerCase().includes(q) ||
+        (hs.ma_so_bhxh || "").toLowerCase().includes(q) ||
+        (hs.sdt_lienhe || "").toLowerCase().includes(q) ||
+        (hs.so_dinh_danh || "").toLowerCase().includes(q) ||
+        (hs.ten_cha_me || "").toLowerCase().includes(q)
+      );
+      // Sort
+      if (sortField) {
+        filtered.sort(function(a, b) {
+          let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+          if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+          if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+        });
+      }
+      return filtered;
+    }
+
+    function renderAllView() {
+      let filtered = getFilteredSortedData();
+      totalRecords = filtered.length;
       totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
       document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+      let start = (currentPage - 1) * pageSize;
+      let ds = filtered.slice(start, start + pageSize);
+      lastPageData = ds;
       renderDanhSachHS(ds, start);
       renderPagination();
       renderActions();
     }
 
-    function doSearch() {
-      currentPage = 1;
-      fetchAndRenderAll();
-    }
-    function clearSearch() {
-      document.getElementById('search-box').value = "";
-      doSearch();
-    }
+    function doSearch() { currentPage = 1; renderAllView(); }
+    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
 
     function renderDanhSachHS(ds, offset) {
       selectedRows = [];
@@ -249,9 +278,9 @@
           <th class="sortable" onclick="doSort('gioi_tinh')">Giới tính${sortIcon('gioi_tinh')}</th>
           <th class="sortable" onclick="doSort('dia_chi')">Địa chỉ${sortIcon('dia_chi')}</th>
           <th class="sortable" onclick="doSort('lop')">Lớp${sortIcon('lop')}</th>
-          <th class="sortable" onclick="doSort('sdt_lienhe')">SĐT liên hệ${sortIcon('sdt_lienhe')}</th>
-          <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh${sortIcon('so_dinh_danh')}</th>
-          <th class="sortable" onclick="doSort('ten_cha_me')">Tên cha/mẹ${sortIcon('ten_cha_me')}</th>
+<th class="sortable" onclick="doSort('sdt_lienhe')">SĐT liên hệ${sortIcon('sdt_lienhe')}</th>
+<th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh${sortIcon('so_dinh_danh')}</th>
+<th class="sortable" onclick="doSort('ten_cha_me')">Tên cha/mẹ${sortIcon('ten_cha_me')}</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
         html += `<tr>
@@ -279,7 +308,7 @@
     function doSort(field) {
       if (sortField === field) sortDir = -sortDir;
       else { sortField = field; sortDir = 1; }
-      fetchAndRenderAll();
+      renderAllView();
     }
 
     function renderPagination() {
@@ -300,7 +329,7 @@
     window.gotoPage = function(p) {
       if (p<1||p>totalPages||p===currentPage) return;
       currentPage = p;
-      fetchAndRenderAll();
+      renderAllView();
     };
 
     function renderActions() {
@@ -353,7 +382,7 @@
       const res = await themHocsinh(hs);
       hideLoading();
       if (res.success) {
-        await fetchAndRenderAll();
+        await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalThemHS')).hide();
       } else {
         document.getElementById('themhs-error').innerText = res.message || "Lỗi thêm học sinh!";
@@ -362,7 +391,7 @@
 
     // === SỬA ===
     function showModalSuaHSByIndex(i) {
-      const hs = lastFetchedDs[i];
+      const hs = lastPageData[i];
       if (!hs) return;
       document.getElementById('form-suahs').reset?.();
       document.getElementById('suahs-error').innerText = "";
@@ -411,7 +440,7 @@
       const res = await suaHocsinh(hs);
       hideLoading();
       if (res.success) {
-        await fetchAndRenderAll();
+        await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalSuaHS')).hide();
       } else {
         document.getElementById('suahs-error').innerText = res.message || "Lỗi cập nhật!";
@@ -456,7 +485,7 @@
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
-          await fetchAndRenderAll();
+          await fetchAllHocsinhOnce();
           bootstrap.Modal.getInstance(document.getElementById('modalImportHS')).hide();
         } else {
           errorDiv.innerText = res.message || "Lỗi import dữ liệu!";
@@ -496,7 +525,7 @@
       const res = await xoaNhieuHocsinh(selectedRows);
       hideLoading();
       if (res.success) {
-        await fetchAndRenderAll();
+        await fetchAllHocsinhOnce();
         selectedRows = [];
       } else {
         alert(res.message || "Xóa nhiều học sinh thất bại!");
@@ -510,14 +539,15 @@
       const res = await xoaHocsinh(stt);
       hideLoading();
       if (res.success) {
-        await fetchAndRenderAll();
+        await fetchAllHocsinhOnce();
       } else {
         alert(res.message || "Xóa học sinh thất bại!");
       }
     }
 
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
-    window.onload = fetchAndRenderAll;
+    window.onload = fetchAllHocsinhOnce;
   </script>
 </body>
 </html>
+

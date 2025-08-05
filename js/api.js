@@ -18,6 +18,17 @@ async function forgotPassword(sdt) {
 }
 
 
+
+
+
+// API lấy toàn bộ danh sách học sinh (phục vụ cache trên client tăng tốc độ hiển thị danh sách)
+async function getAllDanhSachHocsinh(ma_truong, lop) {
+  // Nếu muốn filter phía server có thể truyền params
+  const url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop=${encodeURIComponent(lop)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
 // Lấy danh sách học sinh phân trang + tìm kiếm + sort
 async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10, query = "", sortField = "", sortDir = 1) {
   const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated`
