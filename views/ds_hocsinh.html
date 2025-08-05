@@ -27,16 +27,12 @@
     <span class="total-count" id="total-hs"></span>
   </div>
 
-  <div id="ds-actions" style="margin-bottom:14px;">
-    <!-- Nút thêm mới, import, tải mẫu sẽ render JS -->
-  </div>
-
+  <div id="ds-actions" style="margin-bottom:14px;"></div>
   <div class="search-row mb-2">
     <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh...">
     <button class="btn btn-outline-primary" onclick="doSearch()">Tìm kiếm</button>
     <button class="btn btn-outline-secondary" onclick="clearSearch()">Xóa tìm</button>
   </div>
-
   <div class="table-responsive" id="ds-container"></div>
   <nav>
     <ul class="pagination justify-content-center" id="pagination"></ul>
@@ -49,16 +45,28 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div id="form-themhs">
+        <form id="form-themhs" onsubmit="event.preventDefault();handleThemHS();">
           <input class="form-control mb-2" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
           <input class="form-control mb-2" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
           <input class="form-control mb-2" id="inp-ngay-sinh" type="date" placeholder="Ngày sinh"/>
-          <input class="form-control mb-2" id="inp-gioi-tinh" placeholder="Giới tính"/>
+
+          <label class="mb-1">Giới tính:</label>
+          <div class="mb-2" style="display: flex; gap: 16px;">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nam" value="Nam" checked>
+              <label class="form-check-label" for="gt-nam">Nam</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nu" value="Nữ">
+              <label class="form-check-label" for="gt-nu">Nữ</label>
+            </div>
+          </div>
+
           <input class="form-control mb-2" id="inp-dia-chi" placeholder="Địa chỉ"/>
-          <input class="form-control mb-2" id="inp-lop" placeholder="Lớp"/>
+          <input class="form-control mb-2" id="inp-lop" placeholder="Lớp" disabled/>
           <input class="form-control mb-2" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
           <input class="form-control mb-2" id="inp-so-dinh-danh" placeholder="Số định danh"/>
-        </div>
+        </form>
         <div id="themhs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
       <div class="modal-footer">
@@ -212,7 +220,6 @@
       pagin.innerHTML = '';
       if (totalPages <= 1) return;
       pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
-      // Hiển thị số trang: chỉ hiển thị quanh trang hiện tại cho gọn
       let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
       if (minP > 1) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
       if (minP > 2) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
@@ -243,8 +250,11 @@
 
     // ==== Thêm mới/Import ====
     function showModalThemHS() {
-      document.getElementById('form-themhs').reset?.(); 
+      document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
+      // Thiết lập lại lớp mặc định và radio giới tính mặc định
+      document.getElementById('inp-lop').value = user.lop_hoc || "";
+      document.getElementById('gt-nam').checked = true;
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
     async function handleThemHS() {
@@ -255,11 +265,14 @@
         ngaySinh = `${d}/${m}/${y}`;
       } else ngaySinh = ngaySinhRaw;
 
+      // Lấy giới tính từ radio
+      let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
+
       const hs = {
         ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
         ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
         ngay_sinh: ngaySinh,
-        gioi_tinh: document.getElementById('inp-gioi-tinh').value.trim(),
+        gioi_tinh: gioiTinh,
         dia_chi: document.getElementById('inp-dia-chi').value.trim(),
         lop: user.lop_hoc,
         sdt_lienhe: document.getElementById('inp-sdt-lienhe').value.trim(),
