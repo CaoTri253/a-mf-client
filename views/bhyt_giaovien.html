@@ -36,9 +36,9 @@
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "index.html";
 
-    
+
     function handleDaThu() { alert("Chức năng Đã thu (dành cho giáo viên) đang phát triển!"); }
-    function handleChuaThu() { window.location.href = "ds_hocsinh_chuathu.html"; }
+    function handleChuaThu() { window.location.href = "ds_hocsinh_chuathu_giaovien.html"; }
     function handleHoaHong() { alert("Chức năng Hoa hồng (dành cho giáo viên) đang phát triển!"); }
     function handleThongKe() { alert("Chức năng Thống kê (dành cho giáo viên) đang phát triển!"); }
 
