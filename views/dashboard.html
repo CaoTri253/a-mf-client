@@ -82,7 +82,7 @@
       container.innerHTML = `
         <div class="flower-grid">
           <div class="flower-item flower-top-left" onclick="goToDSHocsinh()">DS Học sinh</div>
-          <div class="flower-item flower-top-right">BHYT</div>
+          <div class="flower-item flower-top-right" onclick="goToBHYT_giaovien()">BHYT</div>
           <div class="flower-item flower-bottom-left">BHTN</div>
           <div class="flower-item flower-bottom-right">KHÁC</div>
         </div>`;
@@ -113,6 +113,12 @@
   function goToBHYT() {
     showLoading();
     window.location.href = "bhyt.html";  // vẫn đúng vì bhyt.html nằm cùng thư mục với dashboard.html
+  }
+
+
+  function goToBHYT_giaovien() {
+    showLoading();
+    window.location.href = "bhyt_giaovien.html";  // BHYT giáo viên nằm cùng thư mục với dashboard.html
   }
 
 
