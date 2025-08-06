@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DS học sinh chưa thu - Giáo viên</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body { background: #f8f9fa; min-height: 100vh; padding: 20px; }
+    .header { font-size: 22px; font-weight: bold; margin-bottom: 18px; }
+    .btn-main { margin: 5px 8px 10px 0; }
+    .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002;}
+    .table-responsive { overflow-x: auto; }
+    .total-count { font-size: 1rem; font-weight: 400; color: #444;}
+    th.th-action { min-width: 170px; }
+    .btn-back {
+      position: fixed; bottom: 26px; right: 20px; z-index: 1099;
+      border-radius: 50%; width: 54px; height: 54px;
+      box-shadow: 0 2px 14px #0003; font-size: 25px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: 2px solid #eee; color: #2563eb;
+      transition: box-shadow 0.12s;
+    }
+    .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
+    @media (max-width: 600px) {
+      .header { font-size: 18px; }
+      th.th-action { min-width: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    DANH SÁCH HỌC SINH CHƯA THU LỚP <span id="lop-hoc"></span>
+    <span class="total-count" id="total-hs"></span>
+  </div>
+  <div class="table-responsive" id="ds-container"></div>
+  <nav>
+    <ul class="pagination justify-content-center" id="pagination"></ul>
+  </nav>
+  <!-- Nút quay về -->
+  <button class="btn btn-back" onclick="goBack()" title="Quay về">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
+    </svg>
+  </button>
+  <div id="loadingSpinner" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(255,255,255,0.5);align-items:center;justify-content:center;">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    let user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
+    document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
+    let pageSize = 12, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [];
+
+    function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
+    function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
+
+    // Hiển thị đúng định dạng ngày/tháng/năm
+    function displayNgaySinh(raw) {
+      if (!raw) return "";
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        let d = new Date(raw);
+        return d.toLocaleDateString('vi-VN');
+      }
+      if (raw.match && raw.match(/^\d{2}\/\d{2}\/\d{4}$/)) return raw;
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        let [y,m,d] = raw.split('-'); return `${d}/${m}/${y}`;
+      }
+      return raw;
+    }
+
+    // ===== Lấy danh sách học sinh chưa thu =====
+    async function fetchChuaThuHocsinh() {
+      showLoading();
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
+      let res = await fetch(url);
+      let data = await res.json();
+      hideLoading();
+      if (data.success && Array.isArray(data.data)) {
+        // Lọc học sinh chưa thu (giả định có field "trang_thai" === "Chưa thu")
+        allData = data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu");
+      } else {
+        allData = [];
+      }
+      currentPage = 1;
+      renderAllView();
+    }
+
+    function renderAllView() {
+      totalRecords = allData.length;
+      totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+      document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+      let start = (currentPage - 1) * pageSize;
+      let ds = allData.slice(start, start + pageSize);
+      renderDanhSachHS(ds);
+      renderPagination();
+    }
+
+    function renderDanhSachHS(ds) {
+      if (!ds || ds.length === 0) {
+        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
+        return;
+      }
+      let html = `<table class="table table-bordered table-hs align-middle"><thead>
+        <tr>
+          <th class="th-action">Thao tác</th>
+          <th>Họ tên học sinh</th>
+          <th>Ngày sinh</th>
+          <th>Số định danh cá nhân</th>
+        </tr></thead><tbody>`;
+      ds.forEach((hs, i) => {
+        html += `<tr>
+          <td>
+            <button class="btn btn-success btn-sm me-1" onclick="nopHoSo('${hs.stt}')">Nộp hồ sơ</button>
+            <button class="btn btn-warning btn-sm me-1" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
+            <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+          </td>
+          <td>${hs.ho_ten_hoc_sinh||""}</td>
+          <td>${displayNgaySinh(hs.ngay_sinh)}</td>
+          <td>${hs.so_dinh_danh||""}</td>
+        </tr>`;
+      });
+      html += "</tbody></table>";
+      document.getElementById('ds-container').innerHTML = html;
+    }
+
+    function renderPagination() {
+      const pagin = document.getElementById('pagination');
+      pagin.innerHTML = '';
+      if (totalPages <= 1) return;
+      pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
+      let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
+      if (minP > 1) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
+      if (minP > 2) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      for (let p = minP; p <= maxP; p++) {
+        pagin.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`;
+      }
+      if (maxP < totalPages-1) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      if (maxP < totalPages) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
+      pagin.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
+    }
+    window.gotoPage = function(p) {
+      if (p<1||p>totalPages||p===currentPage) return;
+      currentPage = p;
+      renderAllView();
+    };
+
+    // ==== Thao tác nút (cần bổ sung nghiệp vụ thực tế) ====
+    function nopHoSo(stt) { alert("Nộp hồ sơ cho học sinh STT: "+stt); }
+    function suaHoSo(stt) { alert("Sửa hồ sơ học sinh STT: "+stt); }
+    function inPhieuThu(stt) { alert("In phiếu thu cho học sinh STT: "+stt); }
+
+    function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
+
+    // Init
+    window.onload = fetchChuaThuHocsinh;
+  </script>
+</body>
+</html>
