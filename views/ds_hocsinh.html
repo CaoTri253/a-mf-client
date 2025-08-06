@@ -45,9 +45,7 @@
 
   <div id="ds-actions" style="margin-bottom:14px;"></div>
   <div class="search-row mb-2">
-    <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh...">
-    <button class="btn btn-outline-primary" onclick="doSearch()">Tìm kiếm</button>
-    <button class="btn btn-outline-secondary" onclick="clearSearch()">Xóa tìm</button>
+    <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh..." oninput="doSearch()">
     <button class="btn btn-danger d-none" id="btn-delete-multi" onclick="showConfirmDeleteMany()">Xóa các dòng đã chọn</button>
   </div>
   <div class="table-responsive" id="ds-container"></div>
@@ -312,7 +310,6 @@
     }
 
     function doSearch() { currentPage = 1; renderAllView(); }
-    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
 
     function renderDanhSachHS(ds, offset) {
       selectedRows = [];
@@ -607,10 +604,7 @@
     window.onload = fetchAllHocsinhOnce;
 
 
-
-
-
-  function goBack() { showLoading(); window.location.href = "dashboard.html"; }
+    function goBack() { showLoading(); window.location.href = "dashboard.html"; }
   </script>
 </body>
 </html>
