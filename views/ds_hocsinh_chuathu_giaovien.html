@@ -349,6 +349,13 @@
       new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
     }
 
+    // Hàm ép kiểu an toàn cho trường hợp chuỗi hoặc số
+    function parseFloatSafe(val) {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+      return 0;
+    }
+
     async function submitNopHoSoBHYT() {
       if (!_currentHS) return;
       let noikham = document.getElementById('nhs-noikham').value.trim();
@@ -358,50 +365,60 @@
         return;
       }
       showLoading();
-      // Lấy giá BHYT
-      let giaRes = await getGiaBHYT();
-      let gia = giaRes?.data?.[0];
-      // --- Đúng: TÍNH GIÁ TRỊ SỐ TIỀN VÀ HOA HỒNG ---
-      let so_tien = gia ? (parseInt(gia.gia_tien, 10) * Number(so_thang)) : 0;
-      let hoa_hong = "null";
-      if (so_thang == 3 && gia) hoa_hong = Math.round(Number(gia.hoa_hong_3_thang.replace(",", ".")) * so_tien * 100) / 100;
-      else if (so_thang == 6 && gia) hoa_hong = Math.round(Number(gia.hoa_hong_6_thang.replace(",", ".")) * so_tien * 100) / 100;
-      else if (so_thang == 12 && gia) hoa_hong = Math.round(Number(gia.hoa_hong_12_thang.replace(",", ".")) * so_tien * 100) / 100;
-      let now = new Date();
-      let ngay_dong = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
-      let ngay_het_han = `31/12/${now.getFullYear()}`;
-      // Chuẩn bị payload
-      let payload = {
-        ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
-        nam_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
-        gioi_tinh: _currentHS.gioi_tinh || "null",
-        so_thang_dong: so_thang,
-        ngay_dong, ngay_het_han,
-        doi_tuong_dong: "HS",
-        hoa_hong, so_tien,
-        lop_hoc: _currentHS.lop || "null",
-        ghi_chu: "null",
-        dia_chi: _currentHS.dia_chi || "null",
-        so_dinh_danh: _currentHS.so_dinh_danh || "null",
-        sdt: "'" + _currentHS.sdt_lienhe || "null",
-        so_bhyt: "null",
-        noi_kham: noikham,
-        trang_thai: 0,
-        so_ho_so: "null",
-        ma_truong: user.ma_truong || "null"
-      };
-      let res = await nopHoSoBHYTApi(payload);
-      hideLoading();
-      if (res.success) {
-        // Đóng modal
-        bootstrap.Modal.getInstance(document.getElementById('modalNopHoSoBHYT')).hide();
-        showLoading();
-        await fetchChuaThuHocsinh(); // reload lại table (đã có trạng thái mới)
+      try {
+        // Lấy giá BHYT
+        let giaRes = await getGiaBHYT();
+        let gia = giaRes?.data?.[0];
+        // Tính toán
+        let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
+        let hoa_hong = "null";
+        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
+        else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+        let now = new Date();
+        let ngay_dong = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+        let ngay_het_han = `31/12/${now.getFullYear()}`;
+        // Chuẩn bị payload
+        let payload = {
+          ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
+          nam_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
+          gioi_tinh: _currentHS.gioi_tinh || "null",
+          so_thang_dong: so_thang,
+          ngay_dong, ngay_het_han,
+          doi_tuong_dong: "HS",
+          hoa_hong, so_tien,
+          lop_hoc: _currentHS.lop || "null",
+          ghi_chu: "null",
+          dia_chi: _currentHS.dia_chi || "null",
+          so_dinh_danh: _currentHS.so_dinh_danh || "null",
+          sdt: _currentHS.sdt_lienhe || "null",
+          so_bhyt: "null",
+          noi_kham: noikham,
+          trang_thai: 0,
+          so_ho_so: "null",
+          ma_truong: user.ma_truong || "null"
+        };
+        let res = await nopHoSoBHYTApi(payload);
         hideLoading();
-      } else {
-        document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
+        if (res.success) {
+          // Đóng modal đúng chuẩn Bootstrap 5
+          let modalEl = document.getElementById('modalNopHoSoBHYT');
+          let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.hide();
+          // Hiển thị thông báo thành công
+          alert("Nộp hồ sơ thành công!");
+          showLoading();
+          await fetchChuaThuHocsinh(); // reload lại table
+          hideLoading();
+        } else {
+          document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
+        }
+      } catch (err) {
+        hideLoading();
+        document.getElementById('nhs-error').innerText = err.message || "Có lỗi xảy ra!";
       }
     }
+
 
   </script>
 </body>
