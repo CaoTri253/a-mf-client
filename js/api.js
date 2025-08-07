@@ -145,3 +145,11 @@ async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
   });
   return await res.json();
 }
+
+
+//lấy thông tin để hiển thị lên modal sửa hồ sơ BHYT
+async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}

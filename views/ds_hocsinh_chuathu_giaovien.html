@@ -342,9 +342,8 @@
 
 
     // Biến toàn cục để lưu học sinh đang sửa
-    let _currentHS_Sua = null;
-    // Hàm sửa hồ sơ BHYT
-    function suaHoSo(stt) {
+    // Sửa hồ sơ BHYT
+    async function suaHoSo(stt) {
       // Tìm học sinh chưa thu có stt này
       const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs || hs._bhyt_trangthai !== 0) {
@@ -353,17 +352,29 @@
       _currentHS_Sua = hs;
       document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
       document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
-      document.getElementById('shs-noikham').value = hs.noi_kham || "";
       document.getElementById('shs-error').innerText = "";
-      // Fill số tháng đóng
-      ["3","6","12"].forEach(t => {
-        document.getElementById('shs-thang-' + t).checked = (String(hs.so_thang_dong) === t);
-      });
       // Gợi ý nơi khám
       let datalist = document.getElementById('noikham-list');
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
+
+      // GỌI API lấy hồ sơ BHYT cũ
+      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop);
+      if (bhytRes && bhytRes.success && bhytRes.data) {
+        document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
+        ["3","6","12"].forEach(t => {
+          document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
+        });
+        // Bạn cũng có thể show hoa_hong, so_tien nếu muốn
+      } else {
+        // Nếu không có dữ liệu thì clear
+        document.getElementById('shs-noikham').value = "";
+        ["3","6","12"].forEach(t => {
+          document.getElementById('shs-thang-' + t).checked = false;
+        });
+      }
       new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
     }
+
 
 
     // API cập nhật hồ sơ BHYT (cần thêm trên backend)
