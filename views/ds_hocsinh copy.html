@@ -21,7 +21,14 @@
       .search-row { flex-direction: column; align-items: stretch; }
       .btn-main { width: 100%; }
       .th-action { min-width: 70px; }
+
+      .action-btns { display: flex; flex-direction: column; gap: 6px; }
+      .action-btns .btn { width: 100%; }
     }
+    @media (min-width: 601px) {
+      .action-btns { display: flex; flex-direction: row; gap: 4px; }
+    }
+
     .btn-back {
       position: fixed;
       bottom: 26px; right: 20px; z-index: 1099;
@@ -45,9 +52,7 @@
 
   <div id="ds-actions" style="margin-bottom:14px;"></div>
   <div class="search-row mb-2">
-    <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh...">
-    <button class="btn btn-outline-primary" onclick="doSearch()">Tìm kiếm</button>
-    <button class="btn btn-outline-secondary" onclick="clearSearch()">Xóa tìm</button>
+    <input class="form-control search-input" id="search-box" placeholder="Tìm kiếm theo tên, mã BHXH, số ĐT, số định danh..." oninput="doSearch()">
     <button class="btn btn-danger d-none" id="btn-delete-multi" onclick="showConfirmDeleteMany()">Xóa các dòng đã chọn</button>
   </div>
   <div class="table-responsive" id="ds-container"></div>
@@ -312,7 +317,6 @@
     }
 
     function doSearch() { currentPage = 1; renderAllView(); }
-    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
 
     function renderDanhSachHS(ds, offset) {
       selectedRows = [];
@@ -343,8 +347,10 @@
         html += `<tr>
           <td><input type="checkbox" class="chk-row" value="${hs.stt}" onchange="onSelectRow('${hs.stt}', this)"></td>
           <td>
-            <button class="btn btn-sm btn-warning" onclick="showModalSuaHSByIndex(${i})">Sửa</button>
-            <button class="btn btn-sm btn-danger" onclick="showConfirmDelete('${hs.stt}')">Xóa</button>
+            <div class="action-btns">
+              <button class="btn btn-sm btn-warning" onclick="showModalSuaHSByIndex(${i})">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="showConfirmDelete('${hs.stt}')">Xóa</button>
+            </div>
           </td>
           <td>${hs.ma_so_bhxh||""}</td>
           <td>${hs.ho_ten_hoc_sinh||""}</td>
@@ -607,10 +613,7 @@
     window.onload = fetchAllHocsinhOnce;
 
 
-
-
-
-  function goBack() { showLoading(); window.location.href = "dashboard.html"; }
+    function goBack() { showLoading(); window.location.href = "dashboard.html"; }
   </script>
 </body>
 </html>

@@ -84,7 +84,7 @@
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
-    let pageSize = 10, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [];
+    let pageSize = 20, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [];
 
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
@@ -106,7 +106,7 @@
       const width = window.innerWidth;
       if (width <= 600) pageSize = 3;          // Mobile
       else if (width <= 999) pageSize = 7;     // Tablet
-      else pageSize = 10;                      // Desktop
+      else pageSize = 20;                      // Desktop
     }
 
     window.addEventListener('resize', function() {
