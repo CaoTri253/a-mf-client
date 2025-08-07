@@ -80,38 +80,45 @@
   </div>
 
 
-  <div class="modal fade" id="modalNopHS" tabindex="-1" aria-hidden="true">
+
+  <!-- Modal Nộp Hồ Sơ BHYT -->
+  <div class="modal fade" id="modalNopHoSoBHYT" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHYT</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="mb-2"><b>Họ tên:</b> <span id="hs-ten"></span></div>
-        <div class="mb-2"><b>Ngày sinh:</b> <span id="hs-ngaysinh"></span></div>
         <div class="mb-2">
-          <label for="noi-kham">Nơi khám:</label>
-          <input type="text" class="form-control" id="noi-kham" list="noi-kham-list" autocomplete="off">
-          <datalist id="noi-kham-list">
-            <option value="TTYT huyện Châu Phú">
-            <option value="BV tỉnh An Giang">
-            <option value="BV Đại học Y Dược">
+          <label>Họ tên học sinh:</label>
+          <input class="form-control" id="nhs-hoten" readonly>
+        </div>
+        <div class="mb-2">
+          <label>Ngày sinh:</label>
+          <input class="form-control" id="nhs-ngaysinh" readonly>
+        </div>
+        <div class="mb-2">
+          <label>Nơi khám BHYT:</label>
+          <input class="form-control" id="nhs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
+          <datalist id="noikham-list">
+            <!-- Gợi ý sẽ render tự động -->
           </datalist>
         </div>
         <div class="mb-2">
-          <label>Chọn số tháng đóng:</label><br>
-          <input type="radio" name="thang-dong" value="3" id="radio-3"> <label for="radio-3">3 tháng</label>
-          <input type="radio" name="thang-dong" value="6" id="radio-6"> <label for="radio-6">6 tháng</label>
-          <input type="radio" name="thang-dong" value="12" id="radio-12" checked> <label for="radio-12">12 tháng</label>
+          <label>Số tháng đóng:</label>
+          <div>
+            <input type="radio" name="nhs-thang" value="3" id="nhs-thang-3"> <label for="nhs-thang-3">3 tháng</label>
+            <input type="radio" name="nhs-thang" value="6" id="nhs-thang-6" style="margin-left:18px"> <label for="nhs-thang-6">6 tháng</label>
+            <input type="radio" name="nhs-thang" value="12" id="nhs-thang-12" style="margin-left:18px" checked> <label for="nhs-thang-12">12 tháng</label>
+          </div>
         </div>
-        <div id="nophs-error" class="text-danger" style="min-height:18px;"></div>
+        <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <button class="btn btn-success" id="btn-submit-nophs" onclick="submitNopHS()">Nộp hồ sơ</button>
+        <button class="btn btn-primary" onclick="submitNopHoSoBHYT()">Nộp hồ sơ</button>
       </div>
     </div></div>
   </div>
-
 
 
 
@@ -163,18 +170,12 @@
       let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
       let res = await fetch(url);
       let data = await res.json();
+      hideLoading();
       if (data.success && Array.isArray(data.data)) {
-        allData = [];
-        // Đợi lấy trạng thái BHYT cho từng hs
-        for (const hs of data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu")) {
-          const bhyt = await getBHYTStatusByHS(hs.so_dinh_danh, user.ma_truong, user.lop_hoc);
-          hs._bhyt_trangthai = (bhyt && bhyt.hoso) ? Number(bhyt.trang_thai) : null;
-          allData.push(hs);
-        }
+        allData = data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu");
       } else {
         allData = [];
       }
-      hideLoading();
       currentPage = 1;
       doSearch();
     }
@@ -189,12 +190,10 @@
       currentPage = 1;
       renderAllView();
     }
-
     function clearSearch() {
       document.getElementById('search-box').value = "";
       doSearch();
     }
-
 
     function renderAllView() {
       let dataToShow = lastFiltered || allData;
@@ -223,47 +222,43 @@
 
 
 
-    // Hiện modal nộp hồ sơ BHYT
-    let currentHS = null;
-      function nopHoSo(stt) {
-        const hs = allData.find(x => String(x.stt) === String(stt));
-        if (!hs) return;
-        currentHS = hs;
-        document.getElementById('hs-ten').innerText = hs.ho_ten_hoc_sinh;
-        document.getElementById('hs-ngaysinh').innerText = hs.ngay_sinh;
-        document.getElementById('noi-kham').value = "";
-        document.querySelector('[name="thang-dong"][value="12"]').checked = true;
-        document.getElementById('nophs-error').innerText = "";
-        new bootstrap.Modal(document.getElementById('modalNopHS')).show();
+
+
+    // Gợi ý danh sách nơi khám (demo, có thể fetch từ backend sau)
+    const NOIKHAM_SUGGEST = [
+      "TTYT huyện Châu Phú", "BVĐK tỉnh An Giang", "TTYT huyện Châu Thành", "BV Nhi Đồng 2", "BV Nhi Đồng 1"
+    ];
+
+    // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
+    async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
+      const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+      const res = await fetch(url);
+      return await res.json();
     }
 
-    // Submit Nộp hồ sơ BHYT
-    async function submitNopHS() {
-      const noiKham = document.getElementById('noi-kham').value.trim();
-      const soThang = document.querySelector('[name="thang-dong"]:checked')?.value;
-      if (!noiKham) {
-        document.getElementById('nophs-error').innerText = "Vui lòng nhập nơi khám!";
-        return;
-      }
-      showLoading();
-      const res = await nopBHYTHoSo({
-        so_dinh_danh: currentHS.so_dinh_danh,
-        noi_kham: noiKham,
-        so_thang_dong: soThang,
-        user_info: { ma_truong: user.ma_truong, lop_hoc: user.lop_hoc }
-      });
-      hideLoading();
-      if (res.success) {
-        bootstrap.Modal.getInstance(document.getElementById('modalNopHS')).hide();
-        await fetchChuaThuHocsinh();
-      } else {
-        document.getElementById('nophs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
-      }
+    // API nộp hồ sơ BHYT
+    async function nopHoSoBHYTApi(payload) {
+      const params = Object.entries(payload)
+        .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+      const url = `${API_BASE}?func=NopHoSoBHYT&${params}`;
+      const res = await fetch(url);
+      return await res.json();
+    }
+
+    // API lấy phí và hoa hồng BHYT
+    async function getGiaBHYT() {
+      const url = `${API_BASE}?func=GetGiaBHYT`;
+      const res = await fetch(url);
+      return await res.json();
     }
 
 
 
-    // Render table: ẩn dòng nếu đã duyệt, đổi nút nếu chờ duyệt
+
+
+
+
+    // Render danh sách học sinh chưa thu
     function renderDanhSachHS(ds) {
       if (!ds || ds.length === 0) {
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
@@ -277,19 +272,16 @@
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
-        if (hs._bhyt_trangthai === 1) return; // Đã duyệt, ẩn dòng
-        let nopHSBtn;
-        if (hs._bhyt_trangthai === 0) {
-          nopHSBtn = `<button class="btn btn-success btn-sm" disabled>Chờ duyệt</button>`;
-        } else {
-          nopHSBtn = `<button class="btn btn-success btn-sm" onclick="nopHoSo('${hs.stt}')">Nộp hồ sơ</button>`;
-        }
+        // Nếu trạng thái hồ sơ đã duyệt (1), ẩn dòng
+        if (hs._bhyt_trangthai === 1) return;
         html += `<tr>
           <td>
             <div class="action-btns">
-                ${nopHSBtn}
-                <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
-                <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${hs._bhyt_trangthai===0?'disabled':''}>
+                ${hs._bhyt_trangthai===0 ? "Chờ duyệt" : "Nộp hồ sơ"}
+              </button>
+              <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
+              <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
             </div>
           </td>
           <td>${hs.ho_ten_hoc_sinh||""}</td>
@@ -300,6 +292,7 @@
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
     }
+
 
     function doSort(field) {
       if (sortField === field) sortDir = -sortDir;
@@ -333,6 +326,82 @@
     function inPhieuThu(stt) { alert("In phiếu thu cho học sinh STT: "+stt); }
     function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
     window.onload = fetchChuaThuHocsinh;
+
+
+
+
+
+
+
+    let _currentHS = null;
+
+    function showNopHoSoModal(stt) {
+      const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
+      if (!hs) return;
+      _currentHS = hs;
+      document.getElementById('nhs-hoten').value = hs.ho_ten_hoc_sinh || "";
+      document.getElementById('nhs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+      document.getElementById('nhs-noikham').value = "";
+      document.getElementById('nhs-error').innerText = "";
+      // Gợi ý nơi khám
+      let datalist = document.getElementById('noikham-list');
+      datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
+      new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
+    }
+
+    async function submitNopHoSoBHYT() {
+      if (!_currentHS) return;
+      let noikham = document.getElementById('nhs-noikham').value.trim();
+      let so_thang = document.querySelector('input[name="nhs-thang"]:checked').value;
+      if (!noikham) {
+        document.getElementById('nhs-error').innerText = "Vui lòng nhập nơi khám!";
+        return;
+      }
+      showLoading();
+      // Lấy giá BHYT
+      let giaRes = await getGiaBHYT();
+      let gia = giaRes?.data?.[0];
+      // Tính toán
+      let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
+      let hoa_hong = "null";
+      if (so_thang == 3 && gia) hoa_hong = parseFloat(gia.hoa_hong_3_thang) * so_tien;
+      else if (so_thang == 6 && gia) hoa_hong = parseFloat(gia.hoa_hong_6_thang) * so_tien;
+      else if (so_thang == 12 && gia) hoa_hong = parseFloat(gia.hoa_hong_12_thang) * so_tien;
+      let now = new Date();
+      let ngay_dong = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+      let ngay_het_han = `31/12/${now.getFullYear()}`;
+      // Chuẩn bị payload
+      let payload = {
+        ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
+        nam_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
+        gioi_tinh: _currentHS.gioi_tinh || "null",
+        so_thang_dong: so_thang,
+        ngay_dong, ngay_het_han,
+        doi_tuong_dong: "HS",
+        hoa_hong, so_tien,
+        lop_hoc: _currentHS.lop || "null",
+        ghi_chu: "null",
+        dia_chi: _currentHS.dia_chi || "null",
+        so_dinh_danh: _currentHS.so_dinh_danh || "null",
+        sdt: _currentHS.sdt_lienhe || "null",
+        so_bhyt: "null",
+        noi_kham: noikham,
+        trang_thai: 0,
+        so_ho_so: "null",
+        ma_truong: user.ma_truong || "null"
+      };
+      let res = await nopHoSoBHYTApi(payload);
+      hideLoading();
+      if (res.success) {
+        new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).hide();
+        showLoading();
+        await fetchChuaThuHocsinh(); // reload lại table
+        hideLoading();
+      } else {
+        document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
+      }
+    }
+
   </script>
 </body>
 </html>
