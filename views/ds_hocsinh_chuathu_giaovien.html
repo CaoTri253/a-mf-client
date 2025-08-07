@@ -172,29 +172,53 @@
       }
     });
 
-    // Lấy toàn bộ học sinh chưa thu
+    // Thêm hàm gọi API lấy danh sách BHYT (nếu chưa có)
+    async function getAllBHYT(ma_truong, lop) {
+      const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;
+      const res = await fetch(url);
+      return await res.json();
+    }
+
+    // Hàm chính lấy danh sách học sinh chưa thu, merge trạng thái BHYT
     async function fetchChuaThuHocsinh() {
       detectPageSize();
       showLoading();
+
+      // 1. Lấy danh sách học sinh
       let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
       let res = await fetch(url);
       let data = await res.json();
-      hideLoading();
-
       console.log("[fetchChuaThuHocsinh] raw data:", data);
 
-      // Nếu backend đã merge trạng thái BHYT vào từng học sinh, code sau là đủ:
+      // 2. Lấy danh sách BHYT
+      let bhytRes = await getAllBHYT(user.ma_truong, user.lop_hoc);
+      let dsBHYT = Array.isArray(bhytRes.data) ? bhytRes.data : [];
+      let bhytMap = {};
+      dsBHYT.forEach(row => {
+        bhytMap[row.so_dinh_danh] = row.trang_thai;
+      });
+
+      // 3. Merge trạng thái BHYT vào học sinh
       if (data.success && Array.isArray(data.data)) {
-        allData = data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu");
+        allData = data.data.map(hs => {
+          let trangThai = bhytMap[hs.so_dinh_danh];
+          return {
+            ...hs,
+            _bhyt_trangthai: trangThai === undefined ? undefined : Number(trangThai),
+            trang_thai: trangThai // để log tiện tra cứu
+          };
+        }).filter(hs => hs._bhyt_trangthai !== 1); // Ẩn dòng đã duyệt
       } else {
         allData = [];
       }
-      // Log lại trạng thái sau khi filter
-      console.log("[fetchChuaThuHocsinh] allData after filter:", allData);
+
+      console.log("[fetchChuaThuHocsinh] allData after merge BHYT:", allData);
 
       currentPage = 1;
       doSearch();
+      hideLoading();
     }
+
 
 
     function doSearch() {
