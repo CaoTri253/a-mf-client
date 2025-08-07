@@ -121,6 +121,15 @@
   </div>
 
 
+  <!-- Toast Notification -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toast-message">Nộp hồ sơ thành công!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -366,10 +375,8 @@
       }
       showLoading();
       try {
-        // Lấy giá BHYT
         let giaRes = await getGiaBHYT();
         let gia = giaRes?.data?.[0];
-        // Tính toán
         let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
         if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
@@ -378,7 +385,6 @@
         let now = new Date();
         let ngay_dong = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
         let ngay_het_han = `31/12/${now.getFullYear()}`;
-        // Chuẩn bị payload
         let payload = {
           ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
           nam_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
@@ -391,7 +397,7 @@
           ghi_chu: "null",
           dia_chi: _currentHS.dia_chi || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
-          sdt: _currentHS.sdt_lienhe || "null",
+          sdt: "+" + _currentHS.sdt_lienhe || "null",
           so_bhyt: "null",
           noi_kham: noikham,
           trang_thai: 0,
@@ -401,15 +407,11 @@
         let res = await nopHoSoBHYTApi(payload);
         hideLoading();
         if (res.success) {
-          // Đóng modal đúng chuẩn Bootstrap 5
           let modalEl = document.getElementById('modalNopHoSoBHYT');
           let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
           modal.hide();
-          // Hiển thị thông báo thành công
-          alert("Nộp hồ sơ thành công!");
-          showLoading();
-          await fetchChuaThuHocsinh(); // reload lại table
-          hideLoading();
+          showToast("Nộp hồ sơ thành công!");
+          await fetchChuaThuHocsinh(); // Gọi lại để render lại nút thành "Chờ duyệt"
         } else {
           document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
         }
@@ -417,6 +419,18 @@
         hideLoading();
         document.getElementById('nhs-error').innerText = err.message || "Có lỗi xảy ra!";
       }
+    }
+
+
+
+
+
+
+    function showToast(msg) {
+      document.getElementById('toast-message').innerText = msg;
+      let toastEl = document.getElementById('success-toast');
+      let toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+      toast.show();
     }
 
 
