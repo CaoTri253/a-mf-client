@@ -121,6 +121,46 @@
   </div>
 
 
+
+
+  <!-- Modal Sửa Hồ Sơ BHYT -->
+<div class="modal fade" id="modalSuaHoSoBHYT" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHYT</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-2">
+        <label>Họ tên học sinh:</label>
+        <input class="form-control" id="shs-hoten" readonly>
+      </div>
+      <div class="mb-2">
+        <label>Ngày sinh:</label>
+        <input class="form-control" id="shs-ngaysinh" readonly>
+      </div>
+      <div class="mb-2">
+        <label>Nơi khám BHYT:</label>
+        <input class="form-control" id="shs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
+      </div>
+      <div class="mb-2">
+        <label>Số tháng đóng:</label>
+        <div>
+          <input type="radio" name="shs-thang" value="3" id="shs-thang-3"> <label for="shs-thang-3">3 tháng</label>
+          <input type="radio" name="shs-thang" value="6" id="shs-thang-6" style="margin-left:18px"> <label for="shs-thang-6">6 tháng</label>
+          <input type="radio" name="shs-thang" value="12" id="shs-thang-12" style="margin-left:18px"> <label for="shs-thang-12">12 tháng</label>
+        </div>
+      </div>
+      <div id="shs-error" class="text-danger" style="min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      <button class="btn btn-primary" onclick="submitSuaHoSoBHYT()">Lưu thay đổi</button>
+    </div>
+  </div></div>
+</div>
+
+
+
   <!-- Toast Notification -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
     <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
@@ -301,6 +341,45 @@
 
 
 
+    // Biến toàn cục để lưu học sinh đang sửa
+    let _currentHS_Sua = null;
+    // Hàm sửa hồ sơ BHYT
+    function suaHoSo(stt) {
+      // Tìm học sinh chưa thu có stt này
+      const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
+      if (!hs || hs._bhyt_trangthai !== 0) {
+        showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
+      }
+      _currentHS_Sua = hs;
+      document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
+      document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+      document.getElementById('shs-noikham').value = hs.noi_kham || "";
+      document.getElementById('shs-error').innerText = "";
+      // Fill số tháng đóng
+      ["3","6","12"].forEach(t => {
+        document.getElementById('shs-thang-' + t).checked = (String(hs.so_thang_dong) === t);
+      });
+      // Gợi ý nơi khám
+      let datalist = document.getElementById('noikham-list');
+      datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
+      new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
+    }
+
+
+    // API cập nhật hồ sơ BHYT (cần thêm trên backend)
+    async function suaHoSoBHYTApi(payload) {
+      const params = Object.entries(payload)
+        .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+      const url = `${API_BASE}?func=SuaHoSoBHYT&${params}`;
+      const res = await fetch(url);
+      return await res.json();
+    }
+
+
+
+
+
+
     // Render danh sách học sinh chưa thu
     function renderDanhSachHS(ds) {
       if (!ds || ds.length === 0) {
@@ -458,6 +537,56 @@
       } catch (err) {
         hideLoading();
         document.getElementById('nhs-error').innerText = err.message || "Có lỗi xảy ra!";
+      }
+    }
+
+
+
+
+
+
+
+    // Hàm sửa hồ sơ BHYT
+    async function submitSuaHoSoBHYT() {
+      if (!_currentHS_Sua) return;
+      let noikham = document.getElementById('shs-noikham').value.trim();
+      let so_thang = document.querySelector('input[name="shs-thang"]:checked').value;
+      if (!noikham) {
+        document.getElementById('shs-error').innerText = "Vui lòng nhập nơi khám!";
+        return;
+      }
+      showLoading();
+      try {
+        let giaRes = await getGiaBHYT();
+        let gia = giaRes?.data?.[0];
+        let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
+        let hoa_hong = "null";
+        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
+        else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+        let payload = {
+          so_dinh_danh: _currentHS_Sua.so_dinh_danh,
+          ma_truong: user.ma_truong,
+          lop_hoc: _currentHS_Sua.lop,
+          noi_kham: noikham,
+          so_thang_dong: so_thang,
+          hoa_hong,
+          so_tien
+        };
+        let res = await suaHoSoBHYTApi(payload);
+        hideLoading();
+        if (res.success) {
+          let modalEl = document.getElementById('modalSuaHoSoBHYT');
+          let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.hide();
+          showToast("Đã cập nhật hồ sơ!");
+          await fetchChuaThuHocsinh();
+        } else {
+          document.getElementById('shs-error').innerText = res.message || "Cập nhật thất bại!";
+        }
+      } catch (err) {
+        hideLoading();
+        document.getElementById('shs-error').innerText = err.message || "Có lỗi xảy ra!";
       }
     }
 
