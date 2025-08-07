@@ -204,10 +204,10 @@
           let trangThai = bhytMap[hs.so_dinh_danh];
           return {
             ...hs,
-            _bhyt_trangthai: trangThai === undefined ? undefined : Number(trangThai),
+            _bhyt_trangthai: trangThai === undefined ? undefined : String(trangThai),
             trang_thai: trangThai // để log tiện tra cứu
           };
-        }).filter(hs => hs._bhyt_trangthai !== 1); // Ẩn dòng đã duyệt
+        }).filter(hs => hs._bhyt_trangthai !== "1"); // Ẩn dòng đã duyệt
       } else {
         allData = [];
       }
@@ -316,12 +316,12 @@
       ds.forEach((hs, i) => {
         // Log trạng thái từng học sinh
         console.log(`[renderDanhSachHS] Học sinh: ${hs.ho_ten_hoc_sinh} | _bhyt_trangthai:`, hs._bhyt_trangthai, "| trang_thai:", hs.trang_thai);
-        if (hs._bhyt_trangthai === 1) return;
+        if (hs._bhyt_trangthai === "1") return;
         html += `<tr>
           <td>
             <div class="action-btns">
               <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${hs._bhyt_trangthai===0?'disabled':''}>
-                ${hs._bhyt_trangthai===0 ? "Chờ duyệt" : "Nộp hồ sơ"}
+                ${hs._bhyt_trangthai=== "0" ? "Chờ duyệt" : "Nộp hồ sơ"}
               </button>
               <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
               <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
