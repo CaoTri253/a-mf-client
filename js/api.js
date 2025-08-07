@@ -123,3 +123,25 @@ async function xoaNhieuHocsinh(ids) {
   const res = await fetch(url);
   return await res.json();
 }
+
+
+
+
+
+
+// Kiểm tra trạng thái hồ sơ BHYT học sinh
+async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetBHYTStatusByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Nộp hồ sơ BHYT (POST)
+async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info }) {
+  const res = await fetch(`${API_BASE}?func=NopBHYTHoSo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
+  });
+  return await res.json();
+}

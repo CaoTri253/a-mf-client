@@ -78,6 +78,44 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
+
+
+  <div class="modal fade" id="modalNopHS" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHYT</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2"><b>Họ tên:</b> <span id="hs-ten"></span></div>
+        <div class="mb-2"><b>Ngày sinh:</b> <span id="hs-ngaysinh"></span></div>
+        <div class="mb-2">
+          <label for="noi-kham">Nơi khám:</label>
+          <input type="text" class="form-control" id="noi-kham" list="noi-kham-list" autocomplete="off">
+          <datalist id="noi-kham-list">
+            <option value="TTYT huyện Châu Phú">
+            <option value="BV tỉnh An Giang">
+            <option value="BV Đại học Y Dược">
+          </datalist>
+        </div>
+        <div class="mb-2">
+          <label>Chọn số tháng đóng:</label><br>
+          <input type="radio" name="thang-dong" value="3" id="radio-3"> <label for="radio-3">3 tháng</label>
+          <input type="radio" name="thang-dong" value="6" id="radio-6"> <label for="radio-6">6 tháng</label>
+          <input type="radio" name="thang-dong" value="12" id="radio-12" checked> <label for="radio-12">12 tháng</label>
+        </div>
+        <div id="nophs-error" class="text-danger" style="min-height:18px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-success" id="btn-submit-nophs" onclick="submitNopHS()">Nộp hồ sơ</button>
+      </div>
+    </div></div>
+  </div>
+
+
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
