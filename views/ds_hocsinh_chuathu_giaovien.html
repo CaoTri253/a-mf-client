@@ -180,14 +180,22 @@
       let res = await fetch(url);
       let data = await res.json();
       hideLoading();
+
+      console.log("[fetchChuaThuHocsinh] raw data:", data);
+
+      // Nếu backend đã merge trạng thái BHYT vào từng học sinh, code sau là đủ:
       if (data.success && Array.isArray(data.data)) {
         allData = data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu");
       } else {
         allData = [];
       }
+      // Log lại trạng thái sau khi filter
+      console.log("[fetchChuaThuHocsinh] allData after filter:", allData);
+
       currentPage = 1;
       doSearch();
     }
+
 
     function doSearch() {
       let q = document.getElementById('search-box').value.trim().toLowerCase();
@@ -273,6 +281,7 @@
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
         return;
       }
+      console.log("[renderDanhSachHS] render list:", ds);
       let html = `<table class="table table-bordered table-hs align-middle"><thead>
         <tr>
           <th class="th-action">Thao tác</th>
@@ -281,7 +290,8 @@
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
-        // Nếu trạng thái hồ sơ đã duyệt (1), ẩn dòng
+        // Log trạng thái từng học sinh
+        console.log(`[renderDanhSachHS] Học sinh: ${hs.ho_ten_hoc_sinh} | _bhyt_trangthai:`, hs._bhyt_trangthai, "| trang_thai:", hs.trang_thai);
         if (hs._bhyt_trangthai === 1) return;
         html += `<tr>
           <td>
@@ -301,6 +311,7 @@
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
     }
+
 
 
     function doSort(field) {
@@ -397,7 +408,7 @@
           ghi_chu: "null",
           dia_chi: _currentHS.dia_chi || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
-          sdt: "+" + _currentHS.sdt_lienhe || "null",
+          sdt: _currentHS.sdt_lienhe || "null",
           so_bhyt: "null",
           noi_kham: noikham,
           trang_thai: 0,
@@ -411,10 +422,13 @@
           let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
           modal.hide();
           showToast("Nộp hồ sơ thành công!");
+          console.log("[submitNopHoSoBHYT] Nộp thành công, reload danh sách...");
           await fetchChuaThuHocsinh(); // Gọi lại để render lại nút thành "Chờ duyệt"
         } else {
           document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
+          console.log("[submitNopHoSoBHYT] Nộp thất bại:", res);
         }
+
       } catch (err) {
         hideLoading();
         document.getElementById('nhs-error').innerText = err.message || "Có lỗi xảy ra!";
