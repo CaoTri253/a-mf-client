@@ -163,12 +163,18 @@
       let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
       let res = await fetch(url);
       let data = await res.json();
-      hideLoading();
       if (data.success && Array.isArray(data.data)) {
-        allData = data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu");
+        allData = [];
+        // Đợi lấy trạng thái BHYT cho từng hs
+        for (const hs of data.data.filter(hs => !hs.trang_thai || hs.trang_thai.toLowerCase() === "chưa thu")) {
+          const bhyt = await getBHYTStatusByHS(hs.so_dinh_danh, user.ma_truong, user.lop_hoc);
+          hs._bhyt_trangthai = (bhyt && bhyt.hoso) ? Number(bhyt.trang_thai) : null;
+          allData.push(hs);
+        }
       } else {
         allData = [];
       }
+      hideLoading();
       currentPage = 1;
       doSearch();
     }
@@ -183,10 +189,12 @@
       currentPage = 1;
       renderAllView();
     }
+
     function clearSearch() {
       document.getElementById('search-box').value = "";
       doSearch();
     }
+
 
     function renderAllView() {
       let dataToShow = lastFiltered || allData;
@@ -212,6 +220,50 @@
       return sortDir === 1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>';
     }
 
+
+
+
+    // Hiện modal nộp hồ sơ BHYT
+    let currentHS = null;
+      function nopHoSo(stt) {
+        const hs = allData.find(x => String(x.stt) === String(stt));
+        if (!hs) return;
+        currentHS = hs;
+        document.getElementById('hs-ten').innerText = hs.ho_ten_hoc_sinh;
+        document.getElementById('hs-ngaysinh').innerText = hs.ngay_sinh;
+        document.getElementById('noi-kham').value = "";
+        document.querySelector('[name="thang-dong"][value="12"]').checked = true;
+        document.getElementById('nophs-error').innerText = "";
+        new bootstrap.Modal(document.getElementById('modalNopHS')).show();
+    }
+
+    // Submit Nộp hồ sơ BHYT
+    async function submitNopHS() {
+      const noiKham = document.getElementById('noi-kham').value.trim();
+      const soThang = document.querySelector('[name="thang-dong"]:checked')?.value;
+      if (!noiKham) {
+        document.getElementById('nophs-error').innerText = "Vui lòng nhập nơi khám!";
+        return;
+      }
+      showLoading();
+      const res = await nopBHYTHoSo({
+        so_dinh_danh: currentHS.so_dinh_danh,
+        noi_kham: noiKham,
+        so_thang_dong: soThang,
+        user_info: { ma_truong: user.ma_truong, lop_hoc: user.lop_hoc }
+      });
+      hideLoading();
+      if (res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('modalNopHS')).hide();
+        await fetchChuaThuHocsinh();
+      } else {
+        document.getElementById('nophs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
+      }
+    }
+
+
+
+    // Render table: ẩn dòng nếu đã duyệt, đổi nút nếu chờ duyệt
     function renderDanhSachHS(ds) {
       if (!ds || ds.length === 0) {
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
@@ -225,10 +277,17 @@
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
         </tr></thead><tbody>`;
       ds.forEach((hs, i) => {
+        if (hs._bhyt_trangthai === 1) return; // Đã duyệt, ẩn dòng
+        let nopHSBtn;
+        if (hs._bhyt_trangthai === 0) {
+          nopHSBtn = `<button class="btn btn-success btn-sm" disabled>Chờ duyệt</button>`;
+        } else {
+          nopHSBtn = `<button class="btn btn-success btn-sm" onclick="nopHoSo('${hs.stt}')">Nộp hồ sơ</button>`;
+        }
         html += `<tr>
           <td>
             <div class="action-btns">
-                <button class="btn btn-success btn-sm" onclick="nopHoSo('${hs.stt}')">Nộp hồ sơ</button>
+                ${nopHSBtn}
                 <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
                 <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
             </div>
