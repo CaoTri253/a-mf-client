@@ -675,6 +675,44 @@
           ten_cha_me: row[9] || "",
           ma_truong: user.ma_truong
         }));
+
+        // --- Chuẩn bị dữ liệu để kiểm tra trùng ---
+        // Danh sách số định danh và mã số BHXH đã có trên hệ thống
+        const setSDD_exist = makeSetByField(allData, "so_dinh_danh");
+        const setBHXH_exist = makeSetByField(allData, "ma_so_bhxh");
+
+        // Kiểm tra trùng trong file import
+        const setSDD_file = new Set();
+        const setBHXH_file = new Set();
+
+        // --- Kiểm tra lỗi từng dòng, kể cả trùng ---
+        let errList = [];
+        ds.forEach((row, idx) => {
+          let err = [];
+          // Kiểm tra bắt buộc và định dạng
+          let coreErr = validateImportRow(row, idx);
+          if (coreErr) err.push(coreErr);
+
+          // Kiểm tra trùng trong file (tự trùng)
+          if (setSDD_file.has(row.so_dinh_danh)) err.push(`Dòng ${idx+2}: Số định danh '${row.so_dinh_danh}' bị trùng trong file import`);
+          else if (row.so_dinh_danh) setSDD_file.add(row.so_dinh_danh);
+
+          if (setBHXH_file.has(row.ma_so_bhxh)) err.push(`Dòng ${idx+2}: Mã số BHXH '${row.ma_so_bhxh}' bị trùng trong file import`);
+          else if (row.ma_so_bhxh) setBHXH_file.add(row.ma_so_bhxh);
+
+          // Kiểm tra trùng với hệ thống
+          if (setSDD_exist.has(row.so_dinh_danh)) err.push(`Dòng ${idx+2}: Số định danh '${row.so_dinh_danh}' đã tồn tại trong hệ thống`);
+          if (setBHXH_exist.has(row.ma_so_bhxh)) err.push(`Dòng ${idx+2}: Mã số BHXH '${row.ma_so_bhxh}' đã tồn tại trong hệ thống`);
+
+          if (err.length) errList.push(err.join("; "));
+        });
+        hideLoading();
+        if (errList.length) {
+          errorDiv.innerHTML = errList.join("<br>");
+          return;
+        }
+        // --- Không lỗi, thực hiện import ---
+        showLoading();
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
@@ -689,6 +727,7 @@
         errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!";
       }
     }
+
 
     // ==== XÓA HỌC SINH ====
     // Chọn/xóa nhiều dòng
@@ -758,6 +797,19 @@
 
   </script>
 
+
+
+
+  <script>
+    // Dùng để kiểm tra số định danh/mã số BHXH đã tồn tại
+    function makeSetByField(arr, field) {
+      const set = new Set();
+      arr.forEach(row => {
+        if (row[field]) set.add(String(row[field]).trim());
+      });
+      return set;
+    }
+  </script>
 
 
 
