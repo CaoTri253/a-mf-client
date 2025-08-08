@@ -344,10 +344,12 @@
     // Biến toàn cục để lưu học sinh đang sửa
     // Sửa hồ sơ BHYT
     async function suaHoSo(stt) {
+      showLoading();
       // Tìm học sinh chưa thu có stt này
       const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs || hs._bhyt_trangthai !== 0) {
         showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
+        hideLoading();
       }
       _currentHS_Sua = hs;
       document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
@@ -373,6 +375,7 @@
         });
       }
       new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
+      hideLoading();
     }
 
 

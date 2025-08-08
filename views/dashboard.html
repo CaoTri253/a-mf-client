@@ -97,8 +97,12 @@
           <div class="parent-item p6">KHÁM SỨC KHỎE</div>
         </div>`;
     }
+
+    // Tắt loading khi trang đã sẵn sàng
+    hideLoading();
+
     function logout() {
-  localStorage.removeItem("user");
+      localStorage.removeItem("user");
     window.location.href = "../index.html";  // quay lại thư mục gốc chứa index.html
   }
 
