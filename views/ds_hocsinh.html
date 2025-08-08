@@ -223,11 +223,6 @@
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    // Tắt loading khi trang đã sẵn sàng
-    hideLoading();
-
-    
-
     let pageSize = 20; // Default for desktop
     let currentPage = 1;
     let totalPages = 1;

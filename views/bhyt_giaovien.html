@@ -35,9 +35,7 @@
     // Kiểm tra phân quyền: chỉ giáo viên mới được xem trang này
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "index.html";
-    
-    // Tắt loading khi trang đã sẵn sàng
-    hideLoading();
+
 
     function handleDaThu() { alert("Chức năng Đã thu (dành cho giáo viên) đang phát triển!"); }
     function handleChuaThu() { window.location.href = "ds_hocsinh_chuathu_giaovien.html"; }

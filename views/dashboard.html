@@ -43,6 +43,16 @@
   </div>
   <h3 class="fw-bold mb-4">DANH MỤC CÔNG VIỆC</h3>
   <div id="menu-container"></div>
+
+
+  <script>
+    window.addEventListener('load', function() {
+      // Đoạn mã này sẽ được thực thi sau khi trang và tất cả tài nguyên đã tải xong
+      hideLoading();
+      console.log("Trang đã tải xong!");
+      // Thêm các xử lý khác của bạn ở đây
+    });
+  </script>
   <script>
     // Lấy user từ localStorage
     let user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -97,12 +107,8 @@
           <div class="parent-item p6">KHÁM SỨC KHỎE</div>
         </div>`;
     }
-
-    // Tắt loading khi trang đã sẵn sàng
-    hideLoading();
-
     function logout() {
-      localStorage.removeItem("user");
+  localStorage.removeItem("user");
     window.location.href = "../index.html";  // quay lại thư mục gốc chứa index.html
   }
 
