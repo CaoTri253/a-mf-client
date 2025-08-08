@@ -657,31 +657,24 @@
       const file = fileInput.files[0];
       showLoading();
       try {
-        // Đọc danh sách học sinh hiện tại trên hệ thống để kiểm tra trùng
-        let existedList = allData || []; // allData đã được load trước đó khi vào trang
-        const existedSoDinhDanhSet = makeSetByField(existedList, "so_dinh_danh");
-        const existedMaSoBHXHSet = makeSetByField(existedList, "ma_so_bhxh");
-
         // Đọc file Excel
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        rows.shift(); // Bỏ dòng tiêu đề
 
-        // Bỏ dòng header
-        rows.shift();
-
-        // Xử lý, validate từng dòng
-        const ds = [];
-        const errors = [];
-        // Tạo Set để kiểm tra trùng trong file import
+        // Chuẩn bị kiểm tra trùng lặp
         const soDinhDanhSet = new Set();
         const maSoBHXHSet = new Set();
-        rows.forEach((row, idx) => {
-          // idx là số thứ tự trong mảng, +2 để ra số dòng thực tế trong file (1 là header, 1 là index từ 0)
-          const rowNum = idx + 2;
-          const rowObj = {
+        // Dữ liệu đã tồn tại trên hệ thống (allData đã fetch ở ngoài)
+        const existedSoDinhDanhSet = makeSetByField(allData, "so_dinh_danh");
+        const existedMaSoBHXHSet = makeSetByField(allData, "ma_so_bhxh");
+
+        let errors = [];
+        const ds = rows.map((row, idx) => {
+          return {
             ma_so_bhxh: String(row[1] || ""),
             ho_ten_hoc_sinh: row[2] || "",
             ngay_sinh: excelDateToString(row[3]),
@@ -692,29 +685,30 @@
             so_dinh_danh: String(row[8] || ""),
             ten_cha_me: row[9] || "",
             ma_truong: user.ma_truong
-          };
+          }
+        });
 
-          // Validate từng dòng
+        // Kiểm tra từng dòng
+        ds.forEach((row, idx) => {
           const err = validateImportRow(
-            rowObj, rowNum,
+            row, idx + 2,
             soDinhDanhSet, maSoBHXHSet,
             existedSoDinhDanhSet, existedMaSoBHXHSet
           );
           if (err) errors.push(err);
-          ds.push(rowObj);
         });
 
         if (errors.length > 0) {
+          errorDiv.innerText = "Lỗi dữ liệu:\n" + errors.join("\n");
           hideLoading();
-          errorDiv.innerHTML = `<b>Lỗi nhập liệu (không import):</b><br>${errors.join('<br>')}`;
           return;
         }
 
-        // Import lên hệ thống
+        // Gửi dữ liệu lên backend
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
-          showToast("Import danh sách thành công!","success");
+          showToast("Import danh sách thành công!", "success");
           await fetchAllHocsinhOnce();
           bootstrap.Modal.getInstance(document.getElementById('modalImportHS')).hide();
         } else {
@@ -722,9 +716,10 @@
         }
       } catch (err) {
         hideLoading();
-        errorDiv.innerHTML = `Lỗi đọc file hoặc dữ liệu không đúng định dạng!<br>Chi tiết: ${err.message || err}`;
+        errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!\nChi tiết: " + (err.message || err);
       }
     }
+
 
 
 
@@ -809,6 +804,19 @@
       return set;
     }
 
+
+
+    function isValidPhoneNumber(phone) {
+      // Định dạng: bắt đầu bằng 0, đủ 10 số (Việt Nam)
+      return /^0\d{9}$/.test(phone);
+    }
+    function isValidSoDinhDanh(sdd) {
+      // Định dạng: đủ 12 số (Căn cước công dân VN)
+      return /^\d{12}$/.test(sdd);
+    }
+
+
+
     // Kiểm tra hợp lệ 1 dòng import (validate trường trống, định dạng, logic)
     function validateImportRow(row, rowNum, soDinhDanhSet, maSoBHXHSet, existedSoDinhDanhSet, existedMaSoBHXHSet) {
       let errors = [];
@@ -817,22 +825,23 @@
       if (!row.lop) errors.push("Lớp không được để trống");
       if (!row.ngay_sinh) errors.push("Ngày sinh không được để trống");
       if (!row.so_dinh_danh) errors.push("Số định danh không được để trống");
+      if (!row.sdt_lienhe) errors.push("SĐT liên hệ không được để trống");
 
-      // Định dạng ngày sinh
+      // Kiểm tra định dạng ngày sinh
       if (row.ngay_sinh && !/^(\d{2})\/(\d{2})\/(\d{4})$/.test(row.ngay_sinh)) {
         errors.push("Ngày sinh phải đúng định dạng dd/mm/yyyy");
       }
 
-      // Số định danh không trùng trong file import
+      // Kiểm tra số định danh
       if (row.so_dinh_danh) {
         const val = String(row.so_dinh_danh).trim();
+        if (!isValidSoDinhDanh(val)) errors.push("Số định danh phải đủ 12 chữ số");
         if (soDinhDanhSet.has(val)) errors.push("Số định danh bị trùng trong file import");
         else soDinhDanhSet.add(val);
-        // Trùng với hệ thống
         if (existedSoDinhDanhSet.has(val)) errors.push("Số định danh đã tồn tại trên hệ thống");
       }
 
-      // Mã số BHXH (nếu có) kiểm tra trùng
+      // Kiểm tra mã số BHXH (nếu có)
       if (row.ma_so_bhxh) {
         const val = String(row.ma_so_bhxh).trim();
         if (maSoBHXHSet.has(val)) errors.push("Mã số BHXH bị trùng trong file import");
@@ -840,8 +849,14 @@
         if (existedMaSoBHXHSet.has(val)) errors.push("Mã số BHXH đã tồn tại trên hệ thống");
       }
 
+      // Kiểm tra số điện thoại
+      if (row.sdt_lienhe && !isValidPhoneNumber(row.sdt_lienhe)) {
+        errors.push("SĐT liên hệ phải gồm 10 số và bắt đầu bằng số 0");
+      }
+
       return errors.length > 0 ? `Dòng ${rowNum}: ` + errors.join(", ") : null;
     }
+
 
   </script>
 
