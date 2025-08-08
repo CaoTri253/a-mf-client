@@ -724,7 +724,7 @@
         }
       } catch (err) {
         hideLoading();
-        errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!";
+        errorDiv.innerHTML = `<span style="color:red;">Lỗi đọc file hoặc dữ liệu không đúng định dạng!<br>Chi tiết: ${err?.message || err}</span>`;
       }
     }
 
