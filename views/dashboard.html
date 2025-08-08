@@ -45,29 +45,58 @@
   <div id="menu-container"></div>
 
 
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; width:100vw; height:100vh; z-index:9999;
+    background:rgba(255,255,255,0.5); 
+    align-items:center; justify-content:center;">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    window.addEventListener('load', function() {
-      // Đoạn mã này sẽ được thực thi sau khi trang và tất cả tài nguyên đã tải xong
-      hideLoading();
-      console.log("Trang đã tải xong!");
-      // Thêm các xử lý khác của bạn ở đây
-    });
-  </script>
-  <script>
-    // Lấy user từ localStorage
+    /* =============================
+    *  BIẾN TOÀN CỤC & TIỆN ÍCH
+    * ============================= */
     let user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!user.sdt) { window.location.href = "index.html"; }
-    document.getElementById("user-name").innerText = user.ho_ten || "";
-    document.getElementById("user-school").innerText = user.ten_truong || "";
-    document.getElementById("user-province").innerText = user.tinh || "";
-    let roleText = "", roleClass = "";
-    switch (user.phan_quyen) {
-      case "super_admin": roleText = "Admin tối cao"; roleClass = "role-superadmin"; break;
-      case "admin": roleText = "Admin"; roleClass = "role-admin"; break;
-      case "giao_vien": roleText = "Giáo viên"; roleClass = "role-giaovien"; break;
-      default: roleText = "Phụ huynh"; roleClass = "role-user";
+
+    /** Hiện/ẩn loading spinner */
+    function showLoading() {
+      document.getElementById('loadingSpinner').style.display = 'flex';
     }
-    document.getElementById("user-role").innerHTML = `<span class='${roleClass}'>${roleText}</span>`;
+    function hideLoading() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    /* =============================
+    *  XỬ LÝ HIỂN THỊ THÔNG TIN NGƯỜI DÙNG
+    * ============================= */
+    if (!user.sdt) {
+      window.location.href = "index.html";
+    } else {
+      document.getElementById("user-name").innerText = user.ho_ten || "";
+      document.getElementById("user-school").innerText = user.ten_truong || "";
+      document.getElementById("user-province").innerText = user.tinh || "";
+      // Xử lý text và class quyền
+      let roleText = "", roleClass = "";
+      switch (user.phan_quyen) {
+        case "super_admin": roleText = "Admin tối cao"; roleClass = "role-superadmin"; break;
+        case "admin": roleText = "Admin"; roleClass = "role-admin"; break;
+        case "giao_vien": roleText = "Giáo viên"; roleClass = "role-giaovien"; break;
+        default: roleText = "Phụ huynh"; roleClass = "role-user";
+      }
+      document.getElementById("user-role").innerHTML = `<span class='${roleClass}'>${roleText}</span>`;
+    }
+
+    /* =============================
+    *  HIỂN THỊ MENU DASHBOARD THEO PHÂN QUYỀN
+    * ============================= */
     const container = document.getElementById("menu-container");
     container.innerHTML = "";
     if (user.phan_quyen === "super_admin") {
@@ -107,51 +136,42 @@
           <div class="parent-item p6">KHÁM SỨC KHỎE</div>
         </div>`;
     }
+
+    /* =============================
+    *  CÁC HÀM CHUYỂN TRANG & ĐĂNG XUẤT
+    * ============================= */
+    /** Đăng xuất: xóa user, về index */
     function logout() {
-  localStorage.removeItem("user");
-    window.location.href = "../index.html";  // quay lại thư mục gốc chứa index.html
-  }
+      localStorage.removeItem("user");
+      window.location.href = "../index.html";
+    }
 
+    /** Chuyển đến danh sách học sinh */
+    function goToDSHocsinh() {
+      showLoading();
+      window.location.href = "ds_hocsinh.html";
+    }
 
+    /** Chuyển đến trang BHYT (dành cho admin) */
+    function goToBHYT() {
+      showLoading();
+      window.location.href = "bhyt.html";
+    }
 
-  function goToDSHocsinh() {
-    showLoading();
-    window.location.href = "ds_hocsinh.html";
-  }
+    /** Chuyển đến BHYT giáo viên */
+    function goToBHYT_giaovien() {
+      showLoading();
+      window.location.href = "bhyt_giaovien.html";
+    }
 
-
-  function goToBHYT() {
-    showLoading();
-    window.location.href = "bhyt.html";  // vẫn đúng vì bhyt.html nằm cùng thư mục với dashboard.html
-  }
-
-
-  function goToBHYT_giaovien() {
-    showLoading();
-    window.location.href = "bhyt_giaovien.html";  // BHYT giáo viên nằm cùng thư mục với dashboard.html
-  }
-
-
-  function showLoading() {
-    document.getElementById('loadingSpinner').style.display = 'flex';
-  }
-  function hideLoading() {
-    document.getElementById('loadingSpinner').style.display = 'none';
-  }
-
+    /* =============================
+    *  SỰ KIỆN KHỞI TẠO
+    * ============================= */
+    window.addEventListener('load', function() {
+      hideLoading();
+      console.log("Trang dashboard đã tải xong!");
+      // Có thể thêm các khởi tạo khác ở đây
+    });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Loading Spinner -->
-    <div id="loadingSpinner" style="
-      display:none;
-      position:fixed;
-      top:0; left:0; width:100vw; height:100vh; z-index:9999;
-      background:rgba(255,255,255,0.5); 
-      align-items:center; justify-content:center;">
-      <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
 </body>
 </html>
