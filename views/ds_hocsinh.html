@@ -63,6 +63,16 @@
     .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
   </style>
 
+  <!-- Bootstrap Datepicker CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css" rel="stylesheet"/>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap Datepicker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+    <!-- Ngôn ngữ Vietnamese cho Datepicker -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.vi.min.js"></script>
+
+
 </head>
 <body>
   <div class="sticky-header-box">
@@ -94,7 +104,8 @@
         <form id="form-themhs" onsubmit="event.preventDefault();handleThemHS();">
           <input class="form-control mb-2" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
           <input class="form-control mb-2" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
-          <input class="form-control mb-2" id="inp-ngay-sinh" type="date" placeholder="Ngày sinh"/>
+          <input class="form-control mb-2" id="inp-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+
           <label class="mb-1">Giới tính:</label>
           <div class="mb-2" style="display: flex; gap: 16px;">
             <div class="form-check">
@@ -132,7 +143,8 @@
           <input type="hidden" id="sua-stt"/>
           <input class="form-control mb-2" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
           <input class="form-control mb-2" id="sua-ho-ten-hs" placeholder="Họ tên học sinh"/>
-          <input class="form-control mb-2" id="sua-ngay-sinh" type="date" placeholder="Ngày sinh"/>
+          <input class="form-control mb-2" id="sua-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+
           <label class="mb-1">Giới tính:</label>
           <div class="mb-2" style="display: flex; gap: 16px;">
             <div class="form-check">
@@ -472,8 +484,7 @@
     }
     // Xử lý thêm
     async function handleThemHS() {
-      let ngaySinhRaw = document.getElementById('inp-ngay-sinh').value;
-      let ngaySinh = toDDMMYYYY(ngaySinhRaw);
+      let ngaySinh = document.getElementById('inp-ngay-sinh').value.trim(); // Đã là dd/mm/yyyy
       let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
       const hs = {
         ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
@@ -511,8 +522,10 @@
       document.getElementById('sua-stt').value = hs.stt;
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
+      // Hiển thị lại ngày sinh đúng dd/mm/yyyy
       let ddmmyyyy = displayNgaySinh(hs.ngay_sinh);
-      document.getElementById('sua-ngay-sinh').value = toYYYYMMDD(ddmmyyyy);
+      document.getElementById('sua-ngay-sinh').value = ddmmyyyy;
+
       if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
       else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
       document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
@@ -524,8 +537,8 @@
     }
     // Xử lý sửa
     async function handleSuaHS() {
-      let ngaySinhRaw = document.getElementById('sua-ngay-sinh').value;
-      let ngaySinh = toDDMMYYYY(ngaySinhRaw);
+      let ngaySinh = document.getElementById('sua-ngay-sinh').value.trim(); // Đã là dd/mm/yyyy
+
       let gioiTinh = document.querySelector('input[name="sua_gioi_tinh"]:checked')?.value || "";
       const hs = {
         stt: document.getElementById('sua-stt').value,
@@ -674,8 +687,40 @@
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = fetchAllHocsinhOnce;
 
-
   </script>
+
+
+
+
+
+
+  <script>
+    $(function() {
+      // Khởi tạo Datepicker cho input thêm và sửa
+      $('#inp-ngay-sinh, #sua-ngay-sinh').datepicker({
+        format: 'dd/mm/yyyy',
+        language: 'vi',
+        autoclose: true,
+        todayHighlight: true,
+        clearBtn: true
+      });
+
+      // Reset ngày sinh khi mở modal Thêm mới
+      $('#modalThemHS').on('show.bs.modal', function() {
+        $('#inp-ngay-sinh').datepicker('update', '');
+      });
+
+      // Chuyển đổi yyyy-mm-dd sang dd/mm/yyyy khi mở modal Sửa
+      $('#modalSuaHS').on('shown.bs.modal', function () {
+        let val = $('#sua-ngay-sinh').val();
+        if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+          let [y,m,d] = val.split('-');
+          $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
+        }
+      });
+    });
+  </script>
+
 
 </body>
 </html>
