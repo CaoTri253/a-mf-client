@@ -657,62 +657,60 @@
       const file = fileInput.files[0];
       showLoading();
       try {
+        // Đọc danh sách học sinh hiện tại trên hệ thống để kiểm tra trùng
+        let existedList = allData || []; // allData đã được load trước đó khi vào trang
+        const existedSoDinhDanhSet = makeSetByField(existedList, "so_dinh_danh");
+        const existedMaSoBHXHSet = makeSetByField(existedList, "ma_so_bhxh");
+
+        // Đọc file Excel
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+        // Bỏ dòng header
         rows.shift();
-        const ds = rows.map(row => ({
-          ma_so_bhxh: String(row[1] || ""),
-          ho_ten_hoc_sinh: row[2] || "",
-          ngay_sinh: excelDateToString(row[3]),
-          gioi_tinh: row[4] || "",
-          dia_chi: row[5] || "",
-          lop: row[6] || user.lop_hoc,
-          sdt_lienhe: row[7] || "",
-          so_dinh_danh: String(row[8] || ""),
-          ten_cha_me: row[9] || "",
-          ma_truong: user.ma_truong
-        }));
 
-        // --- Chuẩn bị dữ liệu để kiểm tra trùng ---
-        // Danh sách số định danh và mã số BHXH đã có trên hệ thống
-        const setSDD_exist = makeSetByField(allData, "so_dinh_danh");
-        const setBHXH_exist = makeSetByField(allData, "ma_so_bhxh");
+        // Xử lý, validate từng dòng
+        const ds = [];
+        const errors = [];
+        // Tạo Set để kiểm tra trùng trong file import
+        const soDinhDanhSet = new Set();
+        const maSoBHXHSet = new Set();
+        rows.forEach((row, idx) => {
+          // idx là số thứ tự trong mảng, +2 để ra số dòng thực tế trong file (1 là header, 1 là index từ 0)
+          const rowNum = idx + 2;
+          const rowObj = {
+            ma_so_bhxh: String(row[1] || ""),
+            ho_ten_hoc_sinh: row[2] || "",
+            ngay_sinh: excelDateToString(row[3]),
+            gioi_tinh: row[4] || "",
+            dia_chi: row[5] || "",
+            lop: row[6] || user.lop_hoc,
+            sdt_lienhe: row[7] || "",
+            so_dinh_danh: String(row[8] || ""),
+            ten_cha_me: row[9] || "",
+            ma_truong: user.ma_truong
+          };
 
-        // Kiểm tra trùng trong file import
-        const setSDD_file = new Set();
-        const setBHXH_file = new Set();
-
-        // --- Kiểm tra lỗi từng dòng, kể cả trùng ---
-        let errList = [];
-        ds.forEach((row, idx) => {
-          let err = [];
-          // Kiểm tra bắt buộc và định dạng
-          let coreErr = validateImportRow(row, idx);
-          if (coreErr) err.push(coreErr);
-
-          // Kiểm tra trùng trong file (tự trùng)
-          if (setSDD_file.has(row.so_dinh_danh)) err.push(`Dòng ${idx+2}: Số định danh '${row.so_dinh_danh}' bị trùng trong file import`);
-          else if (row.so_dinh_danh) setSDD_file.add(row.so_dinh_danh);
-
-          if (setBHXH_file.has(row.ma_so_bhxh)) err.push(`Dòng ${idx+2}: Mã số BHXH '${row.ma_so_bhxh}' bị trùng trong file import`);
-          else if (row.ma_so_bhxh) setBHXH_file.add(row.ma_so_bhxh);
-
-          // Kiểm tra trùng với hệ thống
-          if (setSDD_exist.has(row.so_dinh_danh)) err.push(`Dòng ${idx+2}: Số định danh '${row.so_dinh_danh}' đã tồn tại trong hệ thống`);
-          if (setBHXH_exist.has(row.ma_so_bhxh)) err.push(`Dòng ${idx+2}: Mã số BHXH '${row.ma_so_bhxh}' đã tồn tại trong hệ thống`);
-
-          if (err.length) errList.push(err.join("; "));
+          // Validate từng dòng
+          const err = validateImportRow(
+            rowObj, rowNum,
+            soDinhDanhSet, maSoBHXHSet,
+            existedSoDinhDanhSet, existedMaSoBHXHSet
+          );
+          if (err) errors.push(err);
+          ds.push(rowObj);
         });
-        hideLoading();
-        if (errList.length) {
-          errorDiv.innerHTML = errList.join("<br>");
+
+        if (errors.length > 0) {
+          hideLoading();
+          errorDiv.innerHTML = `<b>Lỗi nhập liệu (không import):</b><br>${errors.join('<br>')}`;
           return;
         }
-        // --- Không lỗi, thực hiện import ---
-        showLoading();
+
+        // Import lên hệ thống
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
@@ -724,9 +722,10 @@
         }
       } catch (err) {
         hideLoading();
-        errorDiv.innerHTML = `<span style="color:red;">Lỗi đọc file hoặc dữ liệu không đúng định dạng!<br>Chi tiết: ${err?.message || err}</span>`;
+        errorDiv.innerHTML = `Lỗi đọc file hoặc dữ liệu không đúng định dạng!<br>Chi tiết: ${err.message || err}`;
       }
     }
+
 
 
     // ==== XÓA HỌC SINH ====
@@ -801,7 +800,7 @@
 
 
   <script>
-    // Dùng để kiểm tra số định danh/mã số BHXH đã tồn tại
+    // Hàm hỗ trợ: Tạo Set các giá trị đã có của một trường (ví dụ: so_dinh_danh)
     function makeSetByField(arr, field) {
       const set = new Set();
       arr.forEach(row => {
@@ -809,6 +808,41 @@
       });
       return set;
     }
+
+    // Kiểm tra hợp lệ 1 dòng import (validate trường trống, định dạng, logic)
+    function validateImportRow(row, rowNum, soDinhDanhSet, maSoBHXHSet, existedSoDinhDanhSet, existedMaSoBHXHSet) {
+      let errors = [];
+      // Trường bắt buộc
+      if (!row.ho_ten_hoc_sinh) errors.push("Họ tên học sinh không được để trống");
+      if (!row.lop) errors.push("Lớp không được để trống");
+      if (!row.ngay_sinh) errors.push("Ngày sinh không được để trống");
+      if (!row.so_dinh_danh) errors.push("Số định danh không được để trống");
+
+      // Định dạng ngày sinh
+      if (row.ngay_sinh && !/^(\d{2})\/(\d{2})\/(\d{4})$/.test(row.ngay_sinh)) {
+        errors.push("Ngày sinh phải đúng định dạng dd/mm/yyyy");
+      }
+
+      // Số định danh không trùng trong file import
+      if (row.so_dinh_danh) {
+        const val = String(row.so_dinh_danh).trim();
+        if (soDinhDanhSet.has(val)) errors.push("Số định danh bị trùng trong file import");
+        else soDinhDanhSet.add(val);
+        // Trùng với hệ thống
+        if (existedSoDinhDanhSet.has(val)) errors.push("Số định danh đã tồn tại trên hệ thống");
+      }
+
+      // Mã số BHXH (nếu có) kiểm tra trùng
+      if (row.ma_so_bhxh) {
+        const val = String(row.ma_so_bhxh).trim();
+        if (maSoBHXHSet.has(val)) errors.push("Mã số BHXH bị trùng trong file import");
+        else maSoBHXHSet.add(val);
+        if (existedMaSoBHXHSet.has(val)) errors.push("Mã số BHXH đã tồn tại trên hệ thống");
+      }
+
+      return errors.length > 0 ? `Dòng ${rowNum}: ` + errors.join(", ") : null;
+    }
+
   </script>
 
 
