@@ -795,66 +795,76 @@
 
 
   <script>
-    // Hàm hỗ trợ: Tạo Set các giá trị đã có của một trường (ví dụ: so_dinh_danh)
+    function validateImportRow(
+      row, rowNum,
+      soDinhDanhSet, maSoBHXHSet,
+      existedSoDinhDanhSet, existedMaSoBHXHSet
+    ) {
+      // Danh sách trường cần kiểm tra trống
+      const fields = [
+        { key: 'ma_so_bhxh', label: "Mã số BHXH" },
+        { key: 'ho_ten_hoc_sinh', label: "Họ tên học sinh" },
+        { key: 'ngay_sinh', label: "Ngày sinh" },
+        { key: 'gioi_tinh', label: "Giới tính" },
+        { key: 'dia_chi', label: "Địa chỉ" },
+        { key: 'lop', label: "Lớp" },
+        { key: 'sdt_lienhe', label: "SĐT liên hệ" },
+        { key: 'so_dinh_danh', label: "Số định danh" },
+        { key: 'ten_cha_me', label: "Tên cha/mẹ" }
+      ];
+      for (let f of fields) {
+        if (!row[f.key] || String(row[f.key]).trim() === "") {
+          return `Dòng ${rowNum}: Trường "${f.label}" không được để trống.`;
+        }
+      }
+      // Kiểm tra định dạng ngày sinh dd/mm/yyyy
+      if (!/^([0-2]\d|3[01])\/(0\d|1[0-2])\/\d{4}$/.test(row.ngay_sinh)) {
+        return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không đúng định dạng dd/mm/yyyy.`;
+      }
+      // Kiểm tra định dạng số điện thoại
+      if (!isValidPhoneNumber(row.sdt_lienhe)) {
+        return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+      }
+      // Kiểm tra định dạng số định danh (giả sử là 12 số, bạn chỉnh lại nếu cần)
+      if (!isValidSoDinhDanh(row.so_dinh_danh)) {
+        return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ.`;
+      }
+      // Kiểm tra trùng trong file import
+      if (soDinhDanhSet.has(row.so_dinh_danh)) {
+        return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" bị trùng trong file import.`;
+      }
+      if (maSoBHXHSet.has(row.ma_so_bhxh)) {
+        return `Dòng ${rowNum}: Mã số BHXH "${row.ma_so_bhxh}" bị trùng trong file import.`;
+      }
+      soDinhDanhSet.add(row.so_dinh_danh);
+      maSoBHXHSet.add(row.ma_so_bhxh);
+      // Kiểm tra trùng với dữ liệu đã có
+      if (existedSoDinhDanhSet.has(row.so_dinh_danh)) {
+        return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" đã tồn tại trên hệ thống.`;
+      }
+      if (existedMaSoBHXHSet.has(row.ma_so_bhxh)) {
+        return `Dòng ${rowNum}: Mã số BHXH "${row.ma_so_bhxh}" đã tồn tại trên hệ thống.`;
+      }
+      return null;
+    }
+
+    // Kiểm tra SĐT hợp lệ (10 số, bắt đầu bằng 0)
+    function isValidPhoneNumber(phone) {
+      return /^0\d{9}$/.test(phone.trim());
+    }
+
+    // Kiểm tra số định danh hợp lệ (giả sử là 12 số)
+    function isValidSoDinhDanh(s) {
+      return /^\d{12}$/.test(s.trim());
+    }
+
+    // Lấy set theo trường bất kỳ từ mảng dữ liệu đã có
     function makeSetByField(arr, field) {
       const set = new Set();
       arr.forEach(row => {
         if (row[field]) set.add(String(row[field]).trim());
       });
       return set;
-    }
-
-
-
-    function isValidPhoneNumber(phone) {
-      // Định dạng: bắt đầu bằng 0, đủ 10 số (Việt Nam)
-      return /^0\d{9}$/.test(phone);
-    }
-    function isValidSoDinhDanh(sdd) {
-      // Định dạng: đủ 12 số (Căn cước công dân VN)
-      return /^\d{12}$/.test(sdd);
-    }
-
-
-
-    // Kiểm tra hợp lệ 1 dòng import (validate trường trống, định dạng, logic)
-    function validateImportRow(row, rowNum, soDinhDanhSet, maSoBHXHSet, existedSoDinhDanhSet, existedMaSoBHXHSet) {
-      let errors = [];
-      // Trường bắt buộc
-      if (!row.ho_ten_hoc_sinh) errors.push("Họ tên học sinh không được để trống");
-      if (!row.lop) errors.push("Lớp không được để trống");
-      if (!row.ngay_sinh) errors.push("Ngày sinh không được để trống");
-      if (!row.so_dinh_danh) errors.push("Số định danh không được để trống");
-      if (!row.sdt_lienhe) errors.push("SĐT liên hệ không được để trống");
-
-      // Kiểm tra định dạng ngày sinh
-      if (row.ngay_sinh && !/^(\d{2})\/(\d{2})\/(\d{4})$/.test(row.ngay_sinh)) {
-        errors.push("Ngày sinh phải đúng định dạng dd/mm/yyyy");
-      }
-
-      // Kiểm tra số định danh
-      if (row.so_dinh_danh) {
-        const val = String(row.so_dinh_danh).trim();
-        if (!isValidSoDinhDanh(val)) errors.push("Số định danh phải đủ 12 chữ số");
-        if (soDinhDanhSet.has(val)) errors.push("Số định danh bị trùng trong file import");
-        else soDinhDanhSet.add(val);
-        if (existedSoDinhDanhSet.has(val)) errors.push("Số định danh đã tồn tại trên hệ thống");
-      }
-
-      // Kiểm tra mã số BHXH (nếu có)
-      if (row.ma_so_bhxh) {
-        const val = String(row.ma_so_bhxh).trim();
-        if (maSoBHXHSet.has(val)) errors.push("Mã số BHXH bị trùng trong file import");
-        else maSoBHXHSet.add(val);
-        if (existedMaSoBHXHSet.has(val)) errors.push("Mã số BHXH đã tồn tại trên hệ thống");
-      }
-
-      // Kiểm tra số điện thoại
-      if (row.sdt_lienhe && !isValidPhoneNumber(row.sdt_lienhe)) {
-        errors.push("SĐT liên hệ phải gồm 10 số và bắt đầu bằng số 0");
-      }
-
-      return errors.length > 0 ? `Dòng ${rowNum}: ` + errors.join(", ") : null;
     }
 
 
