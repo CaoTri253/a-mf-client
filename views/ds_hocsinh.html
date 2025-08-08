@@ -474,6 +474,19 @@
     }
 
     // ==== THÊM, SỬA, XÓA HỌC SINH ====
+
+    function isValidDateVN(str) {
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return false;
+      const [d, m, y] = str.split('/').map(Number);
+      const date = new Date(y, m-1, d);
+      return date.getFullYear() === y && (date.getMonth()+1) === m && date.getDate() === d;
+    }
+
+    // --- Hiển thị lỗi ---
+    function showError(id, msg) {
+      document.getElementById(id).innerText = msg;
+    }
+
     // Hiện modal thêm
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
@@ -482,27 +495,55 @@
       document.getElementById('gt-nam').checked = true;
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
-    // Xử lý thêm
+    // --- Kiểm tra form thêm mới học sinh ---
+
+    // Xử lý thêm mới học sinh
     async function handleThemHS() {
-      let ngaySinh = document.getElementById('inp-ngay-sinh').value.trim(); // Đã là dd/mm/yyyy
+      // Lấy giá trị input
+      let hoTen = document.getElementById('inp-ho-ten-hs').value.trim();
+      let ngaySinh = document.getElementById('inp-ngay-sinh').value.trim();
       let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
-      const hs = {
-        ma_so_bhxh: String(document.getElementById('inp-ma-so-bhxh').value.trim()),
-        ho_ten_hoc_sinh: document.getElementById('inp-ho-ten-hs').value.trim(),
-        ngay_sinh: ngaySinh,
-        gioi_tinh: gioiTinh,
-        dia_chi: document.getElementById('inp-dia-chi').value.trim(),
-        lop: user.lop_hoc,
-        sdt_lienhe: document.getElementById('inp-sdt-lienhe').value.trim(),
-        so_dinh_danh: String(document.getElementById('inp-so-dinh-danh').value.trim()),
-        ten_cha_me: document.getElementById('inp-ten-cha-me').value.trim(),
-        ma_truong: user.ma_truong
-      };
-      if (!hs.ho_ten_hoc_sinh || !hs.lop) {
-        document.getElementById('themhs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
+      let diaChi = document.getElementById('inp-dia-chi').value.trim();
+      let lop = user.lop_hoc || "";
+      let sdtLienHe = document.getElementById('inp-sdt-lienhe').value.trim();
+      let soDinhDanh = document.getElementById('inp-so-dinh-danh').value.trim();
+      let tenChaMe = document.getElementById('inp-ten-cha-me').value.trim();
+      let maSoBHXH = document.getElementById('inp-ma-so-bhxh').value.trim();
+
+      // --- Kiểm tra không trống ---
+      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH) {
+        showError('themhs-error', "Vui lòng nhập đầy đủ tất cả các trường!");
         return;
       }
+      // --- Kiểm tra ngày sinh ---
+      if (!isValidDateVN(ngaySinh)) {
+        showError('themhs-error', "Ngày sinh không hợp lệ! Định dạng dd/mm/yyyy.");
+        return;
+      }
+      // --- Kiểm tra SĐT liên hệ ---
+      if (!/^0\d{9}$/.test(sdtLienHe)) {
+        showError('themhs-error', "Số điện thoại không hợp lệ!");
+        return;
+      }
+      // --- Kiểm tra số định danh ---
+      if (!/^\d{12}$/.test(soDinhDanh)) {
+        showError('themhs-error', "Số định danh phải gồm 12 số!");
+        return;
+      }
+
       showLoading();
+      const hs = {
+        ma_so_bhxh: maSoBHXH,
+        ho_ten_hoc_sinh: hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: gioiTinh,
+        dia_chi: diaChi,
+        lop: lop,
+        sdt_lienhe: sdtLienHe,
+        so_dinh_danh: soDinhDanh,
+        ten_cha_me: tenChaMe,
+        ma_truong: user.ma_truong
+      };
       const res = await themHocsinh(hs);
       hideLoading();
       if (res.success) {
@@ -510,9 +551,13 @@
         await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalThemHS')).hide();
       } else {
-        document.getElementById('themhs-error').innerText = res.message || "Lỗi thêm học sinh!";
+        showError('themhs-error', res.message || "Lỗi thêm học sinh!");
       }
     }
+
+
+
+
     // Hiện modal sửa
     function showModalSuaHSByIndex(i) {
       const hs = lastPageData[i];
@@ -535,29 +580,53 @@
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
       new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
     }
-    // Xử lý sửa
-    async function handleSuaHS() {
-      let ngaySinh = document.getElementById('sua-ngay-sinh').value.trim(); // Đã là dd/mm/yyyy
 
+
+    
+    // Xử lý sửa
+    // --- Kiểm tra form sửa học sinh ---
+    async function handleSuaHS() {
+      let hoTen = document.getElementById('sua-ho-ten-hs').value.trim();
+      let ngaySinh = document.getElementById('sua-ngay-sinh').value.trim();
       let gioiTinh = document.querySelector('input[name="sua_gioi_tinh"]:checked')?.value || "";
-      const hs = {
-        stt: document.getElementById('sua-stt').value,
-        ma_so_bhxh: String(document.getElementById('sua-ma-so-bhxh').value.trim()),
-        ho_ten_hoc_sinh: document.getElementById('sua-ho-ten-hs').value.trim(),
-        ngay_sinh: ngaySinh,
-        gioi_tinh: gioiTinh,
-        dia_chi: document.getElementById('sua-dia-chi').value.trim(),
-        lop: document.getElementById('sua-lop').value.trim(),
-        sdt_lienhe: document.getElementById('sua-sdt-lienhe').value.trim(),
-        so_dinh_danh: String(document.getElementById('sua-so-dinh-danh').value.trim()),
-        ten_cha_me: document.getElementById('sua-ten-cha-me').value.trim(),
-        ma_truong: user.ma_truong
-      };
-      if (!hs.ho_ten_hoc_sinh || !hs.lop) {
-        document.getElementById('suahs-error').innerText = "Vui lòng nhập đủ thông tin bắt buộc!";
+      let diaChi = document.getElementById('sua-dia-chi').value.trim();
+      let lop = document.getElementById('sua-lop').value.trim();
+      let sdtLienHe = document.getElementById('sua-sdt-lienhe').value.trim();
+      let soDinhDanh = document.getElementById('sua-so-dinh-danh').value.trim();
+      let tenChaMe = document.getElementById('sua-ten-cha-me').value.trim();
+      let maSoBHXH = document.getElementById('sua-ma-so-bhxh').value.trim();
+
+      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH) {
+        showError('suahs-error', "Vui lòng nhập đầy đủ tất cả các trường!");
         return;
       }
+      if (!isValidDateVN(ngaySinh)) {
+        showError('suahs-error', "Ngày sinh không hợp lệ! Định dạng dd/mm/yyyy.");
+        return;
+      }
+      if (!/^0\d{9}$/.test(sdtLienHe)) {
+        showError('suahs-error', "Số điện thoại không hợp lệ!");
+        return;
+      }
+      if (!/^\d{12}$/.test(soDinhDanh)) {
+        showError('suahs-error', "Số định danh phải gồm 12 số!");
+        return;
+      }
+
       showLoading();
+      const hs = {
+        stt: document.getElementById('sua-stt').value,
+        ma_so_bhxh: maSoBHXH,
+        ho_ten_hoc_sinh: hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: gioiTinh,
+        dia_chi: diaChi,
+        lop: lop,
+        sdt_lienhe: sdtLienHe,
+        so_dinh_danh: soDinhDanh,
+        ten_cha_me: tenChaMe,
+        ma_truong: user.ma_truong
+      };
       const res = await suaHocsinh(hs);
       hideLoading();
       if (res.success) {
@@ -565,7 +634,7 @@
         await fetchAllHocsinhOnce();
         bootstrap.Modal.getInstance(document.getElementById('modalSuaHS')).hide();
       } else {
-        document.getElementById('suahs-error').innerText = res.message || "Lỗi cập nhật!";
+        showError('suahs-error', res.message || "Lỗi cập nhật!");
       }
     }
 
