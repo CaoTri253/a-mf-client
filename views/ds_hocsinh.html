@@ -246,7 +246,6 @@
   
   
   
-  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/api.js"></script>
@@ -291,7 +290,7 @@
       }
       return "";
     }
-    // Hiển thị ngày sinh cho table
+    // Hiển thị ngày cho table
     function displayNgaySinh(raw) {
       if (!raw) return "";
       if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
@@ -311,17 +310,14 @@
     }
 
     // ==== XỬ LÝ LOADING, TOAST, XÁC NHẬN ====
-    // Loading overlay
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
-    // Thông báo nhanh
     function showToast(msg, type = "primary") {
       const toast = document.getElementById('toastNoti');
       document.getElementById('toastNotiBody').innerText = msg;
       toast.className = `toast align-items-center text-white bg-${type} border-0`;
       new bootstrap.Toast(toast, { delay: 3500 }).show();
     }
-    // Modal xác nhận
     function showConfirm(msg, onConfirm, title = "Xác nhận") {
       document.getElementById('modalConfirmTitle').innerText = title;
       document.getElementById('modalConfirmBody').innerHTML = msg;
@@ -334,7 +330,6 @@
     }
 
     // ==== PHÂN TRANG, SẮP XẾP, SEARCH ====
-    // Phát hiện thay đổi kích thước màn hình, tự điều chỉnh pageSize
     function detectPageSize() {
       const width = window.innerWidth;
       if (width <= 600) pageSize = 2;
@@ -349,7 +344,6 @@
         renderAllView();
       }
     });
-    // Lọc, sắp xếp dữ liệu
     function getFilteredSortedData() {
       let q = document.getElementById('search-box').value.trim().toLowerCase();
       let filtered = allData.filter(hs =>
@@ -374,7 +368,6 @@
       else { sortField = field; sortDir = 1; }
       renderAllView();
     }
-    // Render nút phân trang
     function renderPagination() {
       const pagin = document.getElementById('pagination');
       pagin.innerHTML = '';
@@ -395,11 +388,9 @@
       currentPage = p;
       renderAllView();
     };
-    // Tìm kiếm
     function doSearch() { currentPage = 1; renderAllView(); }
 
     // ==== LOAD & HIỂN THỊ DANH SÁCH ====
-    // Gọi API lấy toàn bộ danh sách học sinh 1 lần
     async function fetchAllHocsinhOnce() {
       detectPageSize();
       showLoading();
@@ -429,7 +420,6 @@
     }
 
     // ==== HIỂN THỊ BẢNG VÀ ACTION ====
-    // Render bảng danh sách học sinh
     function renderDanhSachHS(ds, offset) {
       selectedRows = [];
       if (!ds || ds.length === 0) {
@@ -450,7 +440,7 @@
           <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
           <th class="sortable" onclick="doSort('gioi_tinh')">Giới tính${sortIcon('gioi_tinh')}</th>
           <th class="sortable" onclick="doSort('dia_chi')">Địa chỉ${sortIcon('dia_chi')}</th>
-          <th class="sortable" onclick="doSort('lop')">Lớp${sortIcon('lop')}</th>
+          <th class="sortable" onclick="doSort('lop_hoc')">Lớp${sortIcon('lop_hoc')}</th>
           <th class="sortable" onclick="doSort('sdt_lienhe')">SĐT liên hệ${sortIcon('sdt_lienhe')}</th>
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh${sortIcon('so_dinh_danh')}</th>
           <th class="sortable" onclick="doSort('ten_cha_me')">Tên cha/mẹ${sortIcon('ten_cha_me')}</th>
@@ -469,7 +459,7 @@
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
           <td>${hs.gioi_tinh||""}</td>
           <td>${hs.dia_chi||""}</td>
-          <td>${hs.lop||""}</td>
+          <td>${hs.lop_hoc||""}</td>
           <td>${hs.sdt_lienhe||""}</td>
           <td>${hs.so_dinh_danh||""}</td>
           <td>${hs.ten_cha_me||""}</td>
@@ -479,7 +469,6 @@
       document.getElementById('ds-container').innerHTML = html;
       document.getElementById('btn-delete-multi').classList.add('d-none');
     }
-    // Render action bar
     function renderActions() {
       document.getElementById('ds-actions').innerHTML = `
         <button class="btn btn-success btn-main" onclick="showModalThemHS()">Thêm mới học sinh</button>
@@ -489,30 +478,28 @@
     }
 
     // ==== THÊM, SỬA, XÓA HỌC SINH ====
-
     function isValidDateVN(str) {
       if (!/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return false;
       const [d, m, y] = str.split('/').map(Number);
       const date = new Date(y, m-1, d);
       return date.getFullYear() === y && (date.getMonth()+1) === m && date.getDate() === d;
     }
-
-    // --- Hiển thị lỗi ---
     function showError(id, msg) {
       document.getElementById(id).innerText = msg;
     }
 
-    // Hiện modal thêm
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
+      // Reset luôn 3 ô ngày bằng API của datepicker để tránh clear ngầm
+      $('#inp-ngay-sinh').datepicker('update', '');
+      $('#inp-ngay-het-han-bhyt').datepicker('update', '');
+      $('#inp-ngay-het-han-bhtn').datepicker('update', '');
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
-    // --- Kiểm tra form thêm mới học sinh ---
 
-    // Xử lý thêm mới học sinh
     async function handleThemHS() {
       let hoTen = document.getElementById('inp-ho-ten-hs').value.trim();
       let ngaySinh = document.getElementById('inp-ngay-sinh').value.trim();
@@ -524,14 +511,14 @@
       let tenChaMe = document.getElementById('inp-ten-cha-me').value.trim();
       let maSoBHXH = document.getElementById('inp-ma-so-bhxh').value.trim();
 
-      // MỚI:
+      // MỚI: hạn dùng & nơi khám
       let ngayHetHanBHYT = document.getElementById('inp-ngay-het-han-bhyt').value.trim();
       let ngayHetHanBHTN = document.getElementById('inp-ngay-het-han-bhtn').value.trim();
       let noiKhamBHYT    = document.getElementById('inp-noi-kham-bhyt').value.trim();
       let doiTuongDong   = (document.getElementById('inp-doi-tuong-dong').value || "").trim();
       let ghiChu         = (document.getElementById('inp-ghi-chu').value || "").trim();
 
-      // --- Kiểm tra không trống: TẤT CẢ TRỪ 2 TRƯỜNG OPTIONAL ---
+      // Bắt buộc nhập (trừ 2 ô optional)
       if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop_hoc || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH
           || !ngayHetHanBHYT || !ngayHetHanBHTN || !noiKhamBHYT) {
         showError('themhs-error', "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!");
@@ -579,11 +566,6 @@
       }
     }
 
-
-
-
-
-    // Hiện modal sửa
     function showModalSuaHSByIndex(i) {
       const hs = lastPageData[i];
       if (!hs) return;
@@ -592,32 +574,29 @@
       document.getElementById('sua-stt').value = hs.stt;
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
-      // Hiển thị lại ngày sinh đúng dd/mm/yyyy
+
+      // DÙNG API datepicker để set, tránh mất khi blur/focus
       let ddmmyyyy = displayNgaySinh(hs.ngay_sinh);
-      document.getElementById('sua-ngay-sinh').value = ddmmyyyy;
+      $('#sua-ngay-sinh').datepicker('update', ddmmyyyy || '');
 
       if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
       else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
       document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
-      document.getElementById('sua-lop').value = hs.lop || "";
+      document.getElementById('sua-lop').value = hs.lop_hoc || "";
       document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
       document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
 
-      document.getElementById('sua-ngay-het-han-bhyt').value = displayNgaySinh(hs.ngay_het_han_bhyt) || "";
-      document.getElementById('sua-ngay-het-han-bhtn').value = displayNgaySinh(hs.ngay_het_han_bhtn) || "";
+      // Set bằng datepicker cho 2 hạn dùng
+      $('#sua-ngay-het-han-bhyt').datepicker('update', displayNgaySinh(hs.ngay_het_han_bhyt) || '');
+      $('#sua-ngay-het-han-bhtn').datepicker('update', displayNgaySinh(hs.ngay_het_han_bhtn) || '');
       document.getElementById('sua-noi-kham-bhyt').value    = hs.noi_kham_bhyt || "";
       document.getElementById('sua-doi-tuong-dong').value   = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
       document.getElementById('sua-ghi-chu').value          = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
 
-
       new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
     }
 
-
-    
-    // Xử lý sửa
-    // --- Kiểm tra form sửa học sinh ---
     async function handleSuaHS() {
       let hoTen = document.getElementById('sua-ho-ten-hs').value.trim();
       let ngaySinh = document.getElementById('sua-ngay-sinh').value.trim();
@@ -637,6 +616,17 @@
         showError('suahs-error', "Ngày sinh không hợp lệ! Định dạng dd/mm/yyyy.");
         return;
       }
+      // Validate thêm cho 2 hạn dùng
+      const _bhyt = document.getElementById('sua-ngay-het-han-bhyt').value.trim();
+      const _bhtn = document.getElementById('sua-ngay-het-han-bhtn').value.trim();
+      if (_bhyt && !isValidDateVN(_bhyt)) {
+        showError('suahs-error', "Hạn BHYT không hợp lệ! Định dạng dd/mm/yyyy.");
+        return;
+      }
+      if (_bhtn && !isValidDateVN(_bhtn)) {
+        showError('suahs-error', "Hạn BHTN không hợp lệ! Định dạng dd/mm/yyyy.");
+        return;
+      }
       if (!/^0\d{9}$/.test(sdtLienHe)) {
         showError('suahs-error', "Số điện thoại không hợp lệ!");
         return;
@@ -654,8 +644,8 @@
         ngay_sinh: ngaySinh,
         gioi_tinh: gioiTinh,
         dia_chi: diaChi,
-        ngay_het_han_bhyt: document.getElementById('sua-ngay-het-han-bhyt').value.trim(),
-        ngay_het_han_bhtn: document.getElementById('sua-ngay-het-han-bhtn').value.trim(),
+        ngay_het_han_bhyt: _bhyt,
+        ngay_het_han_bhtn: _bhtn,
         lop_hoc: document.getElementById('sua-lop').value.trim(),
         sdt_lienhe: sdtLienHe,
         so_dinh_danh: soDinhDanh,
@@ -677,20 +667,13 @@
       }
     }
 
-
-
-
     // ==== IMPORT EXCEL ====
-    // Hiện modal import
     function showModalImportHS() {
       document.getElementById('import-error').innerText = "";
       document.getElementById('import-file').value = "";
       new bootstrap.Modal(document.getElementById('modalImportHS')).show();
     }
 
-
-    
-    // Xử lý import
     async function handleImportHS() {
       const fileInput = document.getElementById('import-file');
       const errorDiv = document.getElementById('import-error');
@@ -702,7 +685,6 @@
       const file = fileInput.files[0];
       showLoading();
       try {
-        // Đọc file Excel
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
@@ -710,10 +692,8 @@
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
         rows.shift(); // Bỏ dòng tiêu đề
 
-        // Chuẩn bị kiểm tra trùng lặp
         const soDinhDanhSet = new Set();
         const maSoBHXHSet = new Set();
-        // Dữ liệu đã tồn tại trên hệ thống (allData đã fetch ở ngoài)
         const existedSoDinhDanhSet = makeSetByField(allData, "so_dinh_danh");
         const existedMaSoBHXHSet = makeSetByField(allData, "ma_so_bhxh");
 
@@ -725,7 +705,7 @@
             ngay_sinh: excelDateToString(row[3]),
             gioi_tinh: row[4] || "",
             dia_chi: row[5] || "",
-            lop: row[6] || user.lop_hoc,
+            lop_hoc: row[6] || user.lop_hoc,   // đổi sang lop_hoc
             sdt_lienhe: row[7] || "",
             so_dinh_danh: String(row[8] || ""),
             ten_cha_me: row[9] || "",
@@ -733,7 +713,6 @@
           }
         });
 
-        // Kiểm tra từng dòng
         ds.forEach((row, idx) => {
           const err = validateImportRow(
             row, idx + 2,
@@ -749,7 +728,6 @@
           return;
         }
 
-        // Gửi dữ liệu lên backend
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
@@ -765,11 +743,7 @@
       }
     }
 
-
-
-
     // ==== XÓA HỌC SINH ====
-    // Chọn/xóa nhiều dòng
     window.onSelectRow = function (stt, cb) {
       if (cb.checked) selectedRows.push(stt);
       else selectedRows = selectedRows.filter(x => x !== stt);
@@ -805,7 +779,6 @@
         showToast(res.message || "Xóa nhiều học sinh thất bại!","danger");
       }
     }
-    // Xóa 1 dòng
     window.showConfirmDelete = function (stt) {
       showConfirm("Bạn có chắc chắn muốn xóa học sinh này?", () => doDelete(stt), "Xác nhận xóa");
     }
@@ -822,15 +795,12 @@
     }
 
     // ==== KHÁC ====
-    // Download file mẫu
     function downloadMauHS() {
       window.open("../mau_nhap_hocsinh.xlsx", "_blank");
     }
-    // Quay lại dashboard
     function goBack() { showLoading(); window.location.href = "dashboard.html"; }
 
     // ==== KHỞI TẠO ====
-    // Expose hàm cho window
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = fetchAllHocsinhOnce;
 
@@ -852,7 +822,7 @@
         { key: 'ngay_sinh', label: "Ngày sinh" },
         { key: 'gioi_tinh', label: "Giới tính" },
         { key: 'dia_chi', label: "Địa chỉ" },
-        { key: 'lop', label: "Lớp" },
+        { key: 'lop_hoc', label: "Lớp" },          // đổi sang lop_hoc
         { key: 'sdt_lienhe', label: "SĐT liên hệ" },
         { key: 'so_dinh_danh', label: "Số định danh" },
         { key: 'ten_cha_me', label: "Tên cha/mẹ" }
@@ -862,19 +832,15 @@
           return `Dòng ${rowNum}: Trường "${f.label}" không được để trống.`;
         }
       }
-      // Kiểm tra định dạng ngày sinh dd/mm/yyyy
       if (!/^([0-2]\d|3[01])\/(0\d|1[0-2])\/\d{4}$/.test(row.ngay_sinh)) {
         return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không đúng định dạng dd/mm/yyyy.`;
       }
-      // Kiểm tra định dạng số điện thoại
       if (!isValidPhoneNumber(row.sdt_lienhe)) {
         return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
       }
-      // Kiểm tra định dạng số định danh (giả sử là 12 số, bạn chỉnh lại nếu cần)
       if (!isValidSoDinhDanh(row.so_dinh_danh)) {
         return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ.`;
       }
-      // Kiểm tra trùng trong file import
       if (soDinhDanhSet.has(row.so_dinh_danh)) {
         return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" bị trùng trong file import.`;
       }
@@ -883,7 +849,6 @@
       }
       soDinhDanhSet.add(row.so_dinh_danh);
       maSoBHXHSet.add(row.ma_so_bhxh);
-      // Kiểm tra trùng với dữ liệu đã có
       if (existedSoDinhDanhSet.has(row.so_dinh_danh)) {
         return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" đã tồn tại trên hệ thống.`;
       }
@@ -893,17 +858,12 @@
       return null;
     }
 
-    // Kiểm tra SĐT hợp lệ (10 số, bắt đầu bằng 0)
     function isValidPhoneNumber(phone) {
       return /^0\d{9}$/.test(phone.trim());
     }
-
-    // Kiểm tra số định danh hợp lệ (giả sử là 12 số)
     function isValidSoDinhDanh(s) {
       return /^\d{12}$/.test(s.trim());
     }
-
-    // Lấy set theo trường bất kỳ từ mảng dữ liệu đã có
     function makeSetByField(arr, field) {
       const set = new Set();
       arr.forEach(row => {
@@ -911,80 +871,64 @@
       });
       return set;
     }
-
-
   </script>
-
-
-
-
 
   <script>
     $(function() {
-      // Khởi tạo Datepicker cho input thêm và sửa
-      $('#inp-ngay-sinh, #sua-ngay-sinh').datepicker({
+      // Tùy chọn chung cho tất cả datepicker: NGĂN CLEAR KHI BLUR/FOCUS
+      const dpOpts = {
         format: 'dd/mm/yyyy',
         language: 'vi',
         autoclose: true,
         todayHighlight: true,
-        clearBtn: true
-      });
+        clearBtn: true,
+        forceParse: false,
+        keyboardNavigation: false,
+        container: 'body'
+      };
 
-      // >>> MỚI: Khởi tạo datepicker cho Hạn BHYT / Hạn BHTN
-      $('#inp-ngay-het-han-bhyt, #inp-ngay-het-han-bhtn, #sua-ngay-het-han-bhyt, #sua-ngay-het-han-bhtn').datepicker({
-        format: 'dd/mm/yyyy',
-        language: 'vi',
-        autoclose: true,
-        todayHighlight: true,
-        clearBtn: true
-      });
+      // Khởi tạo cho ngày sinh (thêm dpOpts)
+      $('#inp-ngay-sinh, #sua-ngay-sinh').datepicker(dpOpts)
+        .on('show', function() {
+          const v = $(this).val()?.trim();
+          if (v) $(this).datepicker('update', v);
+        });
 
-      // Reset ngày sinh khi mở modal Thêm mới (ĐÃ CÓ)
+      // Khởi tạo cho Hạn BHYT/BHTN (THÊM MỚI)
+      $('#inp-ngay-het-han-bhyt, #inp-ngay-het-han-bhtn, #sua-ngay-het-han-bhyt, #sua-ngay-het-han-bhtn')
+        .datepicker(dpOpts)
+        .on('show', function() {
+          const v = $(this).val()?.trim();
+          if (v) $(this).datepicker('update', v);
+        });
+
+      // Reset ngày khi mở modal Thêm mới
       $('#modalThemHS').on('show.bs.modal', function() {
         $('#inp-ngay-sinh').datepicker('update', '');
-        // >>> MỚI: reset luôn 2 hạn dùng
         $('#inp-ngay-het-han-bhyt').datepicker('update', '');
         $('#inp-ngay-het-han-bhtn').datepicker('update', '');
       });
 
-      // Chuyển yyyy-mm-dd -> dd/mm/yyyy khi mở modal Sửa (ĐÃ CÓ)
+      // Đồng bộ lại khi mở modal Sửa (nếu lỡ là yyyy-mm-dd)
       $('#modalSuaHS').on('shown.bs.modal', function () {
         let val = $('#sua-ngay-sinh').val();
         if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
           let [y,m,d] = val.split('-');
           $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
         }
-        // >>> MỚI: đảm bảo 2 hạn dùng vẫn giữ giá trị (nếu đã set từ JS)
         let v1 = $('#sua-ngay-het-han-bhyt').val();
         if (v1 && /^\d{4}-\d{2}-\d{2}$/.test(v1)) {
-          let [y,m,d] = v1.split('-');
-          $('#sua-ngay-het-han-bhyt').datepicker('update', `${d}/${m}/${y}`);
+          let [y1,m1,d1] = v1.split('-');
+          $('#sua-ngay-het-han-bhyt').datepicker('update', `${d1}/${m1}/${y1}`);
         }
         let v2 = $('#sua-ngay-het-han-bhtn').val();
         if (v2 && /^\d{4}-\d{2}-\d{2}$/.test(v2)) {
-          let [y,m,d] = v2.split('-');
-          $('#sua-ngay-het-han-bhtn').datepicker('update', `${d}/${m}/${y}`);
-        }
-      });
-
-
-
-      // Reset ngày sinh khi mở modal Thêm mới
-      $('#modalThemHS').on('show.bs.modal', function() {
-        $('#inp-ngay-sinh').datepicker('update', '');
-      });
-
-      // Chuyển đổi yyyy-mm-dd sang dd/mm/yyyy khi mở modal Sửa
-      $('#modalSuaHS').on('shown.bs.modal', function () {
-        let val = $('#sua-ngay-sinh').val();
-        if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-          let [y,m,d] = val.split('-');
-          $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
+          let [y2,m2,d2] = v2.split('-');
+          $('#sua-ngay-het-han-bhtn').datepicker('update', `${d2}/${m2}/${y2}`);
         }
       });
     });
   </script>
-
 
 </body>
 </html>
