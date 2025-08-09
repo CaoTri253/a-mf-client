@@ -21,6 +21,13 @@
     .sort-icon { font-size: 15px; vertical-align: middle; margin-left: 3px; }
     .th-action { min-width: 90px; }
 
+    /* Form layout gọn gàng: 2 cột trên md, 1 cột trên mobile */
+    .form-grid .form-label { font-weight: 500; margin-bottom: 4px; }
+    .form-grid .col { margin-bottom: 10px; }
+    .row-compact { row-gap: 8px; }
+    .modal-body { padding-top: 12px; }
+    .section-title { font-size: 14px; font-weight: 600; color: #333; margin-top: 2px; margin-bottom: 6px; }
+
     @media (max-width: 600px) {
       .header { font-size: 18px; }
       .search-row { flex-direction: column; align-items: stretch; }
@@ -78,38 +85,90 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="form-themhs" onsubmit="event.preventDefault();handleThemHS();">
-          <input class="form-control mb-2" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
-          <input class="form-control mb-2" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
-
-          <!-- Dùng Flatpickr hiển thị dd/mm/yyyy -->
-          <input class="form-control mb-2" id="inp-ngay-sinh" type="text" placeholder="Ngày sinh (dd/mm/yyyy)" autocomplete="off"/>
-
-          <label class="mb-1">Giới tính:</label>
-          <div class="mb-2" style="display: flex; gap: 16px;">
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nam" value="Nam" checked>
-              <label class="form-check-label" for="gt-nam">Nam</label>
+        <form id="form-themhs" onsubmit="event.preventDefault();handleThemHS();" class="form-grid">
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-ma-so-bhxh">Mã số BHXH</label>
+              <input class="form-control" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nu" value="Nữ">
-              <label class="form-check-label" for="gt-nu">Nữ</label>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-ho-ten-hs">Họ tên học sinh</label>
+              <input class="form-control" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
             </div>
           </div>
 
-          <input class="form-control mb-2" id="inp-dia-chi" placeholder="Địa chỉ"/>
-          <input class="form-control mb-2" id="inp-lop" placeholder="Lớp" disabled/>
-          <input class="form-control mb-2" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
-          <input class="form-control mb-2" id="inp-so-dinh-danh" placeholder="Số định danh"/>
-          <input class="form-control mb-2" id="inp-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="inp-ngay-sinh">Ngày sinh</label>
+              <input class="form-control" id="inp-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Giới tính</label>
+              <div class="d-flex gap-3 pt-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nam" value="Nam" checked>
+                  <label class="form-check-label" for="gt-nam">Nam</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nu" value="Nữ">
+                  <label class="form-check-label" for="gt-nu">Nữ</label>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="inp-lop">Lớp</label>
+              <input class="form-control" id="inp-lop" placeholder="Lớp" disabled/>
+            </div>
+          </div>
 
-          <!-- Flatpickr độc lập cho từng ô -->
-          <input class="form-control mb-2" id="inp-ngay-het-han-bhyt" type="text" placeholder="Hạn BHYT (dd/mm/yyyy)" autocomplete="off"/>
-          <input class="form-control mb-2" id="inp-ngay-het-han-bhtn" type="text" placeholder="Hạn BHTN (dd/mm/yyyy)" autocomplete="off"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-dia-chi">Địa chỉ</label>
+              <input class="form-control" id="inp-dia-chi" placeholder="Địa chỉ"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-sdt-lienhe">Số ĐT liên hệ</label>
+              <input class="form-control" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
+            </div>
+          </div>
 
-          <input class="form-control mb-2" id="inp-noi-kham-bhyt" placeholder="Nơi khám BHYT"/>
-          <input class="form-control mb-2" id="inp-doi-tuong-dong" placeholder="Đối tượng đóng (tùy chọn)"/>
-          <input class="form-control mb-2" id="inp-ghi-chu" placeholder="Ghi chú (tùy chọn)"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-so-dinh-danh">Số định danh</label>
+              <input class="form-control" id="inp-so-dinh-danh" placeholder="Số định danh"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-ten-cha-me">Tên cha/mẹ học sinh</label>
+              <input class="form-control" id="inp-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+            </div>
+          </div>
+
+          <div class="section-title">Hạn sử dụng thẻ</div>
+          <div class="row row-compact">
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="inp-ngay-het-han-bhyt">Hạn BHYT</label>
+              <input class="form-control" id="inp-ngay-het-han-bhyt" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="inp-ngay-het-han-bhtn">Hạn BHTN</label>
+              <input class="form-control" id="inp-ngay-het-han-bhtn" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="inp-noi-kham-bhyt">Nơi khám BHYT</label>
+              <input class="form-control" id="inp-noi-kham-bhyt" placeholder="Nhập nơi khám BHYT" list="noiKhamList"/>
+            </div>
+          </div>
+
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-doi-tuong-dong">Đối tượng đóng (tùy chọn)</label>
+              <input class="form-control" id="inp-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ... " list="doiTuongList"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="inp-ghi-chu">Ghi chú (tùy chọn)</label>
+              <input class="form-control" id="inp-ghi-chu" placeholder="Ghi chú (nếu có)"/>
+            </div>
+          </div>
         </form>
         <div id="themhs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
@@ -127,37 +186,92 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="form-suahs" onsubmit="event.preventDefault();handleSuaHS();">
+        <form id="form-suahs" onsubmit="event.preventDefault();handleSuaHS();" class="form-grid">
           <input type="hidden" id="sua-stt"/>
-          <input class="form-control mb-2" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
-          <input class="form-control mb-2" id="sua-ho-ten-hs" placeholder="Họ tên học sinh"/>
 
-          <input class="form-control mb-2" id="sua-ngay-sinh" type="text" placeholder="Ngày sinh (dd/mm/yyyy)" autocomplete="off"/>
-
-          <label class="mb-1">Giới tính:</label>
-          <div class="mb-2" style="display: flex; gap: 16px;">
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nam" value="Nam">
-              <label class="form-check-label" for="sua-gt-nam">Nam</label>
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-ma-so-bhxh">Mã số BHXH</label>
+              <input class="form-control" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nu" value="Nữ">
-              <label class="form-check-label" for="sua-gt-nu">Nữ</label>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-ho-ten-hs">Họ tên học sinh</label>
+              <input class="form-control" id="sua-ho-ten-hs" placeholder="Họ tên học sinh"/>
             </div>
           </div>
 
-          <input class="form-control mb-2" id="sua-dia-chi" placeholder="Địa chỉ"/>
-          <input class="form-control mb-2" id="sua-lop" placeholder="Lớp" disabled/>
-          <input class="form-control mb-2" id="sua-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
-          <input class="form-control mb-2" id="sua-so-dinh-danh" placeholder="Số định danh"/>
-          <input class="form-control mb-2" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="sua-ngay-sinh">Ngày sinh</label>
+              <input class="form-control" id="sua-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Giới tính</label>
+              <div class="d-flex gap-3 pt-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nam" value="Nam">
+                  <label class="form-check-label" for="sua-gt-nam">Nam</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nu" value="Nữ">
+                  <label class="form-check-label" for="sua-gt-nu">Nữ</label>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="sua-lop">Lớp</label>
+              <input class="form-control" id="sua-lop" placeholder="Lớp" disabled/>
+            </div>
+          </div>
 
-          <input class="form-control mb-2" id="sua-ngay-het-han-bhyt" type="text" placeholder="Hạn BHYT (dd/mm/yyyy)" autocomplete="off"/>
-          <input class="form-control mb-2" id="sua-ngay-het-han-bhtn" type="text" placeholder="Hạn BHTN (dd/mm/yyyy)" autocomplete="off"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-dia-chi">Địa chỉ</label>
+              <input class="form-control" id="sua-dia-chi" placeholder="Địa chỉ"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-sdt-lienhe">Số ĐT liên hệ</label>
+              <input class="form-control" id="sua-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
+            </div>
+          </div>
 
-          <input class="form-control mb-2" id="sua-noi-kham-bhyt" placeholder="Nơi khám BHYT"/>
-          <input class="form-control mb-2" id="sua-doi-tuong-dong" placeholder="Đối tượng đóng (tùy chọn)"/>
-          <input class="form-control mb-2" id="sua-ghi-chu" placeholder="Ghi chú (tùy chọn)"/>
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-so-dinh-danh">Số định danh</label>
+              <input class="form-control" id="sua-so-dinh-danh" placeholder="Số định danh"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-ten-cha-me">Tên cha/mẹ học sinh</label>
+              <input class="form-control" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+            </div>
+          </div>
+
+          <div class="section-title">Hạn sử dụng thẻ</div>
+          <div class="row row-compact">
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="sua-ngay-het-han-bhyt">Hạn BHYT</label>
+              <input class="form-control" id="sua-ngay-het-han-bhyt" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="sua-ngay-het-han-bhtn">Hạn BHTN</label>
+              <input class="form-control" id="sua-ngay-het-han-bhtn" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="sua-noi-kham-bhyt">Nơi khám BHYT</label>
+              <input class="form-control" id="sua-noi-kham-bhyt" placeholder="Nhập nơi khám BHYT" list="noiKhamList"/>
+            </div>
+          </div>
+
+          <div class="row row-compact">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-doi-tuong-dong">Đối tượng đóng (tùy chọn)</label>
+              <input class="form-control" id="sua-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ... " list="doiTuongList"/>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sua-ghi-chu">Ghi chú (tùy chọn)</label>
+              <input class="form-control" id="sua-ghi-chu" placeholder="Ghi chú (nếu có)"/>
+            </div>
+          </div>
         </form>
         <div id="suahs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
@@ -167,6 +281,38 @@
       </div>
     </div></div>
   </div>
+
+  <!-- Datalist gợi ý Nơi khám & Đối tượng -->
+  <datalist id="noiKhamList">
+    <!-- Ưu tiên các cơ sở tại tỉnh An Giang -->
+    <option value="Bệnh viện Đa khoa Trung tâm An Giang">
+    <option value="Bệnh viện Sản Nhi An Giang">
+    <option value="Bệnh viện Đa khoa khu vực Châu Đốc">
+    <option value="Bệnh viện Đa khoa khu vực Tân Châu">
+    <option value="Bệnh viện Đa khoa khu vực tỉnh Tri Tôn">
+    <option value="Bệnh viện Mắt – Tai Mũi Họng – Răng Hàm Mặt An Giang">
+    <option value="Trung tâm Y tế thành phố Long Xuyên">
+    <option value="Trung tâm Y tế thành phố Châu Đốc">
+    <option value="Trung tâm Y tế huyện Châu Phú">
+    <option value="Trung tâm Y tế huyện Châu Thành">
+    <option value="Trung tâm Y tế huyện An Phú">
+    <option value="Trung tâm Y tế huyện Tịnh Biên">
+    <option value="Trung tâm Y tế huyện Tri Tôn">
+    <option value="Trung tâm Y tế huyện Thoại Sơn">
+    <option value="Trung tâm Y tế huyện Phú Tân">
+    <option value="Trung tâm Y tế huyện Chợ Mới">
+  </datalist>
+
+  <datalist id="doiTuongList">
+    <option value="Học sinh">
+    <option value="Hộ nghèo">
+    <option value="Cận nghèo">
+    <option value="Con thương binh, liệt sĩ">
+    <option value="Trẻ mồ côi">
+    <option value="Bảo trợ xã hội">
+    <option value="Dân tộc thiểu số">
+    <option value="Hộ cận nghèo khu vực nông thôn">
+  </datalist>
 
   <!-- Modal nhập file excel -->
   <div class="modal fade" id="modalImportHS" tabindex="-1" aria-hidden="true">
@@ -239,7 +385,6 @@
     let sortField = "", sortDir = 1, selectedRows = [], allData = [], lastPageData = [];
 
     // ==== HÀM XỬ LÝ NGÀY ====
-    // dd/mm/yyyy -> Date object an toàn (dùng cho setDate flatpickr)
     function parseDDMMYYYY(str) {
       if (!/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return null;
       const [d, m, y] = str.split('/').map(Number);
@@ -249,7 +394,6 @@
     }
     function excelDateToString(dateCell) {
       if (typeof dateCell === 'string') {
-        // có thể là yyyy-mm-dd hoặc dd/mm/yyyy -> normalize về dd/mm/yyyy
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateCell)) {
           const [y,m,d] = dateCell.split('-'); return `${d}/${m}/${y}`;
         }
@@ -544,14 +688,12 @@
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
 
-      // setDate bằng dd/mm/yyyy
       const dNS = displayNgay(hs.ngay_sinh) || "";
       const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
       const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
       fpSua.ngaySinh?.setDate(parseDDMMYYYY(dNS) || null, true);
       fpSua.hanBHYT?.setDate(parseDDMMYYYY(dBHYT) || null, true);
       fpSua.hanBHTN?.setDate(parseDDMMYYYY(dBHTN) || null, true);
-      // nếu không setDate được (null) thì gán chuỗi (trường hợp dữ liệu sẵn đúng dd/mm/yyyy)
       if (!parseDDMMYYYY(dNS)) document.getElementById('sua-ngay-sinh').value = dNS;
       if (!parseDDMMYYYY(dBHYT)) document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT;
       if (!parseDDMMYYYY(dBHTN)) document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN;
@@ -685,7 +827,7 @@
           };
         });
 
-        // Validate từng dòng theo nguyên lý cũ nhưng đúng cột mới
+        // Validate theo nguyên lý cũ nhưng đúng cột mới
         ds.forEach((row, idx) => {
           const err = validateImportRowNew(
             row, idx + 2,
@@ -701,7 +843,7 @@
           return;
         }
 
-        // Import lên backend (giữ nguyên hàm cũ đã chạy tốt)
+        // Import lên backend
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
@@ -806,7 +948,6 @@
       if (existedSoDinhDanhSet.has(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" đã tồn tại trên hệ thống.`;
       if (existedMaSoBHXHSet.has(row.ma_so_bhxh)) return `Dòng ${rowNum}: Mã số BHXH "${row.ma_so_bhxh}" đã tồn tại trên hệ thống.`;
 
-      // đồng bộ mã trường với user nếu cần
       if (String(row.ma_truong).trim() !== String(user.ma_truong).trim()) {
         return `Dòng ${rowNum}: Mã trường trong file (${row.ma_truong}) không khớp với tài khoản hiện tại (${user.ma_truong}).`;
       }

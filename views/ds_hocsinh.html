@@ -10,31 +10,65 @@
     .sticky-header-box { position: sticky; top: 0; z-index: 999; background: #f8f9fa; padding-bottom: 2px; }
     .header { font-size: 22px; font-weight: bold; margin-bottom: 8px; padding-bottom: 6px; background: #f8f9fa; }
     .btn-main { margin: 5px 8px 10px 0; }
-    .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002;}
-    .download-link { margin-left: 15px; color: #007bff; cursor: pointer;}
+    .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002; }
+    .download-link { margin-left: 15px; color: #007bff; cursor: pointer; }
     .table-responsive { overflow-x: auto; }
     .search-row { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 10px; gap: 12px;
       position: sticky; top: 52px; z-index: 998; background: #f8f9fa; padding-bottom: 6px; }
-    .search-input { flex: 1; min-width: 180px;}
-    .total-count { font-size: 1rem; font-weight: 400; color: #444;}
+    .search-input { flex: 1; min-width: 180px; }
+    .total-count { font-size: 1rem; font-weight: 400; color: #444; }
     th.sortable { cursor: pointer; user-select: none; }
     .sort-icon { font-size: 15px; vertical-align: middle; margin-left: 3px; }
     .th-action { min-width: 90px; }
 
-    /* Form layout gọn gàng: 2 cột trên md, 1 cột trên mobile */
-    .form-grid .form-label { font-weight: 500; margin-bottom: 4px; }
-    .form-grid .col { margin-bottom: 10px; }
-    .row-compact { row-gap: 8px; }
-    .modal-body { padding-top: 12px; }
-    .section-title { font-size: 14px; font-weight: 600; color: #333; margin-top: 2px; margin-bottom: 6px; }
+    /* ====== Compact modal forms for mobile ====== */
+    .modal-body { padding-top: 10px; }
+    .section-title { font-size: 13px; font-weight: 600; color: #333; margin: 4px 0 6px; }
+
+    /* Grid giúp 2 cột ngay cả trên mobile ≥360px */
+    .ggrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px 10px;
+      align-items: start;
+    }
+    .gitem .form-label { font-size: 12px; margin-bottom: 4px; color: #333; }
+    .gitem .form-control { padding: 6px 10px; height: 38px; }
+    .gitem .form-check-label { font-size: 13px; }
+    .gitem .form-check-input { transform: scale(0.95); }
+
+    /* Hàng nhóm radio giữ chiều cao thấp */
+    .gitem-radio {
+      padding-top: 2px;
+      display: flex; gap: 16px; align-items: center;
+    }
+
+    /* Modal body có chiều cao tối đa + cuộn mượt để footer luôn hiện */
+    .modal-content {
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+    }
+    .modal-body {
+      overflow: auto;
+    }
+    .modal-footer {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      z-index: 2;
+      border-top: 1px solid #eee;
+    }
 
     @media (max-width: 600px) {
+      body { padding: 12px; }
       .header { font-size: 18px; }
-      .search-row { flex-direction: column; align-items: stretch; }
+      .search-row { flex-direction: column; align-items: stretch; gap: 8px; }
       .btn-main { width: 100%; }
       .th-action { min-width: 70px; }
       .action-btns { display: flex; flex-direction: column; gap: 6px; }
       .action-btns .btn { width: 100%; }
+      /* Giảm thêm chiều cao input cho mobile */
+      .gitem .form-control { height: 36px; padding: 6px 10px; }
     }
     @media (min-width: 601px) and (max-width: 999px) {
       .header { font-size: 20px; }
@@ -57,7 +91,7 @@
     .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
   </style>
 
-  <!-- Flatpickr (ổn định, không xoá giá trị input khác khi focus) -->
+  <!-- Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
@@ -86,25 +120,23 @@
       </div>
       <div class="modal-body">
         <form id="form-themhs" onsubmit="event.preventDefault();handleThemHS();" class="form-grid">
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+          <div class="ggrid">
+            <div class="gitem">
               <label class="form-label" for="inp-ma-so-bhxh">Mã số BHXH</label>
               <input class="form-control" id="inp-ma-so-bhxh" placeholder="Mã số BHXH"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-ho-ten-hs">Họ tên học sinh</label>
               <input class="form-control" id="inp-ho-ten-hs" placeholder="Họ tên học sinh"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="inp-ngay-sinh">Ngày sinh</label>
               <input class="form-control" id="inp-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">Giới tính</label>
-              <div class="d-flex gap-3 pt-2">
+            <div class="gitem">
+              <label class="form-label d-block">Giới tính</label>
+              <div class="gitem-radio">
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="gioi_tinh" id="gt-nam" value="Nam" checked>
                   <label class="form-check-label" for="gt-nam">Nam</label>
@@ -115,56 +147,47 @@
                 </div>
               </div>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="inp-lop">Lớp</label>
               <input class="form-control" id="inp-lop" placeholder="Lớp" disabled/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-dia-chi">Địa chỉ</label>
               <input class="form-control" id="inp-dia-chi" placeholder="Địa chỉ"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-sdt-lienhe">Số ĐT liên hệ</label>
               <input class="form-control" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-so-dinh-danh">Số định danh</label>
               <input class="form-control" id="inp-so-dinh-danh" placeholder="Số định danh"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-ten-cha-me">Tên cha/mẹ học sinh</label>
               <input class="form-control" id="inp-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
             </div>
-          </div>
 
-          <div class="section-title">Hạn sử dụng thẻ</div>
-          <div class="row row-compact">
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="inp-ngay-het-han-bhyt">Hạn BHYT</label>
               <input class="form-control" id="inp-ngay-het-han-bhyt" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="inp-ngay-het-han-bhtn">Hạn BHTN</label>
               <input class="form-control" id="inp-ngay-het-han-bhtn" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="inp-noi-kham-bhyt">Nơi khám BHYT</label>
               <input class="form-control" id="inp-noi-kham-bhyt" placeholder="Nhập nơi khám BHYT" list="noiKhamList"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-doi-tuong-dong">Đối tượng đóng (tùy chọn)</label>
-              <input class="form-control" id="inp-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ... " list="doiTuongList"/>
+              <input class="form-control" id="inp-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ..." list="doiTuongList"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="inp-ghi-chu">Ghi chú (tùy chọn)</label>
               <input class="form-control" id="inp-ghi-chu" placeholder="Ghi chú (nếu có)"/>
             </div>
@@ -189,25 +212,23 @@
         <form id="form-suahs" onsubmit="event.preventDefault();handleSuaHS();" class="form-grid">
           <input type="hidden" id="sua-stt"/>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+          <div class="ggrid">
+            <div class="gitem">
               <label class="form-label" for="sua-ma-so-bhxh">Mã số BHXH</label>
               <input class="form-control" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-ho-ten-hs">Họ tên học sinh</label>
               <input class="form-control" id="sua-ho-ten-hs" placeholder="Họ tên học sinh"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="sua-ngay-sinh">Ngày sinh</label>
               <input class="form-control" id="sua-ngay-sinh" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">Giới tính</label>
-              <div class="d-flex gap-3 pt-2">
+            <div class="gitem">
+              <label class="form-label d-block">Giới tính</label>
+              <div class="gitem-radio">
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="sua_gioi_tinh" id="sua-gt-nam" value="Nam">
                   <label class="form-check-label" for="sua-gt-nam">Nam</label>
@@ -218,56 +239,47 @@
                 </div>
               </div>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="sua-lop">Lớp</label>
               <input class="form-control" id="sua-lop" placeholder="Lớp" disabled/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-dia-chi">Địa chỉ</label>
               <input class="form-control" id="sua-dia-chi" placeholder="Địa chỉ"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-sdt-lienhe">Số ĐT liên hệ</label>
               <input class="form-control" id="sua-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-so-dinh-danh">Số định danh</label>
               <input class="form-control" id="sua-so-dinh-danh" placeholder="Số định danh"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-ten-cha-me">Tên cha/mẹ học sinh</label>
               <input class="form-control" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
             </div>
-          </div>
 
-          <div class="section-title">Hạn sử dụng thẻ</div>
-          <div class="row row-compact">
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="sua-ngay-het-han-bhyt">Hạn BHYT</label>
               <input class="form-control" id="sua-ngay-het-han-bhyt" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="sua-ngay-het-han-bhtn">Hạn BHTN</label>
               <input class="form-control" id="sua-ngay-het-han-bhtn" type="text" placeholder="dd/mm/yyyy" autocomplete="off"/>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="gitem">
               <label class="form-label" for="sua-noi-kham-bhyt">Nơi khám BHYT</label>
               <input class="form-control" id="sua-noi-kham-bhyt" placeholder="Nhập nơi khám BHYT" list="noiKhamList"/>
             </div>
-          </div>
 
-          <div class="row row-compact">
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-doi-tuong-dong">Đối tượng đóng (tùy chọn)</label>
-              <input class="form-control" id="sua-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ... " list="doiTuongList"/>
+              <input class="form-control" id="sua-doi-tuong-dong" placeholder="Học sinh / Cận nghèo / ..." list="doiTuongList"/>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="gitem">
               <label class="form-label" for="sua-ghi-chu">Ghi chú (tùy chọn)</label>
               <input class="form-control" id="sua-ghi-chu" placeholder="Ghi chú (nếu có)"/>
             </div>
@@ -282,9 +294,8 @@
     </div></div>
   </div>
 
-  <!-- Datalist gợi ý Nơi khám & Đối tượng -->
+  <!-- Datalist gợi ý -->
   <datalist id="noiKhamList">
-    <!-- Ưu tiên các cơ sở tại tỉnh An Giang -->
     <option value="Bệnh viện Đa khoa Trung tâm An Giang">
     <option value="Bệnh viện Sản Nhi An Giang">
     <option value="Bệnh viện Đa khoa khu vực Châu Đốc">
@@ -603,12 +614,7 @@
       document.getElementById('themhs-error').innerText = "";
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
-
-      // clear giá trị datepicker
-      fpThem.ngaySinh?.clear();
-      fpThem.hanBHYT?.clear();
-      fpThem.hanBHTN?.clear();
-
+      fpThem.ngaySinh?.clear(); fpThem.hanBHYT?.clear(); fpThem.hanBHTN?.clear();
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
 
@@ -621,7 +627,7 @@
     // Xử lý thêm mới học sinh
     async function handleThemHS() {
       let hoTen = document.getElementById('inp-ho-ten-hs').value.trim();
-      let ngaySinh = readDateStr('#inp-ngay-sinh');        // dd/mm/yyyy
+      let ngaySinh = readDateStr('#inp-ngay-sinh');
       let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
       let diaChi = document.getElementById('inp-dia-chi').value.trim();
       let lop_hoc = user.lop_hoc || "";
@@ -799,7 +805,7 @@
         const existedMaSoBHXHSet = makeSetByField(allData, "ma_so_bhxh");
 
         let errors = [];
-        // THỨ TỰ CỘT MỚI:
+        // Thứ tự cột mới:
         // 0 stt (bỏ), 1 ma_so_bhxh, 2 ho_ten_hoc_sinh, 3 ngay_sinh, 4 gioi_tinh,
         // 5 dia_chi, 6 ngay_het_han_bhyt, 7 ngay_het_han_bhtn, 8 lop_hoc,
         // 9 sdt_lienhe, 10 so_dinh_danh, 11 noi_kham_bhyt, 12 ten_cha_me,
@@ -827,7 +833,6 @@
           };
         });
 
-        // Validate theo nguyên lý cũ nhưng đúng cột mới
         ds.forEach((row, idx) => {
           const err = validateImportRowNew(
             row, idx + 2,
@@ -843,7 +848,6 @@
           return;
         }
 
-        // Import lên backend
         const res = await importDanhSachHocsinh(ds);
         hideLoading();
         if (res.success) {
@@ -911,7 +915,6 @@
       soDinhDanhSet, maSoBHXHSet,
       existedSoDinhDanhSet, existedMaSoBHXHSet
     ) {
-      // Các trường bắt buộc (trừ doi_tuong_dong, ghi_chu)
       const required = [
         { key: 'ma_so_bhxh', label: "Mã số BHXH" },
         { key: 'ho_ten_hoc_sinh', label: "Họ tên học sinh" },
@@ -932,7 +935,6 @@
           return `Dòng ${rowNum}: Trường "${f.label}" không được để trống.`;
         }
       }
-      // 3 ngày đều dd/mm/yyyy
       if (!isValidDateVN(row.ngay_sinh)) return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không đúng định dạng dd/mm/yyyy.`;
       if (!isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không đúng định dạng dd/mm/yyyy.`;
       if (!isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không đúng định dạng dd/mm/yyyy.`;
@@ -954,8 +956,7 @@
       return null;
     }
 
-    // các util cũ giữ nguyên
-    function validateImportRow(){ /* không dùng nữa, giữ lại để không phá cấu trúc cũ */ }
+    function validateImportRow(){ /* giữ lại để không phá cấu trúc cũ */ }
     function isValidPhoneNumber(phone) { return /^0\d{9}$/.test(phone.trim()); }
     function isValidSoDinhDanh(s) { return /^\d{12}$/.test(s.trim()); }
     function makeSetByField(arr, field) {
