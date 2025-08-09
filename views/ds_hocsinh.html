@@ -122,6 +122,13 @@
           <input class="form-control mb-2" id="inp-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
           <input class="form-control mb-2" id="inp-so-dinh-danh" placeholder="Số định danh"/>
           <input class="form-control mb-2" id="inp-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+
+          <input class="form-control mb-2" id="inp-ngay-het-han-bhyt" type="text" placeholder="Hạn BHYT (dd/mm/yyyy)" autocomplete="off"/>
+          <input class="form-control mb-2" id="inp-ngay-het-han-bhtn" type="text" placeholder="Hạn BHTN (dd/mm/yyyy)" autocomplete="off"/>
+          <input class="form-control mb-2" id="inp-noi-kham-bhyt" placeholder="Nơi khám BHYT"/>
+          <input class="form-control mb-2" id="inp-doi-tuong-dong" placeholder="Đối tượng đóng (tùy chọn)"/>
+          <input class="form-control mb-2" id="inp-ghi-chu" placeholder="Ghi chú (tùy chọn)"/>
+
         </form>
         <div id="themhs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
@@ -161,6 +168,14 @@
           <input class="form-control mb-2" id="sua-sdt-lienhe" placeholder="Số ĐT liên hệ"/>
           <input class="form-control mb-2" id="sua-so-dinh-danh" placeholder="Số định danh"/>
           <input class="form-control mb-2" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
+
+
+          <input class="form-control mb-2" id="sua-ngay-het-han-bhyt" type="text" placeholder="Hạn BHYT (dd/mm/yyyy)" autocomplete="off"/>
+          <input class="form-control mb-2" id="sua-ngay-het-han-bhtn" type="text" placeholder="Hạn BHTN (dd/mm/yyyy)" autocomplete="off"/>
+          <input class="form-control mb-2" id="sua-noi-kham-bhyt" placeholder="Nơi khám BHYT"/>
+          <input class="form-control mb-2" id="sua-doi-tuong-dong" placeholder="Đối tượng đóng (tùy chọn)"/>
+          <input class="form-control mb-2" id="sua-ghi-chu" placeholder="Ghi chú (tùy chọn)"/>
+
         </form>
         <div id="suahs-error" class="text-danger" style="min-height:20px;"></div>
       </div>
@@ -388,7 +403,7 @@
     async function fetchAllHocsinhOnce() {
       detectPageSize();
       showLoading();
-      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop_hoc=${encodeURIComponent(user.lop_hoc)}`;
       let res = await fetch(url);
       let data = await res.json();
       hideLoading();
@@ -499,33 +514,37 @@
 
     // Xử lý thêm mới học sinh
     async function handleThemHS() {
-      // Lấy giá trị input
       let hoTen = document.getElementById('inp-ho-ten-hs').value.trim();
       let ngaySinh = document.getElementById('inp-ngay-sinh').value.trim();
       let gioiTinh = document.querySelector('input[name="gioi_tinh"]:checked')?.value || "";
       let diaChi = document.getElementById('inp-dia-chi').value.trim();
-      let lop = user.lop_hoc || "";
+      let lop_hoc = user.lop_hoc || "";
       let sdtLienHe = document.getElementById('inp-sdt-lienhe').value.trim();
       let soDinhDanh = document.getElementById('inp-so-dinh-danh').value.trim();
       let tenChaMe = document.getElementById('inp-ten-cha-me').value.trim();
       let maSoBHXH = document.getElementById('inp-ma-so-bhxh').value.trim();
 
-      // --- Kiểm tra không trống ---
-      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH) {
-        showError('themhs-error', "Vui lòng nhập đầy đủ tất cả các trường!");
+      // MỚI:
+      let ngayHetHanBHYT = document.getElementById('inp-ngay-het-han-bhyt').value.trim();
+      let ngayHetHanBHTN = document.getElementById('inp-ngay-het-han-bhtn').value.trim();
+      let noiKhamBHYT    = document.getElementById('inp-noi-kham-bhyt').value.trim();
+      let doiTuongDong   = (document.getElementById('inp-doi-tuong-dong').value || "").trim();
+      let ghiChu         = (document.getElementById('inp-ghi-chu').value || "").trim();
+
+      // --- Kiểm tra không trống: TẤT CẢ TRỪ 2 TRƯỜNG OPTIONAL ---
+      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop_hoc || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH
+          || !ngayHetHanBHYT || !ngayHetHanBHTN || !noiKhamBHYT) {
+        showError('themhs-error', "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!");
         return;
       }
-      // --- Kiểm tra ngày sinh ---
-      if (!isValidDateVN(ngaySinh)) {
-        showError('themhs-error', "Ngày sinh không hợp lệ! Định dạng dd/mm/yyyy.");
+      if (!isValidDateVN(ngaySinh) || !isValidDateVN(ngayHetHanBHYT) || !isValidDateVN(ngayHetHanBHTN)) {
+        showError('themhs-error', "Ngày không hợp lệ! Định dạng dd/mm/yyyy.");
         return;
       }
-      // --- Kiểm tra SĐT liên hệ ---
       if (!/^0\d{9}$/.test(sdtLienHe)) {
         showError('themhs-error', "Số điện thoại không hợp lệ!");
         return;
       }
-      // --- Kiểm tra số định danh ---
       if (!/^\d{12}$/.test(soDinhDanh)) {
         showError('themhs-error', "Số định danh phải gồm 12 số!");
         return;
@@ -538,10 +557,15 @@
         ngay_sinh: ngaySinh,
         gioi_tinh: gioiTinh,
         dia_chi: diaChi,
-        lop: lop,
+        ngay_het_han_bhyt: ngayHetHanBHYT,
+        ngay_het_han_bhtn: ngayHetHanBHTN,
+        lop_hoc: lop_hoc,
         sdt_lienhe: sdtLienHe,
         so_dinh_danh: soDinhDanh,
+        noi_kham_bhyt: noiKhamBHYT,
         ten_cha_me: tenChaMe,
+        doi_tuong_dong: doiTuongDong || "null",
+        ghi_chu: ghiChu || "null",
         ma_truong: user.ma_truong
       };
       const res = await themHocsinh(hs);
@@ -554,6 +578,7 @@
         showError('themhs-error', res.message || "Lỗi thêm học sinh!");
       }
     }
+
 
 
 
@@ -578,6 +603,14 @@
       document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
       document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
+
+      document.getElementById('sua-ngay-het-han-bhyt').value = displayNgaySinh(hs.ngay_het_han_bhyt) || "";
+      document.getElementById('sua-ngay-het-han-bhtn').value = displayNgaySinh(hs.ngay_het_han_bhtn) || "";
+      document.getElementById('sua-noi-kham-bhyt').value    = hs.noi_kham_bhyt || "";
+      document.getElementById('sua-doi-tuong-dong').value   = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
+      document.getElementById('sua-ghi-chu').value          = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
+
+
       new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
     }
 
@@ -621,12 +654,18 @@
         ngay_sinh: ngaySinh,
         gioi_tinh: gioiTinh,
         dia_chi: diaChi,
-        lop: lop,
+        ngay_het_han_bhyt: document.getElementById('sua-ngay-het-han-bhyt').value.trim(),
+        ngay_het_han_bhtn: document.getElementById('sua-ngay-het-han-bhtn').value.trim(),
+        lop_hoc: document.getElementById('sua-lop').value.trim(),
         sdt_lienhe: sdtLienHe,
         so_dinh_danh: soDinhDanh,
+        noi_kham_bhyt: document.getElementById('sua-noi-kham-bhyt').value.trim(),
         ten_cha_me: tenChaMe,
+        doi_tuong_dong: (document.getElementById('sua-doi-tuong-dong').value || "null").trim() || "null",
+        ghi_chu: (document.getElementById('sua-ghi-chu').value || "null").trim() || "null",
         ma_truong: user.ma_truong
       };
+
       const res = await suaHocsinh(hs);
       hideLoading();
       if (res.success) {

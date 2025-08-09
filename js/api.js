@@ -17,23 +17,18 @@ async function forgotPassword(sdt) {
   return await res.json();
 }
 
-
-
-
-
-// API lấy toàn bộ danh sách học sinh (phục vụ cache trên client tăng tốc độ hiển thị danh sách)
-async function getAllDanhSachHocsinh(ma_truong, lop) {
-  // Nếu muốn filter phía server có thể truyền params
-  const url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop=${encodeURIComponent(lop)}`;
+// API lấy toàn bộ danh sách học sinh
+async function getAllDanhSachHocsinh(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
   const res = await fetch(url);
   return await res.json();
 }
 
 // Lấy danh sách học sinh phân trang + tìm kiếm + sort
-async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10, query = "", sortField = "", sortDir = 1) {
+async function getDanhSachHocsinhPaginated(ma_truong, lop_hoc, start = 0, limit = 10, query = "", sortField = "", sortDir = 1) {
   const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated`
     + `&ma_truong=${encodeURIComponent(ma_truong)}`
-    + `&lop=${encodeURIComponent(lop)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
     + `&start=${start}`
     + `&limit=${limit}`
     + `&query=${encodeURIComponent(query)}`
@@ -43,7 +38,6 @@ async function getDanhSachHocsinhPaginated(ma_truong, lop, start = 0, limit = 10
   return await res.json();
 }
 
-
 // Thêm học sinh đơn lẻ
 async function themHocsinh(hs) {
   const url = `${API_BASE}?func=ThemHocsinh`
@@ -52,16 +46,21 @@ async function themHocsinh(hs) {
     + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
     + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
     + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
-    + `&lop=${encodeURIComponent(hs.lop)}`
+    + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+    + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+    + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
     + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
     + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
     + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+    + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+    + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
     + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
   const res = await fetch(url);
   return await res.json();
 }
 
-// Gửi từng học sinh bằng GET (có thể dùng Promise.all nếu muốn chờ hết)
+// Import từng dòng (giữ nguyên chiến lược)
 async function importDanhSachHocsinh(listHS) {
   let okCount = 0, failCount = 0, errors = [];
   for (const hs of listHS) {
@@ -71,10 +70,15 @@ async function importDanhSachHocsinh(listHS) {
       + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
       + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
       + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
-      + `&lop=${encodeURIComponent(hs.lop)}`
+      + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+      + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+      + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
       + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
       + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+      + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
       + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+      + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+      + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
       + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
     try {
       const res = await fetch(url);
@@ -82,14 +86,12 @@ async function importDanhSachHocsinh(listHS) {
       if (json.success) okCount++;
       else { failCount++; errors.push(json.message || "Lỗi không xác định"); }
     } catch (err) {
-      failCount++;
-      errors.push(err.message);
+      failCount++; errors.push(err.message);
     }
   }
   if (failCount === 0) return { success: true, imported: okCount };
   else return { success: false, imported: okCount, errors };
 }
-
 
 // Sửa học sinh
 async function suaHocsinh(hs) {
@@ -100,10 +102,15 @@ async function suaHocsinh(hs) {
     + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
     + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
     + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
-    + `&lop=${encodeURIComponent(hs.lop)}`
+    + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+    + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+    + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
     + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
     + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
     + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+    + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+    + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
     + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
   const res = await fetch(url);
   return await res.json();
@@ -118,11 +125,14 @@ async function xoaHocsinh(id) {
 
 // Xóa nhiều học sinh
 async function xoaNhieuHocsinh(ids) {
-  // ids là mảng stt hoặc số định danh
   const url = `${API_BASE}?func=DeleteManyHocsinh&ids=${encodeURIComponent(ids.join(","))}`;
   const res = await fetch(url);
   return await res.json();
 }
+
+/* ====== BHYT: giữ nguyên các hàm phía dưới nếu đã chạy tốt ====== */
+// ... (không thay đổi phần BHYT hiện có)
+
 
 
 
