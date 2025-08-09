@@ -225,7 +225,8 @@
       showLoading();
 
       // 1. Lấy danh sách học sinh
-      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop=${encodeURIComponent(user.lop_hoc)}`;
+      // CHANGED: tham số đúng là lop_hoc (không phải lop)
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop_hoc=${encodeURIComponent(user.lop_hoc)}`; // CHANGED
       let res = await fetch(url);
       let data = await res.json();
       console.log("[fetchChuaThuHocsinh] raw data:", data);
@@ -314,7 +315,8 @@
 
     // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
     async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
-      const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+      // CHANGED: chuẩn hoá tên endpoint theo Controller (getstatus)
+      const url = `${API_BASE}?func=GetStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`; // CHANGED
       const res = await fetch(url);
       return await res.json();
     }
@@ -358,7 +360,8 @@
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
 
       // GỌI API lấy hồ sơ BHYT cũ
-      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop);
+      // CHANGED: dùng hs.lop_hoc đúng cột
+      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc); // CHANGED
       if (bhytRes && bhytRes.success && bhytRes.data) {
         document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
         ["3","6","12"].forEach(t => {
@@ -507,28 +510,35 @@
         if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
         else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+
+        // CHANGED: cột mới trong DanhSach_BHYT
         let now = new Date();
-        let ngay_dong = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
-        let ngay_het_han = `31/12/${now.getFullYear()}`;
+        let han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`; // thay cho ngay_het_han cũ
+
         let payload = {
-          ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
-          nam_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
+          // các cột DanhSach_BHYT mới
+          ma_so_bhxh: _currentHS.ma_so_bhxh || "null",
+          ho_ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
+          ngay_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
           gioi_tinh: _currentHS.gioi_tinh || "null",
-          so_thang_dong: so_thang,
-          ngay_dong, ngay_het_han,
-          doi_tuong_dong: "HS",
-          hoa_hong, so_tien,
-          lop_hoc: _currentHS.lop || "null",
-          ghi_chu: "null",
           dia_chi: _currentHS.dia_chi || "null",
+          ngay_het_han_bhyt_cu: _currentHS.ngay_het_han_bhyt || "null",
+          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi, // CHANGED
+          so_thang_dong: so_thang,
+          lop_hoc: _currentHS.lop_hoc || "null",       // CHANGED (lop -> lop_hoc)
+          sdt_lienhe: _currentHS.sdt_lienhe || "null", // CHANGED (sdt -> sdt_lienhe)
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
-          sdt: _currentHS.sdt_lienhe || "null",
-          so_bhyt: "null",
-          noi_kham: noikham,
+          noi_kham_bhyt: noikham,                      // CHANGED (noi_kham -> noi_kham_bhyt)
+          ten_cha_me: _currentHS.ten_cha_me || "null",
+          doi_tuong_dong: "HS",
+          ghi_chu: "null",
+          so_tien,
+          hoa_hong,
           trang_thai: 0,
           so_ho_so: "null",
           ma_truong: user.ma_truong || "null"
         };
+
         let res = await nopHoSoBHYTApi(payload);
         hideLoading();
         if (res.success) {
@@ -573,10 +583,12 @@
         if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
         else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+
+        // BE map 'noi_kham' -> cột 'noi_kham_bhyt' trong Model
         let payload = {
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: user.ma_truong,
-          lop_hoc: _currentHS_Sua.lop,
+          lop_hoc: _currentHS_Sua.lop_hoc,  // CHANGED (lop -> lop_hoc)
           noi_kham: noikham,
           so_thang_dong: so_thang,
           hoa_hong,

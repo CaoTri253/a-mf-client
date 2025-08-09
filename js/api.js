@@ -139,27 +139,42 @@ async function xoaNhieuHocsinh(ids) {
 
 
 
-// Kiểm tra trạng thái hồ sơ BHYT học sinh
-async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
-  const url = `${API_BASE}?func=GetBHYTStatusByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+// Trạng thái BHYT theo HS
+async function getBHYTStatus(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
   const res = await fetch(url);
   return await res.json();
 }
 
-// Nộp hồ sơ BHYT (POST)
+// (Tùy nơi gọi) nộp hồ sơ qua GET param
+async function nopHoSoBHYT(payload) {
+  const params = Object.entries(payload).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=NopHoSoBHYT&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Sửa hồ sơ qua GET param
+async function suaHoSoBHYT(payload) {
+  const params = Object.entries(payload).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=SuaHoSoBHYT&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy hồ sơ BHYT theo HS
+async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// (Giữ lại) Hàm POST cũ — backend chưa implement; chỉ dùng nếu bạn bổ sung route POST tương ứng
 async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info }) {
   const res = await fetch(`${API_BASE}?func=NopBHYTHoSo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
   });
-  return await res.json();
-}
-
-
-//lấy thông tin để hiển thị lên modal sửa hồ sơ BHYT
-async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
-  const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
-  const res = await fetch(url);
   return await res.json();
 }
