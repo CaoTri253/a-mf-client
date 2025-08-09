@@ -930,6 +930,45 @@
         clearBtn: true
       });
 
+      // >>> MỚI: Khởi tạo datepicker cho Hạn BHYT / Hạn BHTN
+      $('#inp-ngay-het-han-bhyt, #inp-ngay-het-han-bhtn, #sua-ngay-het-han-bhyt, #sua-ngay-het-han-bhtn').datepicker({
+        format: 'dd/mm/yyyy',
+        language: 'vi',
+        autoclose: true,
+        todayHighlight: true,
+        clearBtn: true
+      });
+
+      // Reset ngày sinh khi mở modal Thêm mới (ĐÃ CÓ)
+      $('#modalThemHS').on('show.bs.modal', function() {
+        $('#inp-ngay-sinh').datepicker('update', '');
+        // >>> MỚI: reset luôn 2 hạn dùng
+        $('#inp-ngay-het-han-bhyt').datepicker('update', '');
+        $('#inp-ngay-het-han-bhtn').datepicker('update', '');
+      });
+
+      // Chuyển yyyy-mm-dd -> dd/mm/yyyy khi mở modal Sửa (ĐÃ CÓ)
+      $('#modalSuaHS').on('shown.bs.modal', function () {
+        let val = $('#sua-ngay-sinh').val();
+        if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+          let [y,m,d] = val.split('-');
+          $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
+        }
+        // >>> MỚI: đảm bảo 2 hạn dùng vẫn giữ giá trị (nếu đã set từ JS)
+        let v1 = $('#sua-ngay-het-han-bhyt').val();
+        if (v1 && /^\d{4}-\d{2}-\d{2}$/.test(v1)) {
+          let [y,m,d] = v1.split('-');
+          $('#sua-ngay-het-han-bhyt').datepicker('update', `${d}/${m}/${y}`);
+        }
+        let v2 = $('#sua-ngay-het-han-bhtn').val();
+        if (v2 && /^\d{4}-\d{2}-\d{2}$/.test(v2)) {
+          let [y,m,d] = v2.split('-');
+          $('#sua-ngay-het-han-bhtn').datepicker('update', `${d}/${m}/${y}`);
+        }
+      });
+
+
+
       // Reset ngày sinh khi mở modal Thêm mới
       $('#modalThemHS').on('show.bs.modal', function() {
         $('#inp-ngay-sinh').datepicker('update', '');
