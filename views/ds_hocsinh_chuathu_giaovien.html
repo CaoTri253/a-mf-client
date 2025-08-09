@@ -111,17 +111,6 @@
             <input type="radio" name="nhs-thang" value="12" id="nhs-thang-12" style="margin-left:18px" checked> <label for="nhs-thang-12">12 tháng</label>
           </div>
         </div>
-
-        <!-- NEW: Hạn dùng cũ / mới -->
-        <div class="mb-2">
-          <label>Hạn dùng cũ:</label>
-          <input class="form-control" id="nhs-hancu" readonly>
-        </div>
-        <div class="mb-2">
-          <label>Hạn dùng mới (tự tính):</label>
-          <input class="form-control" id="nhs-hanmoi" readonly>
-        </div>
-
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
       </div>
       <div class="modal-footer">
@@ -161,17 +150,6 @@
           <input type="radio" name="shs-thang" value="12" id="shs-thang-12" style="margin-left:18px"> <label for="shs-thang-12">12 tháng</label>
         </div>
       </div>
-
-      <!-- NEW: Hạn dùng cũ / mới -->
-      <div class="mb-2">
-        <label>Hạn dùng cũ:</label>
-        <input class="form-control" id="shs-hancu" readonly>
-      </div>
-      <div class="mb-2">
-        <label>Hạn dùng mới (tự tính):</label>
-        <input class="form-control" id="shs-hanmoi" readonly>
-      </div>
-
       <div id="shs-error" class="text-danger" style="min-height:18px"></div>
     </div>
     <div class="modal-footer">
@@ -207,13 +185,13 @@
 
     function displayNgaySinh(raw) {
       if (!raw) return "";
-      if (raw.match && raw.match(/^\\d{4}-\\d{2}-\\d{2}T/)) {
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
         let d = new Date(raw);
         return d.toLocaleDateString('vi-VN');
       }
-      if (raw.match && raw.match(/^\\d{2}\\/\\d{2}\\/\\d{4}$/)) return raw;
-      if (raw.match && raw.match(/^\\d{4}-\\d{2}-\\d{2}$/)) {
-        let ymd = raw.split('-'); return ymd[2] + "/" + ymd[1] + "/" + ymd[0];
+      if (raw.match && raw.match(/^\d{2}\/\d{2}\/\d{4}$/)) return raw;
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        let [y,m,d] = raw.split('-'); return `${d}/${m}/${y}`;
       }
       return raw;
     }
@@ -236,7 +214,7 @@
 
     // Thêm hàm gọi API lấy danh sách BHYT (nếu chưa có)
     async function getAllBHYT(ma_truong, lop) {
-      const url = API_BASE + "?func=GetDanhSachBHYT&ma_truong=" + encodeURIComponent(ma_truong) + "&lop_hoc=" + encodeURIComponent(lop);
+      const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;
       const res = await fetch(url);
       return await res.json();
     }
@@ -248,7 +226,7 @@
 
       // 1. Lấy danh sách học sinh
       // CHANGED: tham số đúng là lop_hoc (không phải lop)
-      let url = API_BASE + "?func=GetAllDanhSachHocsinh&ma_truong=" + encodeURIComponent(user.ma_truong) + "&lop_hoc=" + encodeURIComponent(user.lop_hoc); // CHANGED
+      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop_hoc=${encodeURIComponent(user.lop_hoc)}`; // CHANGED
       let res = await fetch(url);
       let data = await res.json();
       console.log("[fetchChuaThuHocsinh] raw data:", data);
@@ -257,36 +235,22 @@
       let bhytRes = await getAllBHYT(user.ma_truong, user.lop_hoc);
       let dsBHYT = Array.isArray(bhytRes.data) ? bhytRes.data : [];
       let bhytMap = {};
-      dsBHYT.forEach(function(row) {
+      dsBHYT.forEach(row => {
         const key = String(row.so_dinh_danh).replace(/^'/, '').trim();
         bhytMap[key] = row.trang_thai;
       });
 
+
       // 3. Merge trạng thái BHYT vào học sinh
       if (data.success && Array.isArray(data.data)) {
-        allData = data.data.map(function(hs) {
+        allData = data.data.map(hs => {
           let trangThai = bhytMap[hs.so_dinh_danh];
           return {
-            stt: hs.stt,
-            ma_so_bhxh: hs.ma_so_bhxh,
-            ho_ten_hoc_sinh: hs.ho_ten_hoc_sinh,
-            ngay_sinh: hs.ngay_sinh,
-            gioi_tinh: hs.gioi_tinh,
-            dia_chi: hs.dia_chi,
-            ngay_het_han_bhyt: hs.ngay_het_han_bhyt,
-            ngay_het_han_bhtn: hs.ngay_het_han_bhtn,
-            lop_hoc: hs.lop_hoc,
-            sdt_lienhe: hs.sdt_lienhe,
-            so_dinh_danh: hs.so_dinh_danh,
-            noi_kham_bhyt: hs.noi_kham_bhyt,
-            ten_cha_me: hs.ten_cha_me,
-            doi_tuong_dong: hs.doi_tuong_dong,
-            ghi_chu: hs.ghi_chu,
-            ma_truong: hs.ma_truong,
-            _bhyt_trangthai: (trangThai === undefined ? undefined : Number(trangThai)),
-            trang_thai: trangThai
+            ...hs,
+            _bhyt_trangthai: trangThai === undefined ? undefined : Number(trangThai),
+            trang_thai: trangThai // để log tiện tra cứu
           };
-        }).filter(function(hs) { return hs._bhyt_trangthai !== 1; }); // Ẩn dòng đã duyệt
+        }).filter(hs => hs._bhyt_trangthai !== 1); // Ẩn dòng đã duyệt
       } else {
         allData = [];
       }
@@ -302,11 +266,11 @@
 
     function doSearch() {
       let q = document.getElementById('search-box').value.trim().toLowerCase();
-      lastFiltered = !q ? allData : allData.filter(function(hs) {
-        return (String(hs.ho_ten_hoc_sinh||"").toLowerCase().indexOf(q) >= 0) ||
-               (String(displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().indexOf(q) >= 0) ||
-               (String(hs.so_dinh_danh||"").toLowerCase().indexOf(q) >= 0);
-      });
+      lastFiltered = !q ? allData : allData.filter(hs =>
+        (hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
+        (displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q) ||
+        (hs.so_dinh_danh||"").toLowerCase().includes(q)
+      );
       currentPage = 1;
       renderAllView();
     }
@@ -319,15 +283,15 @@
       let dataToShow = lastFiltered || allData;
       // Sort
       if (sortField) {
-        dataToShow = dataToShow.slice().sort(function(a, b) {
-          let av = String(a[sortField] || "").toLowerCase(), bv = String(b[sortField] || "").toLowerCase();
+        dataToShow = [...dataToShow].sort(function(a, b) {
+          let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
           if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
           if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
         });
       }
       totalRecords = dataToShow.length;
       totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-      document.getElementById('total-hs').innerText = "(" + totalRecords + " học sinh)";
+      document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
       let start = (currentPage - 1) * pageSize;
       let ds = dataToShow.slice(start, start + pageSize);
       renderDanhSachHS(ds);
@@ -343,6 +307,7 @@
 
 
 
+
     // Gợi ý danh sách nơi khám (demo, có thể fetch từ backend sau)
     const NOIKHAM_SUGGEST = [
       "TTYT huyện Châu Phú", "BVĐK tỉnh An Giang", "TTYT huyện Châu Thành", "BV Nhi Đồng 2", "BV Nhi Đồng 1"
@@ -351,7 +316,7 @@
     // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
     async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
       // CHANGED: chuẩn hoá tên endpoint theo Controller (getstatus)
-      const url = API_BASE + "?func=GetStatus&so_dinh_danh=" + encodeURIComponent(so_dinh_danh) + "&ma_truong=" + encodeURIComponent(ma_truong) + "&lop_hoc=" + encodeURIComponent(lop_hoc); // CHANGED
+      const url = `${API_BASE}?func=GetStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`; // CHANGED
       const res = await fetch(url);
       return await res.json();
     }
@@ -359,67 +324,108 @@
     // API nộp hồ sơ BHYT
     async function nopHoSoBHYTApi(payload) {
       const params = Object.entries(payload)
-        .map(function(kv){ return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1]); }).join('&');
-      const url = API_BASE + "?func=NopHoSoBHYT&" + params;
-      const res = await fetch(url);
-      return await res.json();
-    }
-
-    // API cập nhật hồ sơ BHYT (có tính lại hạn dùng mới ở BE)
-    async function suaHoSoBHYTApi(payload) {
-      const params = Object.entries(payload)
-        .map(function(kv){ return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1]); }).join('&');
-      const url = API_BASE + "?func=SuaHoSoBHYT&" + params;
+        .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+      const url = `${API_BASE}?func=NopHoSoBHYT&${params}`;
       const res = await fetch(url);
       return await res.json();
     }
 
     // API lấy phí và hoa hồng BHYT
     async function getGiaBHYT() {
-      const url = API_BASE + "?func=GetGiaBHYT";
+      const url = `${API_BASE}?func=GetGiaBHYT`;
       const res = await fetch(url);
       return await res.json();
     }
 
-    // API lấy hồ sơ BHYT theo HS (để prefill form sửa)
-    async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
-      const url = API_BASE + "?func=GetHosoBHYTByHS&so_dinh_danh=" + encodeURIComponent(so_dinh_danh) + "&ma_truong=" + encodeURIComponent(ma_truong) + "&lop_hoc=" + encodeURIComponent(lop_hoc);
+
+
+
+
+
+
+    // Biến toàn cục để lưu học sinh đang sửa
+    // Sửa hồ sơ BHYT
+    async function suaHoSo(stt) {
+      // Tìm học sinh chưa thu có stt này
+      const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
+      if (!hs || hs._bhyt_trangthai !== 0) {
+        showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
+      }
+      _currentHS_Sua = hs;
+      document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
+      document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+      document.getElementById('shs-error').innerText = "";
+      // Gợi ý nơi khám
+      let datalist = document.getElementById('noikham-list');
+      datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
+
+      // GỌI API lấy hồ sơ BHYT cũ
+      // CHANGED: dùng hs.lop_hoc đúng cột
+      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc); // CHANGED
+      if (bhytRes && bhytRes.success && bhytRes.data) {
+        document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
+        ["3","6","12"].forEach(t => {
+          document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
+        });
+        // Bạn cũng có thể show hoa_hong, so_tien nếu muốn
+      } else {
+        // Nếu không có dữ liệu thì clear
+        document.getElementById('shs-noikham').value = "";
+        ["3","6","12"].forEach(t => {
+          document.getElementById('shs-thang-' + t).checked = false;
+        });
+      }
+      new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
+    }
+
+
+
+    // API cập nhật hồ sơ BHYT (cần thêm trên backend)
+    async function suaHoSoBHYTApi(payload) {
+      const params = Object.entries(payload)
+        .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+      const url = `${API_BASE}?func=SuaHoSoBHYT&${params}`;
       const res = await fetch(url);
       return await res.json();
     }
+
+
+
+
 
 
     // Render danh sách học sinh chưa thu
     function renderDanhSachHS(ds) {
       if (!ds || ds.length === 0) {
-        document.getElementById('ds-container').innerHTML = "<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>";
+        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
         return;
       }
       console.log("[renderDanhSachHS] render list:", ds);
-      var html = "<table class=\"table table-bordered table-hs align-middle\"><thead>"
-        + "<tr>"
-        + "<th class=\"th-action\">Thao tác</th>"
-        + "<th class=\"sortable\" onclick=\"doSort('ho_ten_hoc_sinh')\">Họ tên học sinh" + sortIcon('ho_ten_hoc_sinh') + "</th>"
-        + "<th class=\"sortable\" onclick=\"doSort('ngay_sinh')\">Ngày sinh" + sortIcon('ngay_sinh') + "</th>"
-        + "<th class=\"sortable\" onclick=\"doSort('so_dinh_danh')\">Số định danh cá nhân" + sortIcon('so_dinh_danh') + "</th>"
-        + "</tr></thead><tbody>";
-      ds.forEach(function(hs) {
-        console.log("[renderDanhSachHS] Học sinh:", hs.ho_ten_hoc_sinh, "| _bhyt_trangthai:", hs._bhyt_trangthai, "| trang_thai:", hs.trang_thai);
+      let html = `<table class="table table-bordered table-hs align-middle"><thead>
+        <tr>
+          <th class="th-action">Thao tác</th>
+          <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
+          <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
+        </tr></thead><tbody>`;
+      ds.forEach((hs, i) => {
+        // Log trạng thái từng học sinh
+        console.log(`[renderDanhSachHS] Học sinh: ${hs.ho_ten_hoc_sinh} | _bhyt_trangthai:`, hs._bhyt_trangthai, "| trang_thai:", hs.trang_thai);
         if (hs._bhyt_trangthai === 1) return;
-        html += "<tr>"
-          + "<td>"
-            + "<div class=\"action-btns\">"
-              + "<button class=\"btn btn-success btn-sm\" onclick=\"showNopHoSoModal('" + hs.stt + "')\" " + (hs._bhyt_trangthai===0?'disabled':'') + ">"
-                + (hs._bhyt_trangthai===0 ? "Chờ duyệt" : "Nộp hồ sơ")
-              + "</button>"
-              + "<button class=\"btn btn-warning btn-sm\" onclick=\"suaHoSo('" + hs.stt + "')\">Sửa hồ sơ</button>"
-              + "<button class=\"btn btn-primary btn-sm\" onclick=\"inPhieuThu('" + hs.stt + "')\">In phiếu thu</button>"
-            + "</div>"
-          + "</td>"
-          + "<td>" + (hs.ho_ten_hoc_sinh||"") + "</td>"
-          + "<td>" + displayNgaySinh(hs.ngay_sinh) + "</td>"
-          + "<td>" + (hs.so_dinh_danh||"") + "</td>"
-        + "</tr>";
+        html += `<tr>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${hs._bhyt_trangthai===0?'disabled':''}>
+                ${hs._bhyt_trangthai===0 ? "Chờ duyệt" : "Nộp hồ sơ"}
+              </button>
+              <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
+              <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+            </div>
+          </td>
+          <td>${hs.ho_ten_hoc_sinh||""}</td>
+          <td>${displayNgaySinh(hs.ngay_sinh)}</td>
+          <td>${hs.so_dinh_danh||""}</td>
+        </tr>`;
       });
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
@@ -437,16 +443,16 @@
       const pagin = document.getElementById('pagination');
       pagin.innerHTML = '';
       if (totalPages <= 1) return;
-      pagin.innerHTML += "<li class=\"page-item" + (currentPage===1?' disabled':'') + "\"><a class=\"page-link\" href=\"#\" onclick=\"gotoPage(" + (currentPage-1) + ");return false;\">Trước</a></li>";
+      pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
       let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
-      if (minP > 1) pagin.innerHTML += "<li class=\"page-item\"><a class=\"page-link\" href=\"#\" onclick=\"gotoPage(1);return false;\">1</a></li>";
-      if (minP > 2) pagin.innerHTML += "<li class=\"page-item disabled\"><span class=\"page-link\">...</span></li>";
+      if (minP > 1) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
+      if (minP > 2) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
       for (let p = minP; p <= maxP; p++) {
-        pagin.innerHTML += "<li class=\"page-item" + (p===currentPage?' active':'') + "\"><a class=\"page-link\" href=\"#\" onclick=\"gotoPage(" + p + ");return false;\">" + p + "</a></li>";
+        pagin.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`;
       }
-      if (maxP < totalPages-1) pagin.innerHTML += "<li class=\"page-item disabled\"><span class=\"page-link\">...</span></li>";
-      if (maxP < totalPages) pagin.innerHTML += "<li class=\"page-item\"><a class=\"page-link\" href=\"#\" onclick=\"gotoPage(" + totalPages + ");return false;\">" + totalPages + "</a></li>";
-      pagin.innerHTML += "<li class=\"page-item" + (currentPage===totalPages?' disabled':'') + "\"><a class=\"page-link\" href=\"#\" onclick=\"gotoPage(" + (currentPage+1) + ");return false;\">Sau</a></li>";
+      if (maxP < totalPages-1) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      if (maxP < totalPages) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
+      pagin.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
     }
     window.gotoPage = function(p) {
       if (p<1||p>totalPages||p===currentPage) return;
@@ -461,79 +467,22 @@
 
 
 
+
+
+
     let _currentHS = null;
-    let _currentHS_Sua = null;
-    let _nhs_han_cu_cache = ""; // để tính nhanh hạn mới
-    let _shs_han_cu_cache = "";
-
-    function addMonthsPreserve(dom, months) {
-      // Thêm tháng tính theo dd/mm/yyyy, trả về dd/mm/yyyy
-      if (!dom) return "";
-      var parts = dom.split("/");
-      if (parts.length !== 3) return "";
-      var d = parseInt(parts[0],10), m = parseInt(parts[1],10), y = parseInt(parts[2],10);
-      if (isNaN(d)||isNaN(m)||isNaN(y)) return "";
-      var base = new Date(y, m-1, d);
-      var targetMonth = base.getMonth() + months;
-      var targetYear = base.getFullYear() + Math.floor(targetMonth / 12);
-      targetMonth = targetMonth % 12;
-      if (targetMonth < 0) { targetMonth += 12; targetYear -= 1; }
-
-      // ngày cuối tháng mới
-      var lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
-      var day = Math.min(d, lastDay);
-      var out = new Date(targetYear, targetMonth, day);
-      var dd = String(out.getDate()).padStart(2,'0');
-      var mm = String(out.getMonth()+1).padStart(2,'0');
-      var yyyy = out.getFullYear();
-      return dd + "/" + mm + "/" + yyyy;
-    }
-
-    function attachNopRadioEvents() {
-      var radios = document.querySelectorAll('input[name="nhs-thang"]');
-      radios.forEach(function(r){
-        r.onchange = function(){
-          var months = parseInt(document.querySelector('input[name="nhs-thang"]:checked').value, 10);
-          var hanMoi = addMonthsPreserve(_nhs_han_cu_cache, months);
-          document.getElementById('nhs-hanmoi').value = hanMoi || "";
-        };
-      });
-    }
-    function attachSuaRadioEvents() {
-      var radios = document.querySelectorAll('input[name="shs-thang"]');
-      radios.forEach(function(r){
-        r.onchange = function(){
-          var months = parseInt(document.querySelector('input[name="shs-thang"]:checked').value, 10);
-          var hanMoi = addMonthsPreserve(_shs_han_cu_cache, months);
-          document.getElementById('shs-hanmoi').value = hanMoi || "";
-        };
-      });
-    }
 
     function showNopHoSoModal(stt) {
-      const hs = (lastFiltered || allData).find(function(h){ return String(h.stt) === String(stt); });
+      const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs) return;
       _currentHS = hs;
-
       document.getElementById('nhs-hoten').value = hs.ho_ten_hoc_sinh || "";
       document.getElementById('nhs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
-      document.getElementById('nhs-noikham').value = hs.noi_kham_bhyt || ""; // auto fill từ DS_HS
+      document.getElementById('nhs-noikham').value = "";
       document.getElementById('nhs-error').innerText = "";
-
       // Gợi ý nơi khám
       let datalist = document.getElementById('noikham-list');
-      datalist.innerHTML = NOIKHAM_SUGGEST.map(function(item){ return "<option value=\"" + item + "\">"; }).join('');
-
-      // Hạn cũ
-      _nhs_han_cu_cache = hs.ngay_het_han_bhyt ? displayNgaySinh(hs.ngay_het_han_bhyt) : "";
-      document.getElementById('nhs-hancu').value = _nhs_han_cu_cache || "";
-      // Mặc định 12 tháng
-      document.getElementById('nhs-thang-12').checked = true;
-      var hanMoi = addMonthsPreserve(_nhs_han_cu_cache, 12);
-      document.getElementById('nhs-hanmoi').value = hanMoi || "";
-
-      attachNopRadioEvents();
-
+      datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
       new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
     }
 
@@ -546,7 +495,7 @@
 
     async function submitNopHoSoBHYT() {
       if (!_currentHS) return;
-      let noikham = (document.getElementById('nhs-noikham').value.trim()) || _currentHS.noi_kham_bhyt || "";
+      let noikham = _currentHS.noi_kham_bhyt || document.getElementById('nhs-noikham').value.trim();
       let so_thang = document.querySelector('input[name="nhs-thang"]:checked').value;
       if (!noikham) {
         document.getElementById('nhs-error').innerText = "Vui lòng nhập nơi khám!";
@@ -555,15 +504,16 @@
       showLoading();
       try {
         let giaRes = await getGiaBHYT();
-        let gia = giaRes && giaRes.data && giaRes.data[0] ? giaRes.data[0] : null;
-        let so_tien = gia ? (parseInt(gia.gia_tien,10) * parseInt(so_thang,10)) : 0;
+        let gia = giaRes?.data?.[0];
+        let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
-        if (parseInt(so_thang,10) === 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
-        else if (parseInt(so_thang,10) === 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
-        else if (parseInt(so_thang,10) === 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
+        else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // TÍNH HẠN MỚI THEO HẠN CŨ + THÁNG
-        let han_su_dung_bhyt_moi = document.getElementById('nhs-hanmoi').value || "";
+        // CHANGED: cột mới trong DanhSach_BHYT
+        let now = new Date();
+        let han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`; // thay cho ngay_het_han cũ
 
         let payload = {
           // các cột DanhSach_BHYT mới
@@ -572,18 +522,18 @@
           ngay_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
           gioi_tinh: _currentHS.gioi_tinh || "null",
           dia_chi: _currentHS.dia_chi || "null",
-          ngay_het_han_bhyt_cu: _nhs_han_cu_cache || "null",
-          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi || "null",
+          ngay_het_han_bhyt_cu: _currentHS.ngay_het_han_bhyt || "null",
+          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi, // CHANGED
           so_thang_dong: so_thang,
-          lop_hoc: _currentHS.lop_hoc || "null",
-          sdt_lienhe: _currentHS.sdt_lienhe || "null",
+          lop_hoc: _currentHS.lop_hoc || "null",       // CHANGED (lop -> lop_hoc)
+          sdt_lienhe: _currentHS.sdt_lienhe || "null", // CHANGED (sdt -> sdt_lienhe)
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
-          noi_kham_bhyt: noikham,
+          noi_kham_bhyt: noikham,                      // CHANGED (noi_kham -> noi_kham_bhyt)
           ten_cha_me: _currentHS.ten_cha_me || "null",
           doi_tuong_dong: "HS",
-          ghi_chu: _currentHS.ghi_chu || "null",
-          so_tien: so_tien,
-          hoa_hong: hoa_hong,
+          ghi_chu: "null",
+          so_tien,
+          hoa_hong,
           trang_thai: 0,
           so_ho_so: "null",
           ma_truong: user.ma_truong || "null"
@@ -596,6 +546,7 @@
           let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
           modal.hide();
           showToast("Nộp hồ sơ thành công!");
+          console.log("[submitNopHoSoBHYT] Nộp thành công, reload danh sách...");
           await fetchChuaThuHocsinh(); // Gọi lại để render lại nút thành "Chờ duyệt"
         } else {
           document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
@@ -610,58 +561,8 @@
 
 
 
-    // Sửa hồ sơ BHYT
-    async function suaHoSo(stt) {
-      const hs = (lastFiltered || allData).find(function(h){ return String(h.stt) === String(stt); });
-      if (!hs || hs._bhyt_trangthai !== 0) {
-        showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
-      }
-      _currentHS_Sua = hs;
-      document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
-      document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
-      document.getElementById('shs-error').innerText = "";
-      // Gợi ý nơi khám
-      let datalist = document.getElementById('noikham-list');
-      datalist.innerHTML = NOIKHAM_SUGGEST.map(function(item){ return "<option value=\"" + item + "\">"; }).join('');
 
-      // GỌI API lấy hồ sơ BHYT cũ
-      // CHANGED: dùng hs.lop_hoc đúng cột
-      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc); // CHANGED
 
-      // Hạn cũ lấy ưu tiên từ BHYT row, fallback DS_HS
-      let han_cu = "";
-      let so_thang_old = "";
-      if (bhytRes && bhytRes.success && bhytRes.data) {
-        document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || (hs.noi_kham_bhyt || "");
-        han_cu = (bhytRes.data.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || "");
-        so_thang_old = String(bhytRes.data.so_thang_dong || "");
-        ["3","6","12"].forEach(function(t){
-          document.getElementById('shs-thang-' + t).checked = (so_thang_old === t);
-        });
-      } else {
-        document.getElementById('shs-noikham').value = hs.noi_kham_bhyt || "";
-        han_cu = hs.ngay_het_han_bhyt || "";
-        ["3","6","12"].forEach(function(t){
-          document.getElementById('shs-thang-' + t).checked = false;
-        });
-      }
-      _shs_han_cu_cache = displayNgaySinh(han_cu);
-      document.getElementById('shs-hancu').value = _shs_han_cu_cache || "";
-      // Nếu chưa có lựa chọn radio thì mặc định theo so_thang_old hoặc 12
-      var currentRadio = document.querySelector('input[name="shs-thang"]:checked');
-      var months = currentRadio ? parseInt(currentRadio.value,10) : (so_thang_old ? parseInt(so_thang_old,10) : 12);
-      if (!currentRadio) {
-        if (months === 3) document.getElementById('shs-thang-3').checked = true;
-        else if (months === 6) document.getElementById('shs-thang-6').checked = true;
-        else document.getElementById('shs-thang-12').checked = true;
-      }
-      var hanMoi = addMonthsPreserve(_shs_han_cu_cache, months);
-      document.getElementById('shs-hanmoi').value = hanMoi || "";
-
-      attachSuaRadioEvents();
-
-      new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
-    }
 
 
     // Hàm sửa hồ sơ BHYT
@@ -676,27 +577,22 @@
       showLoading();
       try {
         let giaRes = await getGiaBHYT();
-        let gia = giaRes && giaRes.data && giaRes.data[0] ? giaRes.data[0] : null;
-        let so_tien = gia ? (parseInt(gia.gia_tien,10) * parseInt(so_thang,10)) : 0;
+        let gia = giaRes?.data?.[0];
+        let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
-        if (parseInt(so_thang,10) === 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
-        else if (parseInt(so_thang,10) === 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
-        else if (parseInt(so_thang,10) === 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
+        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
+        else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // TÍNH LẠI HẠN MỚI Ở FE (BE cũng nên tính lại để đảm bảo)
-        var han_moi = document.getElementById('shs-hanmoi').value || "";
-
-        // BE map 'noi_kham' -> cột 'noi_kham_bhyt' trong Model, bổ sung han_su_dung_bhyt_moi
+        // BE map 'noi_kham' -> cột 'noi_kham_bhyt' trong Model
         let payload = {
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: user.ma_truong,
-          lop_hoc: _currentHS_Sua.lop_hoc,
+          lop_hoc: _currentHS_Sua.lop_hoc,  // CHANGED (lop -> lop_hoc)
           noi_kham: noikham,
           so_thang_dong: so_thang,
-          hoa_hong: hoa_hong,
-          so_tien: so_tien,
-          han_su_dung_bhyt_moi: han_moi,
-          ngay_het_han_bhyt_cu: _shs_han_cu_cache || "" // gửi kèm để BE có đủ dữ liệu tính đối chiếu
+          hoa_hong,
+          so_tien
         };
         let res = await suaHoSoBHYTApi(payload);
         hideLoading();
@@ -714,6 +610,9 @@
         document.getElementById('shs-error').innerText = err.message || "Có lỗi xảy ra!";
       }
     }
+
+
+
 
 
 
