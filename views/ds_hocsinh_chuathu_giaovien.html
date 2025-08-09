@@ -495,7 +495,7 @@
 
     async function submitNopHoSoBHYT() {
       if (!_currentHS) return;
-      let noikham = document.getElementById('nhs-noikham').value.trim();
+      let noikham = _currentHS.noi_kham_bhyt || document.getElementById('nhs-noikham').value.trim();
       let so_thang = document.querySelector('input[name="nhs-thang"]:checked').value;
       if (!noikham) {
         document.getElementById('nhs-error').innerText = "Vui lòng nhập nơi khám!";
