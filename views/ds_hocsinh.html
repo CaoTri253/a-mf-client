@@ -169,7 +169,6 @@
           <input class="form-control mb-2" id="sua-so-dinh-danh" placeholder="Số định danh"/>
           <input class="form-control mb-2" id="sua-ten-cha-me" placeholder="Tên cha/mẹ học sinh"/>
 
-
           <input class="form-control mb-2" id="sua-ngay-het-han-bhyt" type="text" placeholder="Hạn BHYT (dd/mm/yyyy)" autocomplete="off"/>
           <input class="form-control mb-2" id="sua-ngay-het-han-bhtn" type="text" placeholder="Hạn BHTN (dd/mm/yyyy)" autocomplete="off"/>
           <input class="form-control mb-2" id="sua-noi-kham-bhyt" placeholder="Nơi khám BHYT"/>
@@ -251,17 +250,14 @@
   <script src="../js/api.js"></script>
   <script>
     // ==== XỬ LÝ NGƯỜI DÙNG VÀ BIẾN TOÀN CỤC ====
-    // Lấy thông tin user từ localStorage, kiểm tra quyền
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    // Biến cấu hình phân trang, trạng thái
     let pageSize = 20, currentPage = 1, totalPages = 1, totalRecords = 0;
     let sortField = "", sortDir = 1, selectedRows = [], allData = [], lastPageData = [];
 
     // ==== HÀM XỬ LÝ NGÀY ====
-    // Chuyển yyyy-mm-dd => dd/mm/yyyy
     function toDDMMYYYY(dateStr) {
       if (!dateStr) return "";
       if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -271,12 +267,10 @@
       if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return dateStr;
       return dateStr;
     }
-    // Chuyển dd/mm/yyyy => yyyy-mm-dd (cho input type="date")
     function toYYYYMMDD(ddmmyyyy) {
       let parts = ddmmyyyy.split("/");
       return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
     }
-    // Đọc số excel -> chuỗi dd/mm/yyyy
     function excelDateToString(dateCell) {
       if (typeof dateCell === 'string') return toDDMMYYYY(dateCell);
       if (typeof dateCell === 'number') {
@@ -290,7 +284,6 @@
       }
       return "";
     }
-    // Hiển thị ngày cho table
     function displayNgaySinh(raw) {
       if (!raw) return "";
       if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
@@ -309,7 +302,7 @@
       return raw;
     }
 
-    // ==== XỬ LÝ LOADING, TOAST, XÁC NHẬN ====
+    // ==== LOADING/TOAST/CONFIRM ====
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
     function showToast(msg, type = "primary") {
@@ -493,10 +486,12 @@
       document.getElementById('themhs-error').innerText = "";
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
-      // Reset luôn 3 ô ngày bằng API của datepicker để tránh clear ngầm
+
+      // Reset từng datepicker bằng instance riêng (không ảnh hưởng nhau)
       $('#inp-ngay-sinh').datepicker('update', '');
       $('#inp-ngay-het-han-bhyt').datepicker('update', '');
       $('#inp-ngay-het-han-bhtn').datepicker('update', '');
+
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
     }
 
@@ -511,14 +506,12 @@
       let tenChaMe = document.getElementById('inp-ten-cha-me').value.trim();
       let maSoBHXH = document.getElementById('inp-ma-so-bhxh').value.trim();
 
-      // MỚI: hạn dùng & nơi khám
       let ngayHetHanBHYT = document.getElementById('inp-ngay-het-han-bhyt').value.trim();
       let ngayHetHanBHTN = document.getElementById('inp-ngay-het-han-bhtn').value.trim();
       let noiKhamBHYT    = document.getElementById('inp-noi-kham-bhyt').value.trim();
       let doiTuongDong   = (document.getElementById('inp-doi-tuong-dong').value || "").trim();
       let ghiChu         = (document.getElementById('inp-ghi-chu').value || "").trim();
 
-      // Bắt buộc nhập (trừ 2 ô optional)
       if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop_hoc || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH
           || !ngayHetHanBHYT || !ngayHetHanBHTN || !noiKhamBHYT) {
         showError('themhs-error', "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!");
@@ -575,9 +568,8 @@
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
 
-      // DÙNG API datepicker để set, tránh mất khi blur/focus
-      let ddmmyyyy = displayNgaySinh(hs.ngay_sinh);
-      $('#sua-ngay-sinh').datepicker('update', ddmmyyyy || '');
+      // set từng datepicker riêng
+      $('#sua-ngay-sinh').datepicker('update', displayNgaySinh(hs.ngay_sinh) || '');
 
       if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
       else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
@@ -587,7 +579,6 @@
       document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
 
-      // Set bằng datepicker cho 2 hạn dùng
       $('#sua-ngay-het-han-bhyt').datepicker('update', displayNgaySinh(hs.ngay_het_han_bhyt) || '');
       $('#sua-ngay-het-han-bhtn').datepicker('update', displayNgaySinh(hs.ngay_het_han_bhtn) || '');
       document.getElementById('sua-noi-kham-bhyt').value    = hs.noi_kham_bhyt || "";
@@ -616,7 +607,6 @@
         showError('suahs-error', "Ngày sinh không hợp lệ! Định dạng dd/mm/yyyy.");
         return;
       }
-      // Validate thêm cho 2 hạn dùng
       const _bhyt = document.getElementById('sua-ngay-het-han-bhyt').value.trim();
       const _bhtn = document.getElementById('sua-ngay-het-han-bhtn').value.trim();
       if (_bhyt && !isValidDateVN(_bhyt)) {
@@ -690,7 +680,7 @@
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        rows.shift(); // Bỏ dòng tiêu đề
+        rows.shift();
 
         const soDinhDanhSet = new Set();
         const maSoBHXHSet = new Set();
@@ -705,7 +695,7 @@
             ngay_sinh: excelDateToString(row[3]),
             gioi_tinh: row[4] || "",
             dia_chi: row[5] || "",
-            lop_hoc: row[6] || user.lop_hoc,   // đổi sang lop_hoc
+            lop_hoc: row[6] || user.lop_hoc,
             sdt_lienhe: row[7] || "",
             so_dinh_danh: String(row[8] || ""),
             ten_cha_me: row[9] || "",
@@ -815,14 +805,13 @@
       soDinhDanhSet, maSoBHXHSet,
       existedSoDinhDanhSet, existedMaSoBHXHSet
     ) {
-      // Danh sách trường cần kiểm tra trống
       const fields = [
         { key: 'ma_so_bhxh', label: "Mã số BHXH" },
         { key: 'ho_ten_hoc_sinh', label: "Họ tên học sinh" },
         { key: 'ngay_sinh', label: "Ngày sinh" },
         { key: 'gioi_tinh', label: "Giới tính" },
         { key: 'dia_chi', label: "Địa chỉ" },
-        { key: 'lop_hoc', label: "Lớp" },          // đổi sang lop_hoc
+        { key: 'lop_hoc', label: "Lớp" },
         { key: 'sdt_lienhe', label: "SĐT liên hệ" },
         { key: 'so_dinh_danh', label: "Số định danh" },
         { key: 'ten_cha_me', label: "Tên cha/mẹ" }
@@ -874,57 +863,76 @@
   </script>
 
   <script>
+    // ====== KHỞI TẠO DATEPICKER TÁCH RIÊNG CHO TỪNG Ô ======
     $(function() {
-      // Tùy chọn chung cho tất cả datepicker: NGĂN CLEAR KHI BLUR/FOCUS
-      const dpOpts = {
-        format: 'dd/mm/yyyy',
-        language: 'vi',
-        autoclose: true,
-        todayHighlight: true,
-        clearBtn: true,
-        forceParse: false,
-        keyboardNavigation: false,
-        container: 'body'
-      };
+      // Tùy chọn chung
+      function baseOpts(containerSel) {
+        return {
+          format: 'dd/mm/yyyy',
+          language: 'vi',
+          autoclose: true,
+          todayHighlight: true,
+          clearBtn: true,
+          forceParse: false,
+          keyboardNavigation: false,
+          container: containerSel,
+          orientation: 'auto bottom'
+        };
+      }
 
-      // Khởi tạo cho ngày sinh (thêm dpOpts)
-      $('#inp-ngay-sinh, #sua-ngay-sinh').datepicker(dpOpts)
-        .on('show', function() {
+      // Helper: gắn sự kiện giữ giá trị khi ẩn
+      function bindPreserve($el){
+        $el.on('changeDate', function(){
+          $(this).data('lastVal', $(this).val());
+        });
+        $el.on('hide', function(){
+          const v = $(this).val();
+          const last = $(this).data('lastVal');
+          if (!v && last) $(this).val(last); // nếu vì lý do nào đó bị rỗng, khôi phục
+        });
+        // Khi mở, đồng bộ lại UI với value hiện có
+        $el.on('show', function(){
           const v = $(this).val()?.trim();
           if (v) $(this).datepicker('update', v);
         });
+      }
 
-      // Khởi tạo cho Hạn BHYT/BHTN (THÊM MỚI)
-      $('#inp-ngay-het-han-bhyt, #inp-ngay-het-han-bhtn, #sua-ngay-het-han-bhyt, #sua-ngay-het-han-bhtn')
-        .datepicker(dpOpts)
-        .on('show', function() {
-          const v = $(this).val()?.trim();
-          if (v) $(this).datepicker('update', v);
-        });
+      // ----- Modal Thêm: 3 ô riêng -----
+      const $addNgaySinh  = $('#inp-ngay-sinh').datepicker(baseOpts('#modalThemHS'));
+      const $addBHYT      = $('#inp-ngay-het-han-bhyt').datepicker(baseOpts('#modalThemHS'));
+      const $addBHTN      = $('#inp-ngay-het-han-bhtn').datepicker(baseOpts('#modalThemHS'));
+      bindPreserve($addNgaySinh);
+      bindPreserve($addBHYT);
+      bindPreserve($addBHTN);
 
-      // Reset ngày khi mở modal Thêm mới
+      // Reset khi mở modal Thêm
       $('#modalThemHS').on('show.bs.modal', function() {
         $('#inp-ngay-sinh').datepicker('update', '');
         $('#inp-ngay-het-han-bhyt').datepicker('update', '');
         $('#inp-ngay-het-han-bhtn').datepicker('update', '');
       });
 
-      // Đồng bộ lại khi mở modal Sửa (nếu lỡ là yyyy-mm-dd)
+      // ----- Modal Sửa: 3 ô riêng -----
+      const $editNgaySinh = $('#sua-ngay-sinh').datepicker(baseOpts('#modalSuaHS'));
+      const $editBHYT     = $('#sua-ngay-het-han-bhyt').datepicker(baseOpts('#modalSuaHS'));
+      const $editBHTN     = $('#sua-ngay-het-han-bhtn').datepicker(baseOpts('#modalSuaHS'));
+      bindPreserve($editNgaySinh);
+      bindPreserve($editBHYT);
+      bindPreserve($editBHTN);
+
+      // Chuẩn hóa lại nếu giá trị đang là yyyy-mm-dd khi mở modal Sửa
       $('#modalSuaHS').on('shown.bs.modal', function () {
-        let val = $('#sua-ngay-sinh').val();
-        if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-          let [y,m,d] = val.split('-');
-          $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
+        const ns = $('#sua-ngay-sinh').val();
+        if (ns && /^\d{4}-\d{2}-\d{2}$/.test(ns)) {
+          let [y,m,d] = ns.split('-'); $('#sua-ngay-sinh').datepicker('update', `${d}/${m}/${y}`);
         }
-        let v1 = $('#sua-ngay-het-han-bhyt').val();
-        if (v1 && /^\d{4}-\d{2}-\d{2}$/.test(v1)) {
-          let [y1,m1,d1] = v1.split('-');
-          $('#sua-ngay-het-han-bhyt').datepicker('update', `${d1}/${m1}/${y1}`);
+        const bhyt = $('#sua-ngay-het-han-bhyt').val();
+        if (bhyt && /^\d{4}-\d{2}-\d{2}$/.test(bhyt)) {
+          let [y,m,d] = bhyt.split('-'); $('#sua-ngay-het-han-bhyt').datepicker('update', `${d}/${m}/${y}`);
         }
-        let v2 = $('#sua-ngay-het-han-bhtn').val();
-        if (v2 && /^\d{4}-\d{2}-\d{2}$/.test(v2)) {
-          let [y2,m2,d2] = v2.split('-');
-          $('#sua-ngay-het-han-bhtn').datepicker('update', `${d2}/${m2}/${y2}`);
+        const bhtn = $('#sua-ngay-het-han-bhtn').val();
+        if (bhtn && /^\d{4}-\d{2}-\d{2}$/.test(bhtn)) {
+          let [y,m,d] = bhtn.split('-'); $('#sua-ngay-het-han-bhtn').datepicker('update', `${d}/${m}/${y}`);
         }
       });
     });
