@@ -111,6 +111,12 @@
             <input type="radio" name="nhs-thang" value="12" id="nhs-thang-12" style="margin-left:18px" checked> <label for="nhs-thang-12">12 tháng</label>
           </div>
         </div>
+
+        <div class="mt-2 small">
+          <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview">—</span></div>
+          <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview">—</span></div>
+        </div>
+
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
       </div>
       <div class="modal-footer">
@@ -150,6 +156,12 @@
           <input type="radio" name="shs-thang" value="12" id="shs-thang-12" style="margin-left:18px"> <label for="shs-thang-12">12 tháng</label>
         </div>
       </div>
+
+      <div class="mt-2 small">
+        <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview">—</span></div>
+        <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview">—</span></div>
+      </div>
+
       <div id="shs-error" class="text-danger" style="min-height:18px"></div>
     </div>
     <div class="modal-footer">
@@ -313,6 +325,39 @@
       "TTYT huyện Châu Phú", "BVĐK tỉnh An Giang", "TTYT huyện Châu Thành", "BV Nhi Đồng 2", "BV Nhi Đồng 1"
     ];
 
+
+
+
+    /* Khi đổi số tháng (Modal Nộp) -> cập nhật preview */
+    ['nhs-thang-3','nhs-thang-6','nhs-thang-12'].forEach(id=>{
+      const el = document.getElementById(id);
+      el?.addEventListener('change', async ()=>{
+        if(!_currentHS) return;
+        const gia = await ensureGiaBHYT();
+        const months = document.querySelector('input[name="nhs-thang"]:checked').value;
+        const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
+        setPreviewNop(exp, amount);
+      });
+    });
+
+    /* Khi đổi số tháng (Modal Sửa) -> cập nhật preview */
+    ['shs-thang-3','shs-thang-6','shs-thang-12'].forEach(id=>{
+      const el = document.getElementById(id);
+      el?.addEventListener('change', async ()=>{
+        if(!_currentHS_Sua) return;
+        const gia = await ensureGiaBHYT();
+        const months = document.querySelector('input[name="shs-thang"]:checked').value;
+        const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
+        setPreviewSua(exp, amount);
+      });
+    });
+
+
+
+
+
+
+
     // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
     async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
       // CHANGED: chuẩn hoá tên endpoint theo Controller (getstatus)
@@ -375,6 +420,16 @@
           document.getElementById('shs-thang-' + t).checked = false;
         });
       }
+
+      /* ✅ YÊU CẦU #1: Preview ban đầu khi mở modal Sửa */
+      ensureGiaBHYT().then(gia => {
+        const checked = document.querySelector('input[name="shs-thang"]:checked');
+        const months = checked ? checked.value : "12";
+        const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, gia?.gia_tien);
+        setPreviewSua(exp, amount);
+      });
+
+
       new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
     }
 
@@ -397,10 +452,12 @@
     // Render danh sách học sinh chưa thu
     function renderDanhSachHS(ds) {
       if (!ds || ds.length === 0) {
-        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
+        document.getElementById('ds-container').innerHTML =
+          `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lớp này.</div>`;
         return;
       }
       console.log("[renderDanhSachHS] render list:", ds);
+
       let html = `<table class="table table-bordered table-hs align-middle"><thead>
         <tr>
           <th class="th-action">Thao tác</th>
@@ -408,25 +465,35 @@
           <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
         </tr></thead><tbody>`;
-      ds.forEach((hs, i) => {
-        // Log trạng thái từng học sinh
+
+      ds.forEach((hs) => {
+        // Ẩn dòng đã duyệt (giữ nguyên logic cũ)
         console.log(`[renderDanhSachHS] Học sinh: ${hs.ho_ten_hoc_sinh} | _bhyt_trangthai:`, hs._bhyt_trangthai, "| trang_thai:", hs.trang_thai);
         if (hs._bhyt_trangthai === 1) return;
+
+        // ✅ Chỉ hiện Sửa/In nếu đã nộp (0: chờ duyệt) hoặc đã duyệt (1)
+        const submitted = (hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1);
+
         html += `<tr>
           <td>
             <div class="action-btns">
-              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${hs._bhyt_trangthai===0?'disabled':''}>
+              <button class="btn btn-success btn-sm"
+                      onclick="showNopHoSoModal('${hs.stt}')"
+                      ${hs._bhyt_trangthai===0 ? 'disabled' : ''}>
                 ${hs._bhyt_trangthai===0 ? "Chờ duyệt" : "Nộp hồ sơ"}
               </button>
-              <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
-              <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+              ${submitted ? `
+                <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
+                <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+              ` : ``}
             </div>
           </td>
-          <td>${hs.ho_ten_hoc_sinh||""}</td>
+          <td>${hs.ho_ten_hoc_sinh || ""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
-          <td>${hs.so_dinh_danh||""}</td>
+          <td>${hs.so_dinh_danh || ""}</td>
         </tr>`;
       });
+
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
     }
@@ -470,6 +537,60 @@
 
 
 
+
+    /* ======= TÍNH NGÀY/PHÍ CHO DỰ KIẾN ======= */
+    function parseVNDate(str){
+      const m = String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(!m) return null;
+      const d = new Date(+m[3], +m[2]-1, +m[1]);
+      return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1]) ? d : null;
+    }
+    function formatVNDate(d){
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = d.getFullYear();
+      return `${dd}/${mm}/${yy}`;
+    }
+    function addDaysExact(dateObj, days){
+      const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0);
+      d.setDate(d.getDate()+days);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    const DAYS_MAP = {3:90, 6:180, 12:365};
+
+    let _cachedGiaBHYT = null;
+    async function ensureGiaBHYT(){
+      if(_cachedGiaBHYT) return _cachedGiaBHYT;
+      const giaRes = await getGiaBHYT();
+      _cachedGiaBHYT = giaRes?.data?.[0] || null;
+      return _cachedGiaBHYT;
+    }
+    function computeAmountAndExp(oldEndStr, months, basePrice){
+      const daysToAdd = DAYS_MAP[months] || months*30;
+      const oldEnd = parseVNDate(oldEndStr);
+      const from = oldEnd || new Date();
+      const exp = formatVNDate(addDaysExact(from, daysToAdd));
+      const amount = (parseInt(basePrice||0,10) || 0) * (parseInt(months,10)||0);
+      return {exp, amount};
+    }
+    function setPreviewNop(exp, amount){
+      document.getElementById('nhs-exp-preview').innerText = exp;
+      document.getElementById('nhs-amount-preview').innerText = amount.toLocaleString('vi-VN');
+    }
+    function setPreviewSua(exp, amount){
+      document.getElementById('shs-exp-preview').innerText = exp;
+      document.getElementById('shs-amount-preview').innerText = amount.toLocaleString('vi-VN');
+    }
+
+
+
+
+
+
+
+
+
+
     let _currentHS = null;
 
     function showNopHoSoModal(stt) {
@@ -484,6 +605,16 @@
       let datalist = document.getElementById('noikham-list');
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
       new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
+
+      /* ✅ YÊU CẦU #3: Prefill nơi khám từ DanhSach_Hocsinh */
+      document.getElementById('nhs-noikham').value = _currentHS.noi_kham_bhyt || "";
+
+      /* ✅ YÊU CẦU #1: tải giá & hiển thị dự kiến lúc mở modal */
+      ensureGiaBHYT().then(gia => {
+        const months = document.querySelector('input[name="nhs-thang"]:checked').value;
+        const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
+        setPreviewNop(exp, amount);
+      });
     }
 
     // Hàm ép kiểu an toàn cho trường hợp chuỗi hoặc số
@@ -503,8 +634,8 @@
       }
       showLoading();
       try {
-        let giaRes = await getGiaBHYT();
-        let gia = giaRes?.data?.[0];
+        let gia = await ensureGiaBHYT();
+
         let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
         if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
@@ -576,8 +707,8 @@
       }
       showLoading();
       try {
-        let giaRes = await getGiaBHYT();
-        let gia = giaRes?.data?.[0];
+        let gia = await ensureGiaBHYT();
+
         let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
         if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
