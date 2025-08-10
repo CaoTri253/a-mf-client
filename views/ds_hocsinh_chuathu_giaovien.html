@@ -113,8 +113,8 @@
         </div>
 
         <div class="mt-2 small">
-          <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview">—</span></div>
-          <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview">—</span></div>
+          <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
+          <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
@@ -158,8 +158,8 @@
       </div>
 
       <div class="mt-2 small">
-        <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview">—</span></div>
-        <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview">—</span></div>
+        <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
+        <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
       </div>
 
       <div id="shs-error" class="text-danger" style="min-height:18px"></div>
@@ -391,10 +391,13 @@
     // Biến toàn cục để lưu học sinh đang sửa
     // Sửa hồ sơ BHYT
     async function suaHoSo(stt) {
+
+      showLoading();
       // Tìm học sinh chưa thu có stt này
       const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs || hs._bhyt_trangthai !== 0) {
         showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
+        hideLoading();
       }
       _currentHS_Sua = hs;
       document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
@@ -413,12 +416,14 @@
           document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
         });
         // Bạn cũng có thể show hoa_hong, so_tien nếu muốn
+        hideLoading();
       } else {
         // Nếu không có dữ liệu thì clear
         document.getElementById('shs-noikham').value = "";
         ["3","6","12"].forEach(t => {
           document.getElementById('shs-thang-' + t).checked = false;
         });
+        hideLoading();
       }
 
       /* ✅ YÊU CẦU #1: Preview ban đầu khi mở modal Sửa */
@@ -429,7 +434,7 @@
         setPreviewSua(exp, amount);
       });
 
-
+      hideLoading();
       new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
     }
 
@@ -594,6 +599,7 @@
     let _currentHS = null;
 
     function showNopHoSoModal(stt) {
+      showLoading();
       const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs) return;
       _currentHS = hs;
@@ -615,6 +621,7 @@
         const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewNop(exp, amount);
       });
+      hideLoading();
     }
 
     // Hàm ép kiểu an toàn cho trường hợp chuỗi hoặc số
