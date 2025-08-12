@@ -181,8 +181,6 @@
 
 
 
-
-
   <!-- Modal Nộp Nhiều Hồ Sơ (MỚI) -->
   <div class="modal fade" id="modalBulkNopHoSo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
@@ -411,7 +409,6 @@
 
 
 
-
     // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
     async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
       // CHANGED: chuẩn hoá tên endpoint theo Controller (getstatus)
@@ -435,7 +432,6 @@
       const res = await fetch(url);
       return await res.json();
     }
-
 
 
 
@@ -627,7 +623,6 @@
 
 
 
-
     /* ======= TÍNH NGÀY/PHÍ CHO DỰ KIẾN ======= */
     function parseVNDate(str){
       const m = String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -646,7 +641,16 @@
       d.setDate(d.getDate()+days);
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
+    // Giữ nguyên để tương thích (không dùng cho tính hạn mới)
     const DAYS_MAP = {3:90, 6:180, 12:365};
+
+    // NEW: cộng THÁNG đúng chuẩn (giữ ngày trong tháng)
+    function addMonthsExact(dateObj, months){
+      const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0);
+      const m  = Number(months)||0;
+      const t  = new Date(d.getFullYear(), d.getMonth()+m, d.getDate(), 12,0,0);
+      return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    }
 
     let _cachedGiaBHYT = null;
     async function ensureGiaBHYT(){
@@ -655,11 +659,13 @@
       _cachedGiaBHYT = giaRes?.data?.[0] || null;
       return _cachedGiaBHYT;
     }
+    // NEW: Hạn mới = (ngày sau hạn cũ) + N THÁNG rồi TRỪ 1 NGÀY
     function computeAmountAndExp(oldEndStr, months, basePrice){
-      const daysToAdd = DAYS_MAP[months] || months*30;
       const oldEnd = parseVNDate(oldEndStr);
-      const from = oldEnd || new Date();
-      const exp = formatVNDate(addDaysExact(from, daysToAdd));
+      const start = oldEnd ? addDaysExact(oldEnd, 1) : new Date();
+      const afterMonths = addMonthsExact(start, parseInt(months,10)||0);
+      const expDate = addDaysExact(afterMonths, -1);
+      const exp = formatVNDate(expDate);
       const amount = (parseInt(basePrice||0,10) || 0) * (parseInt(months,10)||0);
       return {exp, amount};
     }
@@ -671,8 +677,6 @@
       document.getElementById('shs-exp-preview').innerText = exp;
       document.getElementById('shs-amount-preview').innerText = amount.toLocaleString('vi-VN');
     }
-
-
 
 
 
@@ -734,9 +738,11 @@
         else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // CHANGED: cột mới trong DanhSach_BHYT
-        let now = new Date();
-        let han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`; // thay cho ngay_het_han cũ
+        // NEW: hạn mới = (ngày sau hạn cũ) + N THÁNG - 1 ngày
+        const oldEnd = parseVNDate(_currentHS.ngay_het_han_bhyt);
+        const startDate = oldEnd ? addDaysExact(oldEnd, 1) : new Date();
+        const afterMonths = addMonthsExact(startDate, parseInt(so_thang,10)||0);
+        const han_su_dung_bhyt_moi = formatVNDate(addDaysExact(afterMonths, -1));
 
         let payload = {
           // các cột DanhSach_BHYT mới
@@ -746,7 +752,7 @@
           gioi_tinh: _currentHS.gioi_tinh || "null",
           dia_chi: _currentHS.dia_chi || "null",
           ngay_het_han_bhyt_cu: _currentHS.ngay_het_han_bhyt || "null",
-          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi, // CHANGED
+          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi,
           so_thang_dong: so_thang,
           lop_hoc: _currentHS.lop_hoc || "null",       // CHANGED (lop -> lop_hoc)
           sdt_lienhe: _currentHS.sdt_lienhe || "null", // CHANGED (sdt -> sdt_lienhe)
@@ -1005,9 +1011,11 @@
           if (String(months) === "6"  && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
           if (String(months) === "12" && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-          // Giữ nguyên quy ước hiện tại: hạn sử dụng mới = 31/12 năm hiện tại
-          const now = new Date();
-          const han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`;
+          // NEW: hạn mới = (ngày sau hạn cũ) + N THÁNG - 1 ngày
+          const od = parseVNDate(hs.ngay_het_han_bhyt);
+          const startDate = od ? addDaysExact(od, 1) : new Date();
+          const afterMonths = addMonthsExact(startDate, parseInt(months,10)||0);
+          const han_su_dung_bhyt_moi = formatVNDate(addDaysExact(afterMonths, -1));
 
           const payload = {
             ma_so_bhxh: hs.ma_so_bhxh || "null",
