@@ -50,6 +50,36 @@
     @media (min-width: 601px) {
       .action-btns { display: flex; flex-direction: row; gap: 4px; }
     }
+
+    /* === NEW: CSS phiếu thu A5 & chế độ in === */
+    .a5-paper {
+      width: 148mm;          /* A5 portrait width */
+      min-height: 210mm;     /* A5 portrait height */
+      background: #fff;
+      margin: 0 auto;
+      padding: 10mm;
+      color: #000;
+      box-shadow: 0 1px 10px #0002;
+      font-size: 13px;
+    }
+    .receipt-title { font-weight: 700; font-size: 20px; text-align: center; margin-top: 4mm; text-transform: uppercase; }
+    .receipt-sub { text-align: center; font-style: italic; }
+    .receipt-meta { font-size: 13px; }
+    .receipt-line { margin: 2mm 0; }
+    .qr-box { width: 30mm; height: 30mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; }
+    .sign-col { text-align: center; margin-top: 10mm; font-weight: 500; }
+    .sign-name { margin-top: 20mm; text-align: center; font-weight: 600; }
+
+    @media print {
+      @page { size: A5 portrait; margin: 10mm; }
+      body { background: #fff !important; }
+      .modal { position: static !important; }
+      .modal-dialog { width: auto !important; max-width: none !important; }
+      .modal-content { box-shadow: none !important; border: none !important; }
+      .no-print { display: none !important; }
+      .a5-paper { box-shadow: none !important; margin: 0 !important; }
+    }
+    /* === END NEW CSS === */
   </style>
 </head>
 <body>
@@ -216,6 +246,70 @@
     </div></div>
   </div>
 
+  <!-- === NEW: Modal xem trước & in Phiếu thu A5 === -->
+  <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
+          <div class="no-print d-flex gap-2">
+            <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
+            <button class="btn btn-primary btn-sm" onclick="window.print()">In</button>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="display:flex;justify-content:center;">
+          <div id="receiptA5" class="a5-paper">
+            <div class="d-flex justify-content-between">
+              <div class="receipt-meta">
+                <div><strong id="rec-school">Trường …</strong></div>
+                <div>Lớp: <strong id="rec-class">—</strong></div>
+              </div>
+              <div class="receipt-meta text-end">
+                <div><strong>Mẫu số:</strong> C45-BB</div>
+                <div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div>
+                <div>ngày 10/10/2017 của Bộ Tài Chính</div>
+              </div>
+            </div>
+
+            <div class="receipt-title">BIÊN LAI THU TIỀN</div>
+            <div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div>
+
+            <div class="row mt-3">
+              <div class="col-auto">
+                <div class="qr-box"><div id="receipt-qr"></div></div>
+              </div>
+              <div class="col">
+                <div class="receipt-line">Họ và tên người nộp: <strong id="rec-student-name">—</strong></div>
+                <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
+                <div class="receipt-line">Nội dung thu: <span id="rec-content">—</span></div>
+                <div class="receipt-line">
+                  Số tháng đóng: <span id="rec-months">—</span> tháng
+                  (<span id="rec-range">từ ngày … đến ngày …</span>)
+                </div>
+                <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
+                <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
+              <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
+            </div>
+
+            <div class="sign-name" id="rec-teacher-name">—</div>
+          </div>
+        </div>
+        <div class="modal-footer no-print">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
+          <button class="btn btn-primary" onclick="window.print()">In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- === END NEW MODAL === -->
+
   <!-- Toast Notification -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
     <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
@@ -227,6 +321,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- === NEW: thư viện QR & html2canvas === -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- === END NEW libs -->
   <script src="../js/api.js"></script>
   <script>
     let user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -271,6 +369,25 @@
       const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;
       const res = await fetch(url);
       return await res.json();
+    }
+
+    /* === NEW: API hồ sơ BHYT theo HS (dùng cho Sửa & In phiếu) === */
+    async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
+      const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+      const res = await fetch(url);
+      return await res.json();
+    }
+
+    /* === NEW: Lấy tên trường theo mã trường (fallback user.ten_truong) === */
+    async function getTenTruong(ma_truong) {
+      try {
+        const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
+        const res = await fetch(url);
+        const j = await res.json();
+        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
+      } catch(e){
+        return user.ten_truong || ma_truong || '—';
+      }
     }
 
     // Lấy danh sách học sinh + merge trạng thái BHYT
@@ -583,7 +700,7 @@
       let datalist = document.getElementById('noikham-list');
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
 
-      // Lấy hồ sơ chờ duyệt cũ (nếu có) — cần API getHosoBHYTByHS phía BE
+      // Lấy hồ sơ chờ duyệt cũ (nếu có)
       let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
       if (bhytRes && bhytRes.success && bhytRes.data) {
         document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
@@ -662,7 +779,7 @@
       toast.show();
     }
 
-    /* ===========================
+    /* ============================
     *  CHỌN NHIỀU & NỘP NHIỀU
     * =========================== */
     let bulkSelected = [];
@@ -913,6 +1030,108 @@
 
     function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
     window.onload = fetchChuaThuHocsinh;
+
+    /* === NEW: Hàm đọc số tiền thành chữ (TV) === */
+    const VI_DIGITS = ["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+    function readTriple(n){
+      let tr=Math.floor(n/100), ch=Math.floor((n%100)/10), dv=n%10, s="";
+      if (tr>0){ s += VI_DIGITS[tr] + " trăm"; if (ch==0 && dv>0) s += " lẻ"; }
+      if (ch>1){ s += (s?" ":"") + VI_DIGITS[ch] + " mươi"; if (dv==1) s += " mốt"; else if (dv==5) s += " lăm"; else if (dv>0) s += " " + VI_DIGITS[dv]; }
+      else if (ch==1){ s += (s?" ":"") + "mười"; if (dv==5) s += " lăm"; else if (dv>0) s += " " + VI_DIGITS[dv]; }
+      else if (ch==0 && dv>0){ s += (s?" ":"") + VI_DIGITS[dv]; }
+      return s.trim();
+    }
+    function numberToVietnamese(n){
+      n = Math.round(Number(n)||0);
+      if (n===0) return "Không đồng";
+      const units=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];
+      let i=0, str="";
+      while(n>0 && i<units.length){
+        const block = n%1000;
+        if (block>0){
+          const part = readTriple(block, i>0);
+          str = part + units[i] + (str? " " + str : "");
+        }
+        n = Math.floor(n/1000); i++;
+      }
+      str = str.charAt(0).toUpperCase() + str.slice(1) + " đồng";
+      return str.replace(/\s+/g," ").trim();
+    }
+    /* === NEW: tiện ích in phiếu === */
+    function pad3(n){ n = parseInt(n,10)||0; return String(n).padStart(3,'0'); }
+    function todayText(){
+      const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
+    }
+    function calcRange(oldEndStr, months){
+      const od = parseVNDate(oldEndStr); const m = parseInt(months,10)||0;
+      if (!od || m<=0) return {startText:"—", endText:"(không xác định)"};
+      const start = addDaysExact(od,1);
+      const end   = new Date(start.getFullYear(), start.getMonth()+m, 0);
+      return { startText: formatVNDate(start), endText: formatVNDate(end) };
+    }
+
+    /* === NEW: In phiếu thu (xem trước + QR + lưu ảnh) === */
+    async function inPhieuThu(stt){
+      try{
+        showLoading();
+        const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
+        if (!hs) { hideLoading(); return; }
+
+        // Lấy hồ sơ BHYT từ DanhSach_BHYT (thông tin tháng & tiền)
+        const hoSo = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
+        if (!hoSo || !hoSo.success || !hoSo.data) {
+          hideLoading();
+          showToast("Không tìm thấy hồ sơ BHYT để in.");
+          return;
+        }
+        const months = parseInt(hoSo.data.so_thang_dong || "12", 10);
+        const amount = parseInt((hoSo.data.so_tien||"0").toString().replace(/[^\d]/g,''),10) || 0;
+
+        const {startText, endText} = calcRange(hs.ngay_het_han_bhyt, months);
+        const schoolName = await getTenTruong(user.ma_truong);
+        const classCode = hoSo.data.lop_hoc || hs.lop_hoc || (user.lop_hoc || "");
+        const seq = pad3(hs.stt);
+        const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
+
+        // Gán dữ liệu vào UI phiếu
+        document.getElementById('rec-school').innerText = schoolName;
+        document.getElementById('rec-class').innerText = classCode;
+        document.getElementById('rec-date-today').innerText = todayText();
+        document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh || "";
+        document.getElementById('rec-address').innerText = hs.dia_chi || "";
+        document.getElementById('rec-content').innerText = `Thu tiền BHYT - ${classCode}${seq}`;
+        document.getElementById('rec-months').innerText = String(months);
+        document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
+        document.getElementById('rec-amount').innerText = amount.toLocaleString('vi-VN');
+        document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
+        document.getElementById('rec-teacher-name').innerText = teacherName;
+
+        // QR
+        const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML = "";
+        const qrPayload = {
+          truong: schoolName,
+          lop: classCode,
+          hoc_sinh: hs.ho_ten_hoc_sinh || "",
+          so_thang: months,
+          han_den: endText
+        };
+        new QRCode(qrBox, { text: JSON.stringify(qrPayload), width: 110, height: 110 });
+
+        new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+      } catch(err){
+        console.error(err);
+        showToast("Không thể tạo phiếu thu.");
+      } finally { hideLoading(); }
+    }
+
+    /* === NEW: tải ảnh phiếu thu === */
+    async function downloadReceiptImage(){
+      const node = document.getElementById('receiptA5');
+      const canvas = await html2canvas(node, {scale: 2});
+      const dataURL = canvas.toDataURL("image/png");
+      const a = document.createElement('a');
+      a.href = dataURL; a.download = `phieu-thu-bhyt.png`; a.click();
+    }
   </script>
 </body>
 </html>
