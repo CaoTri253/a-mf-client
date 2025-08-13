@@ -1070,6 +1070,36 @@
       return { startText: formatVNDate(start), endText: formatVNDate(end) };
     }
 
+
+
+
+
+    // --- NEW: rút gọn & chuẩn hoá chuỗi cho QR ---
+    function stripVN(str) {
+      return String(str||"")
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')   // bỏ dấu
+        .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    }
+    function initials(str) {
+      return String(str||"").trim().split(/\s+/).map(w => w[0]||'').join('').toUpperCase();
+    }
+    function buildQRPayload(school, classCode, name, months, endDate) {
+      const s = stripVN(school).slice(0, 60);     // giới hạn độ dài
+      const c = String(classCode||"").slice(0, 12);
+      const n = stripVN(name).slice(0, 60);
+      const m = String(months||"");
+      const e = String(endDate||"").slice(0, 10); // dd/mm/yyyy
+      // Dạng gọn, dễ đọc tay nếu cần
+      return `S=${s};L=${c};N=${n};M=${m};E=${e}`;
+    }
+
+
+
+
+
+
+
     /* === NEW: In phiếu thu (xem trước + QR + lưu ảnh) === */
     async function inPhieuThu(stt){
       try{
@@ -1106,16 +1136,42 @@
         document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText = teacherName;
 
-        // QR
-        const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML = "";
-        const qrPayload = {
-          truong: schoolName,
-          lop: classCode,
-          hoc_sinh: hs.ho_ten_hoc_sinh || "",
-          so_thang: months,
-          han_den: endText
-        };
-        new QRCode(qrBox, { text: JSON.stringify(qrPayload), width: 110, height: 110 });
+
+        // QR (gọn, có fallback nếu vẫn quá dài)
+        const qrBox = document.getElementById('receipt-qr'); 
+        qrBox.innerHTML = "";
+
+        const primaryText = buildQRPayload(
+          schoolName,
+          classCode,
+          hs.ho_ten_hoc_sinh || "",
+          months,
+          endText
+        );
+
+        try {
+          new QRCode(qrBox, {
+            text: primaryText,
+            width: 110,
+            height: 110,
+            correctLevel: QRCode.CorrectLevel.L   // tăng sức chứa
+          });
+        } catch (e) {
+          console.warn("QR overflow, fallback to shorter text", e);
+          // Fallback cực gọn (dùng ký tự viết tắt tên HS)
+          const fallbackText = `L=${String(classCode).slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
+          try {
+            new QRCode(qrBox, {
+              text: fallbackText,
+              width: 110,
+              height: 110,
+              correctLevel: QRCode.CorrectLevel.L
+            });
+          } catch (e2) {
+            qrBox.innerHTML = '<small>QR quá dài</small>';
+          }
+        }
+
 
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } catch(err){
