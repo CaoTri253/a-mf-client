@@ -92,13 +92,13 @@
         modal.show();
       }
       async function handleLogin() {
+        showLoading();   // <-- Thêm dòng này
         const sdt = document.getElementById("login-sdt").value.trim();
         const password = document.getElementById("login-password").value;
 
         if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
         const res = await login(sdt, password);
         if (res.success) {
-          showLoading();   // <-- Thêm dòng này
           showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
           hideLoading(); // <-- Thêm dòng này

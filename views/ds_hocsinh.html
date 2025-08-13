@@ -615,7 +615,9 @@
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
       fpThem.ngaySinh?.clear(); fpThem.hanBHYT?.clear(); fpThem.hanBHTN?.clear();
+      showLoading();
       new bootstrap.Modal(document.getElementById('modalThemHS')).show();
+      hideLoading();
     }
 
     // Đọc giá trị dd/mm/yyyy từ ô Flatpickr
@@ -685,6 +687,7 @@
 
     // Hiện modal sửa
     function showModalSuaHSByIndex(i) {
+      showLoading();
       const hs = lastPageData[i];
       if (!hs) return;
       document.getElementById('form-suahs').reset?.();
@@ -718,6 +721,7 @@
       document.getElementById('sua-ghi-chu').value          = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
 
       new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
+      hideLoading();
     }
 
     // Xử lý sửa
