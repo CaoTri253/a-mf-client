@@ -120,6 +120,8 @@
 
         <div class="mt-2 small">
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
+          <!-- NEW: ghi chú lý do khi không xác định -->
+          <div id="nhs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
@@ -165,6 +167,8 @@
 
         <div class="mt-2 small">
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
+          <!-- NEW: ghi chú lý do khi không xác định -->
+          <div id="shs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
@@ -208,6 +212,8 @@
 
         <div class="mt-2 small">
           <div><strong class="text-danger">Hạn sử dụng dự kiến:</strong> <span id="bulk-exp-preview" class="fw-bold text-danger">—</span></div>
+          <!-- NEW: ghi chú lý do khi không xác định -->
+          <div id="bulk-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong class="text-danger">Số tiền cần đóng (mỗi HS):</strong> <span id="bulk-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
@@ -387,8 +393,9 @@
         if(!_currentHS) return;
         const gia = await ensureGiaBHYT();
         const months = document.querySelector('input[name="nhs-thang"]:checked').value;
-        const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewNop(exp, amount);
+        setExpNoteNop(note);
       });
     });
 
@@ -399,8 +406,9 @@
         if(!_currentHS_Sua) return;
         const gia = await ensureGiaBHYT();
         const months = document.querySelector('input[name="shs-thang"]:checked').value;
-        const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewSua(exp, amount);
+        setExpNoteSua(note);
       });
     });
 
@@ -466,10 +474,8 @@
         ["3","6","12"].forEach(t => {
           document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
         });
-        // Bạn cũng có thể show hoa_hong, so_tien nếu muốn
         hideLoading();
       } else {
-        // Nếu không có dữ liệu thì clear
         document.getElementById('shs-noikham').value = "";
         ["3","6","12"].forEach(t => {
           document.getElementById('shs-thang-' + t).checked = false;
@@ -477,12 +483,13 @@
         hideLoading();
       }
 
-      /* ✅ YÊU CẦU #1: Preview ban đầu khi mở modal Sửa */
+      /* ✅ Preview ban đầu khi mở modal Sửa */
       ensureGiaBHYT().then(gia => {
         const checked = document.querySelector('input[name="shs-thang"]:checked');
         const months = checked ? checked.value : "12";
-        const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewSua(exp, amount);
+        setExpNoteSua(note);
       });
 
       hideLoading();
@@ -525,7 +532,6 @@
         <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
         <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
       </tr></thead><tbody>`;
-
 
       ds.forEach((hs) => {
         // Ẩn dòng đã duyệt (giữ nguyên logic cũ)
@@ -572,8 +578,6 @@
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
 
-
-
       // Đồng bộ lại checkbox theo danh sách đã chọn (MỚI)
       document.querySelectorAll('.chk-bulk-row').forEach(cb => {
         const stt = cb.getAttribute('data-stt');
@@ -582,7 +586,6 @@
 
       // Cập nhật trạng thái nút bulk
       updateBulkButton();
-
     }
 
 
@@ -642,7 +645,7 @@
       d.setDate(d.getDate()+days);
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
-    const DAYS_MAP = {3:90, 6:180, 12:365};
+    const DAYS_MAP = {3:90, 6:180, 12:365}; // giữ nguyên (không dùng cho cách tính mới)
 
     let _cachedGiaBHYT = null;
     async function ensureGiaBHYT(){
@@ -652,19 +655,23 @@
       return _cachedGiaBHYT;
     }
 
-    // ✅ Hạn mới = (ngày sau hạn cũ) -> lấy ngày cuối tháng của (start + N tháng).
-    // Nếu không có hạn cũ => không tính (để '—'), theo yêu cầu bỏ qua case tính từ ngày đóng.
+    // ✅ Hạn mới = (ngày sau hạn cũ) -> ngày cuối tháng của (start + N tháng).
+    // Nếu không có hạn cũ => hiển thị "(không xác định)" và ghi chú lý do.
     function computeAmountAndExp(oldEndStr, months, basePrice){
       const oldEnd = parseVNDate(oldEndStr);
       const m = parseInt(months,10) || 0;
       let exp = '—';
+      let note = '';
       if (oldEnd && m > 0) {
         const start = addDaysExact(oldEnd, 1);
         const lastDay = new Date(start.getFullYear(), start.getMonth() + m, 0);
         exp = formatVNDate(lastDay);
+      } else {
+        exp = '(không xác định)';
+        note = 'Không xác định do chưa nhập ngày hết hạn thẻ cũ trong DanhSach_Hocsinh.';
       }
       const amount = (parseInt(basePrice||0,10) || 0) * (parseInt(months,10)||0);
-      return {exp, amount};
+      return {exp, amount, note};
     }
 
     function setPreviewNop(exp, amount){
@@ -675,6 +682,10 @@
       document.getElementById('shs-exp-preview').innerText = exp;
       document.getElementById('shs-amount-preview').innerText = amount.toLocaleString('vi-VN');
     }
+    // NEW: helper set ghi chú
+    function setExpNoteNop(note){ document.getElementById('nhs-exp-note').innerText = note || ''; }
+    function setExpNoteSua(note){ document.getElementById('shs-exp-note').innerText = note || ''; }
+    function setExpNoteBulk(note){ document.getElementById('bulk-exp-note').innerText = note || ''; }
 
 
 
@@ -699,14 +710,15 @@
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
       new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
 
-      /* ✅ YÊU CẦU #3: Prefill nơi khám từ DanhSach_Hocsinh */
+      /* ✅ Prefill nơi khám từ DanhSach_Hocsinh */
       document.getElementById('nhs-noikham').value = _currentHS.noi_kham_bhyt || "";
 
-      /* ✅ YÊU CẦU #1: tải giá & hiển thị dự kiến lúc mở modal */
+      /* ✅ Preview lúc mở modal */
       ensureGiaBHYT().then(gia => {
         const months = document.querySelector('input[name="nhs-thang"]:checked').value;
-        const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewNop(exp, amount);
+        setExpNoteNop(note);
       });
       hideLoading();
     }
@@ -732,18 +744,18 @@
 
         let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
-        if (so_thang == 3 && gia)  hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang)  * so_tien * 100) / 100;
-        else if (so_thang == 6 && gia)  hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
+        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // ✅ Hạn mới: từ NGÀY SAU HẠN CŨ -> ngày cuối tháng của (start + N tháng).
+        // ✅ Hạn mới: theo hạn cũ (nếu có); nếu không có, để trống ở payload (BE giữ nguyên)
         const od = parseVNDate(_currentHS.ngay_het_han_bhyt);
         let han_su_dung_bhyt_moi = "";
         if (od) {
           const startDate = addDaysExact(od, 1);
           const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + parseInt(so_thang,10), 0);
           han_su_dung_bhyt_moi = formatVNDate(lastDay);
-        } // nếu không có hạn cũ => để trống theo yêu cầu
+        }
 
         let payload = {
           ma_so_bhxh: _currentHS.ma_so_bhxh || "null",
@@ -752,7 +764,7 @@
           gioi_tinh: _currentHS.gioi_tinh || "null",
           dia_chi: _currentHS.dia_chi || "null",
           ngay_het_han_bhyt_cu: _currentHS.ngay_het_han_bhyt || "null",
-          han_su_dung_bhyt_moi,                  // <— theo hạn cũ
+          han_su_dung_bhyt_moi,
           so_thang_dong: so_thang,
           lop_hoc: _currentHS.lop_hoc || "null",
           sdt_lienhe: _currentHS.sdt_lienhe || "null",
@@ -775,11 +787,9 @@
           let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
           modal.hide();
           showToast("Nộp hồ sơ thành công!");
-          console.log("[submitNopHoSoBHYT] Nộp thành công, reload danh sách...");
-          await fetchChuaThuHocsinh(); // Gọi lại để render lại nút thành "Chờ duyệt"
+          await fetchChuaThuHocsinh();
         } else {
           document.getElementById('nhs-error').innerText = res.message || "Nộp hồ sơ thất bại!";
-          console.log("[submitNopHoSoBHYT] Nộp thất bại:", res);
         }
 
       } catch (err) {
@@ -828,6 +838,7 @@
         if (res.success) {
           let modalEl = document.getElementById('modalSuaHoSoBHYT');
           let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+
           modal.hide();
           showToast("Đã cập nhật hồ sơ!");
           await fetchChuaThuHocsinh();
@@ -946,13 +957,14 @@
       // Set checked mặc định 12 tháng
       document.getElementById('bulk-thang-12').checked = true;
 
-      // Tính preview ban đầu (lấy ngày hết hạn cũ của HS đầu tiên; nếu không có thì để '—')
+      // Tính preview ban đầu (lấy ngày hết hạn cũ của HS đầu tiên; nếu không có thì hiện "không xác định")
       ensureGiaBHYT().then(gia => {
         const first = selectedList[0];
         const months = document.querySelector('input[name="bulk-thang"]:checked').value;
-        const {exp, amount} = computeAmountAndExp(first?.ngay_het_han_bhyt || "", months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(first?.ngay_het_han_bhyt || "", months, gia?.gia_tien);
         document.getElementById('bulk-exp-preview').innerText = exp;
         document.getElementById('bulk-amount-preview').innerText = amount.toLocaleString('vi-VN');
+        setExpNoteBulk(note);
       });
 
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
@@ -966,9 +978,10 @@
         if (selectedList.length === 0) return;
         const gia = await ensureGiaBHYT();
         const months = document.querySelector('input[name="bulk-thang"]:checked').value;
-        const {exp, amount} = computeAmountAndExp(selectedList[0]?.ngay_het_han_bhyt || "", months, gia?.gia_tien);
+        const {exp, amount, note} = computeAmountAndExp(selectedList[0]?.ngay_het_han_bhyt || "", months, gia?.gia_tien);
         document.getElementById('bulk-exp-preview').innerText = exp;
         document.getElementById('bulk-amount-preview').innerText = amount.toLocaleString('vi-VN');
+        setExpNoteBulk(note);
       });
     });
 
@@ -1009,7 +1022,7 @@
           if (String(months) === "6"  && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
           if (String(months) === "12" && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-          // ✅ Hạn mới = theo hạn cũ (nếu có)
+          // Hạn mới: theo hạn cũ (nếu có)
           const od = parseVNDate(hs.ngay_het_han_bhyt);
           let han_su_dung_bhyt_moi = "";
           if (od) {

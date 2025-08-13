@@ -181,8 +181,6 @@
 
 
 
-
-
   <!-- Modal Nộp Nhiều Hồ Sơ (MỚI) -->
   <div class="modal fade" id="modalBulkNopHoSo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
@@ -411,7 +409,6 @@
 
 
 
-
     // API lấy trạng thái hồ sơ BHYT theo số định danh học sinh
     async function getBHYTStatusByHS(so_dinh_danh, ma_truong, lop_hoc) {
       // CHANGED: chuẩn hoá tên endpoint theo Controller (getstatus)
@@ -627,7 +624,6 @@
 
 
 
-
     /* ======= TÍNH NGÀY/PHÍ CHO DỰ KIẾN ======= */
     function parseVNDate(str){
       const m = String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -655,14 +651,22 @@
       _cachedGiaBHYT = giaRes?.data?.[0] || null;
       return _cachedGiaBHYT;
     }
+
+    // ✅ Hạn mới = (ngày sau hạn cũ) -> lấy ngày cuối tháng của (start + N tháng).
+    // Nếu không có hạn cũ => không tính (để '—'), theo yêu cầu bỏ qua case tính từ ngày đóng.
     function computeAmountAndExp(oldEndStr, months, basePrice){
-      const daysToAdd = DAYS_MAP[months] || months*30;
       const oldEnd = parseVNDate(oldEndStr);
-      const from = oldEnd || new Date();
-      const exp = formatVNDate(addDaysExact(from, daysToAdd));
+      const m = parseInt(months,10) || 0;
+      let exp = '—';
+      if (oldEnd && m > 0) {
+        const start = addDaysExact(oldEnd, 1);
+        const lastDay = new Date(start.getFullYear(), start.getMonth() + m, 0);
+        exp = formatVNDate(lastDay);
+      }
       const amount = (parseInt(basePrice||0,10) || 0) * (parseInt(months,10)||0);
       return {exp, amount};
     }
+
     function setPreviewNop(exp, amount){
       document.getElementById('nhs-exp-preview').innerText = exp;
       document.getElementById('nhs-amount-preview').innerText = amount.toLocaleString('vi-VN');
@@ -671,8 +675,6 @@
       document.getElementById('shs-exp-preview').innerText = exp;
       document.getElementById('shs-amount-preview').innerText = amount.toLocaleString('vi-VN');
     }
-
-
 
 
 
@@ -730,28 +732,32 @@
 
         let so_tien = gia ? (parseInt(gia.gia_tien) * so_thang) : 0;
         let hoa_hong = "null";
-        if (so_thang == 3 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang) * so_tien * 100) / 100;
-        else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
+        if (so_thang == 3 && gia)  hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_3_thang)  * so_tien * 100) / 100;
+        else if (so_thang == 6 && gia)  hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // CHANGED: cột mới trong DanhSach_BHYT
-        let now = new Date();
-        let han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`; // thay cho ngay_het_han cũ
+        // ✅ Hạn mới: từ NGÀY SAU HẠN CŨ -> ngày cuối tháng của (start + N tháng).
+        const od = parseVNDate(_currentHS.ngay_het_han_bhyt);
+        let han_su_dung_bhyt_moi = "";
+        if (od) {
+          const startDate = addDaysExact(od, 1);
+          const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + parseInt(so_thang,10), 0);
+          han_su_dung_bhyt_moi = formatVNDate(lastDay);
+        } // nếu không có hạn cũ => để trống theo yêu cầu
 
         let payload = {
-          // các cột DanhSach_BHYT mới
           ma_so_bhxh: _currentHS.ma_so_bhxh || "null",
           ho_ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
           ngay_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
           gioi_tinh: _currentHS.gioi_tinh || "null",
           dia_chi: _currentHS.dia_chi || "null",
           ngay_het_han_bhyt_cu: _currentHS.ngay_het_han_bhyt || "null",
-          han_su_dung_bhyt_moi: han_su_dung_bhyt_moi, // CHANGED
+          han_su_dung_bhyt_moi,                  // <— theo hạn cũ
           so_thang_dong: so_thang,
-          lop_hoc: _currentHS.lop_hoc || "null",       // CHANGED (lop -> lop_hoc)
-          sdt_lienhe: _currentHS.sdt_lienhe || "null", // CHANGED (sdt -> sdt_lienhe)
+          lop_hoc: _currentHS.lop_hoc || "null",
+          sdt_lienhe: _currentHS.sdt_lienhe || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
-          noi_kham_bhyt: noikham,                      // CHANGED (noi_kham -> noi_kham_bhyt)
+          noi_kham_bhyt: noikham,
           ten_cha_me: _currentHS.ten_cha_me || "null",
           doi_tuong_dong: "HS",
           ghi_chu: "null",
@@ -852,8 +858,6 @@
 
 
 
-
-
     /* ===========================
     *  CHỌN NHIỀU & NỘP NHIỀU (MỚI)
     * =========================== */
@@ -942,7 +946,7 @@
       // Set checked mặc định 12 tháng
       document.getElementById('bulk-thang-12').checked = true;
 
-      // Tính preview ban đầu (lấy ngày hết hạn cũ của HS đầu tiên; nếu không có thì lấy hôm nay)
+      // Tính preview ban đầu (lấy ngày hết hạn cũ của HS đầu tiên; nếu không có thì để '—')
       ensureGiaBHYT().then(gia => {
         const first = selectedList[0];
         const months = document.querySelector('input[name="bulk-thang"]:checked').value;
@@ -968,7 +972,7 @@
       });
     });
 
-    /** Nộp nhiều hồ sơ — gọi tuần tự endpoint hiện có (không cần sửa backend) */
+    /** Nộp nhiều hồ sơ — gọi tuần tự endpoint hiện có */
     async function submitBulkNopHoSo() {
       const selectedList = getSelectedRowsData();
       if (selectedList.length === 0) return;
@@ -994,7 +998,7 @@
           return;
         }
 
-        // Tính tiền/hoa hồng theo từng hồ sơ (giống logic đơn lẻ, giữ nguyên BE)
+        // Tính tiền/hoa hồng theo từng hồ sơ
         let ok = 0, fail = 0, failNames = [];
         for (const hs of selectedList) {
           const noikham = userNoiKham || hs.noi_kham_bhyt;
@@ -1005,9 +1009,14 @@
           if (String(months) === "6"  && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
           if (String(months) === "12" && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-          // Giữ nguyên quy ước hiện tại: hạn sử dụng mới = 31/12 năm hiện tại
-          const now = new Date();
-          const han_su_dung_bhyt_moi = `31/12/${now.getFullYear()}`;
+          // ✅ Hạn mới = theo hạn cũ (nếu có)
+          const od = parseVNDate(hs.ngay_het_han_bhyt);
+          let han_su_dung_bhyt_moi = "";
+          if (od) {
+            const startDate = addDaysExact(od, 1);
+            const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + parseInt(months,10), 0);
+            han_su_dung_bhyt_moi = formatVNDate(lastDay);
+          }
 
           const payload = {
             ma_so_bhxh: hs.ma_so_bhxh || "null",
@@ -1016,7 +1025,7 @@
             gioi_tinh: hs.gioi_tinh || "null",
             dia_chi: hs.dia_chi || "null",
             ngay_het_han_bhyt_cu: hs.ngay_het_han_bhyt || "null",
-            han_su_dung_bhyt_moi: han_su_dung_bhyt_moi,
+            han_su_dung_bhyt_moi,
             so_thang_dong: months,
             lop_hoc: hs.lop_hoc || "null",
             sdt_lienhe: hs.sdt_lienhe || "null",
@@ -1047,7 +1056,6 @@
           showToast(`Đã nộp thành công ${ok} hồ sơ!`);
         } else {
           showToast(`Nộp xong: thành công ${ok}, thất bại ${fail}.`);
-          // Bạn có thể log chi tiết nếu cần:
           console.log("Các hồ sơ lỗi:", failNames);
         }
 
