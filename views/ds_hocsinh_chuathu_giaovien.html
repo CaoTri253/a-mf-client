@@ -51,7 +51,7 @@
       .action-btns { display: flex; flex-direction: row; gap: 4px; }
     }
 
-    /* === NEW: CSS phiếu thu A5 & chế độ in === */
+    /* === CSS phiếu thu A5 & chế độ in === */
     .a5-paper {
       width: 148mm;          /* A5 portrait width */
       min-height: 210mm;     /* A5 portrait height */
@@ -67,9 +67,9 @@
     .receipt-sub { font-style: italic; }
     .receipt-meta { font-size: 13px; }
     .receipt-line { margin: 2mm 0; }
-    /* QR bé hơn 1 chút */
     .qr-box { width: 26mm; height: 26mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
     .sign-col { text-align: center; margin-top: 10mm; font-weight: 500; }
+    /* ✅ Tên giáo viên canh giữa và đặt trong cột NGƯỜI THU TIỀN */
     .sign-name { margin-top: 20mm; text-align: center; font-weight: 600; }
 
     @media print {
@@ -81,7 +81,7 @@
       .no-print { display: none !important; }
       .a5-paper { box-shadow: none !important; margin: 0 !important; }
     }
-    /* === END NEW CSS === */
+    /* === END CSS === */
     
   </style>
 </head>
@@ -96,7 +96,7 @@
       <input class="form-control search-input" id="search-box" placeholder="Tìm theo tên, ngày sinh, số định danh..." oninput="doSearch()">
     </div>
 
-    <!-- NÚT NỘP NHIỀU HỒ SƠ (MỚI) -->
+    <!-- NÚT NỘP NHIỀU HỒ SƠ -->
     <button id="btn-bulk-submit" class="btn btn-primary" onclick="showBulkNopHoSoModal()" style="display:none;">
       Nộp nhiều hồ sơ
     </button>
@@ -151,7 +151,6 @@
 
         <div class="mt-2 small">
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
-          <!-- Lý do khi không xác định -->
           <div id="nhs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
@@ -160,7 +159,6 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <!-- Thêm id để có thể enable/disable -->
         <button class="btn btn-primary" id="btnNopHoSo" onclick="submitNopHoSoBHYT()">Nộp hồ sơ</button>
       </div>
     </div></div>
@@ -209,7 +207,7 @@
     </div></div>
   </div>
 
-  <!-- Modal Nộp Nhiều Hồ Sơ (MỚI) -->
+  <!-- Modal Nộp Nhiều Hồ Sơ -->
   <div class="modal fade" id="modalBulkNopHoSo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
       <div class="modal-header">
@@ -249,7 +247,7 @@
     </div></div>
   </div>
 
-  <!-- === NEW: Modal xem trước & in Phiếu thu A5 === -->
+  <!-- Modal xem trước & in Phiếu thu A5 -->
   <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -257,7 +255,6 @@
           <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
           <div class="no-print d-flex gap-2">
             <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
-            <!-- Đổi sang in riêng phần phiếu -->
             <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -305,26 +302,28 @@
               <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
             </div>
 
-            <!-- Chữ ký: 1 hàng 2 cột, canh giữa -->
+            <!-- Chữ ký: 1 hàng 2 cột, đặt tên GV trong cột NGƯỜI THU TIỀN -->
             <div class="row">
-              <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
-              <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
+              <div class="col sign-col">
+                NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small>
+              </div>
+              <div class="col sign-col">
+                NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small>
+                <div class="sign-name" id="rec-teacher-name">—</div>
+              </div>
             </div>
 
-            <!-- Tên người thu ở góc phải dưới -->
-            <div class="sign-name" id="rec-teacher-name">—</div>
           </div>
         </div>
         <div class="modal-footer no-print">
           <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
           <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
-          <!-- Đổi sang in riêng phần phiếu -->
           <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
         </div>
       </div>
     </div>
   </div>
-  <!-- === END NEW MODAL === -->
+  <!-- END Modal phiếu thu -->
 
   <!-- Toast Notification -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
@@ -337,12 +336,17 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- === NEW: thư viện QR & html2canvas === -->
+  <!-- Thư viện QR & html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <!-- === END NEW libs -->
+  <!-- API_BASE -->
   <script src="../js/api.js"></script>
+
   <script>
+    const logPrefix = '[Receipts]';
+    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
@@ -376,25 +380,63 @@
       detectPageSize();
       if (pageSize !== prevPageSize) {
         currentPage = 1;
-        renderAllView();
+        window.renderAllView();
       }
     });
 
-    // Lấy danh sách BHYT
+    // ===== GÁN HÀM GLOBAL TRƯỚC doSearch() (fix ReferenceError) =====
+    window.renderAllView = function renderAllView() {
+      try {
+        let dataToShow = lastFiltered || allData;
+        if (sortField) {
+          dataToShow = [...dataToShow].sort(function(a, b) {
+            let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+            if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+          });
+        }
+        totalRecords = dataToShow.length;
+        totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+        document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+        let start = (currentPage - 1) * pageSize;
+        let ds = dataToShow.slice(start, start + pageSize);
+        renderDanhSachHS(ds);
+        renderPagination();
+      } catch (e) {
+        console.error(logPrefix, 'renderAllView error', e);
+      }
+    };
+
+    window.doSort = function doSort(field) {
+      if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
+      window.renderAllView();
+    };
+
+    function doSearch() {
+      let q = document.getElementById('search-box').value.trim().toLowerCase();
+      lastFiltered = !q ? allData : allData.filter(hs =>
+        (hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
+        (displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q) ||
+        (hs.so_dinh_danh||"").toLowerCase().includes(q)
+      );
+      currentPage = 1;
+      window.renderAllView();
+    }
+    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
+
+    // APIs
     async function getAllBHYT(ma_truong, lop) {
       const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;
       const res = await fetch(url);
       return await res.json();
     }
 
-    /* === NEW: API hồ sơ BHYT theo HS (dùng cho Sửa & In phiếu) === */
     async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
       const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
       const res = await fetch(url);
       return await res.json();
     }
 
-    /* === NEW: Lấy tên trường theo mã trường (fallback user.ten_truong) === */
     async function getTenTruong(ma_truong) {
       try {
         const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
@@ -408,69 +450,44 @@
 
     // Lấy danh sách học sinh + merge trạng thái BHYT
     async function fetchChuaThuHocsinh() {
-      detectPageSize();
-      showLoading();
+      try {
+        detectPageSize();
+        showLoading();
+        console.log(logPrefix, 'fetchChuaThuHocsinh start');
 
-      let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop_hoc=${encodeURIComponent(user.lop_hoc)}`;
-      let res = await fetch(url);
-      let data = await res.json();
+        let url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(user.ma_truong)}&lop_hoc=${encodeURIComponent(user.lop_hoc)}`;
+        let res = await fetch(url);
+        let data = await res.json();
 
-      // 2. Lấy danh sách BHYT
-      let bhytRes = await getAllBHYT(user.ma_truong, user.lop_hoc);
-      let dsBHYT = Array.isArray(bhytRes.data) ? bhytRes.data : [];
-      let bhytMap = {};
-      dsBHYT.forEach(row => {
-        const key = String(row.so_dinh_danh).replace(/^'/, '').trim();
-        bhytMap[key] = row.trang_thai;
-      });
-
-      // 3. Merge
-      if (data.success && Array.isArray(data.data)) {
-        allData = data.data.map(hs => {
-          let trangThai = bhytMap[hs.so_dinh_danh];
-          return {
-            ...hs,
-            _bhyt_trangthai: trangThai === undefined ? undefined : Number(trangThai),
-            trang_thai: trangThai
-          };
-        }).filter(hs => hs._bhyt_trangthai !== 1);
-      } else {
-        allData = [];
-      }
-
-      currentPage = 1;
-      doSearch();
-      hideLoading();
-    }
-
-    function doSearch() {
-      let q = document.getElementById('search-box').value.trim().toLowerCase();
-      lastFiltered = !q ? allData : allData.filter(hs =>
-        (hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
-        (displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q) ||
-        (hs.so_dinh_danh||"").toLowerCase().includes(q)
-      );
-      currentPage = 1;
-      renderAllView();
-    }
-    function clearSearch() { document.getElementById('search-box').value = ""; doSearch(); }
-
-    function renderAllView() {
-      let dataToShow = lastFiltered || allData;
-      if (sortField) {
-        dataToShow = [...dataToShow].sort(function(a, b) {
-          let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
-          if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
-          if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+        let bhytRes = await getAllBHYT(user.ma_truong, user.lop_hoc);
+        let dsBHYT = Array.isArray(bhytRes.data) ? bhytRes.data : [];
+        let bhytMap = {};
+        dsBHYT.forEach(row => {
+          const key = String(row.so_dinh_danh).replace(/^'/, '').trim();
+          bhytMap[key] = row.trang_thai;
         });
+
+        if (data.success && Array.isArray(data.data)) {
+          allData = data.data.map(hs => {
+            let trangThai = bhytMap[hs.so_dinh_danh];
+            return {
+              ...hs,
+              _bhyt_trangthai: trangThai === undefined ? undefined : Number(trangThai),
+              trang_thai: trangThai
+            };
+          }).filter(hs => hs._bhyt_trangthai !== 1);
+        } else {
+          allData = [];
+        }
+
+        currentPage = 1;
+        doSearch();
+        console.log(logPrefix, 'fetchChuaThuHocsinh done', { total: allData.length });
+      } catch (e) {
+        console.error(logPrefix, 'fetchChuaThuHocsinh error', e);
+      } finally {
+        hideLoading();
       }
-      totalRecords = dataToShow.length;
-      totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-      document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
-      let start = (currentPage - 1) * pageSize;
-      let ds = dataToShow.slice(start, start + pageSize);
-      renderDanhSachHS(ds);
-      renderPagination();
     }
 
     function sortIcon(field) {
@@ -557,7 +574,6 @@
     }
 
     // ✅ Hạn mới = ngày cuối cùng của (tháng bắt đầu từ ngày sau hạn cũ + N tháng)
-    // Nếu không có hạn cũ => “(không xác định)” + ghi chú
     function computeAmountAndExp(oldEndStr, months, basePrice){
       const oldEnd = parseVNDate(oldEndStr);
       const m = parseInt(months,10) || 0;
@@ -603,10 +619,8 @@
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
       new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT')).show();
 
-      // Prefill nơi khám từ DanhSach_Hocsinh
       document.getElementById('nhs-noikham').value = _currentHS.noi_kham_bhyt || "";
 
-      // Preview + khóa nút nếu thiếu hạn cũ
       ensureGiaBHYT().then(gia => {
         const months = document.querySelector('input[name="nhs-thang"]:checked').value;
         const {exp, amount, note} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, gia?.gia_tien);
@@ -623,11 +637,10 @@
           document.getElementById('nhs-error').innerText = '';
           if (btnNop) btnNop.disabled = false;
         }
-      });
+      }).catch(e=>console.error(logPrefix, 'ensureGiaBHYT (showNopHoSoModal)', e));
       hideLoading();
     }
 
-    // Ép kiểu số an toàn
     function parseFloatSafe(val) {
       if (typeof val === 'number') return val;
       if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
@@ -637,7 +650,6 @@
     async function submitNopHoSoBHYT() {
       if (!_currentHS) return;
 
-      // ⛔ Chặn nếu thiếu hạn cũ
       if (!parseVNDate(_currentHS.ngay_het_han_bhyt)) {
         document.getElementById('nhs-error').innerText =
           'Chưa có "Ngày hết hạn thẻ cũ". Vui lòng cập nhật trong danh sách học sinh trước khi nộp.';
@@ -660,7 +672,6 @@
         else if (so_thang == 6 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang) * so_tien * 100) / 100;
         else if (so_thang == 12 && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-        // FE không quyết định hạn mới; BE sẽ tính theo hạn cũ
         const payload = {
           ma_so_bhxh: _currentHS.ma_so_bhxh || "null",
           ho_ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
@@ -684,7 +695,6 @@
         };
 
         let res = await nopHoSoBHYTApi(payload);
-        hideLoading();
         if (res.success) {
           (bootstrap.Modal.getInstance(document.getElementById('modalNopHoSoBHYT')) || new bootstrap.Modal(document.getElementById('modalNopHoSoBHYT'))).hide();
           showToast("Nộp hồ sơ thành công!");
@@ -694,8 +704,10 @@
         }
 
       } catch (err) {
-        hideLoading();
         document.getElementById('nhs-error').innerText = err.message || "Có lỗi xảy ra!";
+        console.error(logPrefix, 'submitNopHoSoBHYT error', err);
+      } finally {
+        hideLoading();
       }
     }
 
@@ -706,38 +718,39 @@
       showLoading();
       const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
       if (!hs || hs._bhyt_trangthai !== 0) {
-        showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); return;
+        showToast("Chỉ sửa được hồ sơ đang chờ duyệt!"); hideLoading(); return;
       }
       _currentHS_Sua = hs;
       document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
       document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
       document.getElementById('shs-error').innerText = "";
-      // Gợi ý nơi khám
       let datalist = document.getElementById('noikham-list');
       datalist.innerHTML = NOIKHAM_SUGGEST.map(item=>`<option value="${item}">`).join('');
 
-      // Lấy hồ sơ chờ duyệt cũ (nếu có)
-      let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
-      if (bhytRes && bhytRes.success && bhytRes.data) {
-        document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
-        ["3","6","12"].forEach(t => {
-          document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
-        });
-      } else {
-        document.getElementById('shs-noikham').value = "";
-        ["3","6","12"].forEach(t => { document.getElementById('shs-thang-' + t).checked = false; });
-      }
+      try {
+        let bhytRes = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
+        if (bhytRes && bhytRes.success && bhytRes.data) {
+          document.getElementById('shs-noikham').value = bhytRes.data.noi_kham || "";
+          ["3","6","12"].forEach(t => {
+            document.getElementById('shs-thang-' + t).checked = (String(bhytRes.data.so_thang_dong) === t);
+          });
+        } else {
+          document.getElementById('shs-noikham').value = "";
+          ["3","6","12"].forEach(t => { document.getElementById('shs-thang-' + t).checked = false; });
+        }
 
-      ensureGiaBHYT().then(gia => {
+        const gia = await ensureGiaBHYT();
         const checked = document.querySelector('input[name="shs-thang"]:checked');
         const months = checked ? checked.value : "12";
         const {exp, amount, note} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, gia?.gia_tien);
         setPreviewSua(exp, amount);
         setExpNoteSua(note);
-      });
-
-      hideLoading();
-      new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
+      } catch (e) {
+        console.error(logPrefix, 'suaHoSo prepare error', e);
+      } finally {
+        hideLoading();
+        new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT')).show();
+      }
     }
 
     async function suaHoSoBHYTApi(payload) {
@@ -774,7 +787,6 @@
           so_tien
         };
         let res = await suaHoSoBHYTApi(payload);
-        hideLoading();
         if (res.success) {
           (bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT')) || new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT'))).hide();
           showToast("Đã cập nhật hồ sơ!");
@@ -783,8 +795,10 @@
           document.getElementById('shs-error').innerText = res.message || "Cập nhật thất bại!";
         }
       } catch (err) {
-        hideLoading();
         document.getElementById('shs-error').innerText = err.message || "Có lỗi xảy ra!";
+        console.error(logPrefix, 'submitSuaHoSoBHYT error', err);
+      } finally {
+        hideLoading();
       }
     }
 
@@ -852,7 +866,6 @@
 
       document.getElementById('bulk-thang-12').checked = true;
 
-      // Khóa nếu có HS thiếu hạn cũ
       const bulkBtn = document.getElementById('btnBulkNop');
       const invalidOld = selectedList.filter(h => !parseVNDate(h.ngay_het_han_bhyt));
       if (invalidOld.length > 0) {
@@ -868,7 +881,7 @@
         document.getElementById('bulk-exp-preview').innerText = exp;
         document.getElementById('bulk-amount-preview').innerText = amount.toLocaleString('vi-VN');
         setExpNoteBulk(note);
-      });
+      }).catch(e=>console.error(logPrefix, 'ensureGiaBHYT (bulk)', e));
 
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
     }
@@ -891,7 +904,6 @@
       const selectedList = getSelectedRowsData();
       if (selectedList.length === 0) return;
 
-      // ⛔ Chặn nếu có HS thiếu hạn cũ
       const invalidOld = selectedList.filter(h => !parseVNDate(h.ngay_het_han_bhyt));
       if (invalidOld.length > 0) {
         document.getElementById('bulk-error').innerText =
@@ -926,7 +938,6 @@
           if (String(months) === "6"  && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_6_thang)  * so_tien * 100) / 100;
           if (String(months) === "12" && gia) hoa_hong = Math.round(parseFloatSafe(gia.hoa_hong_12_thang) * so_tien * 100) / 100;
 
-          // FE không set hạn; backend tự tính theo hạn cũ
           const payload = {
             ma_so_bhxh: hs.ma_so_bhxh || "null",
             ho_ten_hoc_sinh: hs.ho_ten_hoc_sinh || "null",
@@ -959,10 +970,11 @@
         await fetchChuaThuHocsinh();
 
         if (fail === 0) showToast(`Đã nộp thành công ${ok} hồ sơ!`);
-        else { showToast(`Nộp xong: thành công ${ok}, thất bại ${fail}.`); console.log("Các hồ sơ lỗi:", failNames); }
+        else { showToast(`Nộp xong: thành công ${ok}, thất bại ${fail}.`); console.log(logPrefix, "Các hồ sơ lỗi:", failNames); }
 
       } catch (err) {
         document.getElementById('bulk-error').innerText = err.message || "Có lỗi xảy ra!";
+        console.error(logPrefix, 'submitBulkNopHoSo error', err);
       } finally {
         hideLoading();
         btn.disabled = false;
@@ -1025,8 +1037,6 @@
       updateBulkButton();
     }
 
-    function doSort(field) { if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; } renderAllView(); }
-
     function renderPagination() {
       const pagin = document.getElementById('pagination');
       pagin.innerHTML = '';
@@ -1042,12 +1052,12 @@
       if (maxP < totalPages) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
       pagin.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
     }
-    window.gotoPage = function(p) { if (p<1||p>totalPages||p===currentPage) return; currentPage = p; renderAllView(); };
+    window.gotoPage = function(p) { if (p<1||p>totalPages||p===currentPage) return; currentPage = p; window.renderAllView(); };
 
     function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
     window.onload = fetchChuaThuHocsinh;
 
-    /* === NEW: Hàm đọc số tiền thành chữ (TV) === */
+    /* === Hàm đọc số tiền thành chữ (TV) === */
     const VI_DIGITS = ["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
     function readTriple(n){
       let tr=Math.floor(n/100), ch=Math.floor((n%100)/10), dv=n%10, s="";
@@ -1073,7 +1083,8 @@
       str = str.charAt(0).toUpperCase() + str.slice(1) + " đồng";
       return str.replace(/\s+/g," ").trim();
     }
-    /* === NEW: tiện ích in phiếu === */
+
+    /* === Tiện ích in/lưu phiếu === */
     function pad3(n){ n = parseInt(n,10)||0; return String(n).padStart(3,'0'); }
     function todayText(){
       const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
@@ -1086,34 +1097,31 @@
       return { startText: formatVNDate(start), endText: formatVNDate(end) };
     }
 
-    // --- NEW: rút gọn & chuẩn hoá chuỗi cho QR ---
     function stripVN(str) {
       return String(str||"")
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')   // bỏ dấu
+        .replace(/[\u0300-\u036f]/g, '')
         .replace(/đ/g, 'd').replace(/Đ/g, 'D');
     }
     function initials(str) {
       return String(str||"").trim().split(/\s+/).map(w => w[0]||'').join('').toUpperCase();
     }
     function buildQRPayload(school, classCode, name, months, endDate) {
-      const s = stripVN(school).slice(0, 60);     // giới hạn độ dài
+      const s = stripVN(school).slice(0, 60);
       const c = String(classCode||"").slice(0, 12);
       const n = stripVN(name).slice(0, 60);
       const m = String(months||"");
-      const e = String(endDate||"").slice(0, 10); // dd/mm/yyyy
-      // Dạng gọn, dễ đọc tay nếu cần
+      const e = String(endDate||"").slice(0, 10);
       return `S=${s};L=${c};N=${n};M=${m};E=${e}`;
     }
 
-    /* === NEW: In phiếu thu (xem trước + QR + lưu ảnh) === */
     async function inPhieuThu(stt){
       try{
         showLoading();
+        console.log(logPrefix, 'inPhieuThu start for stt', stt);
         const hs = (lastFiltered || allData).find(h => String(h.stt) === String(stt));
         if (!hs) { hideLoading(); return; }
 
-        // Lấy hồ sơ BHYT từ DanhSach_BHYT (thông tin tháng & tiền)
         const hoSo = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
         if (!hoSo || !hoSo.success || !hoSo.data) {
           hideLoading();
@@ -1129,7 +1137,6 @@
         const seq = pad3(hs.stt);
         const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
 
-        // Gán dữ liệu vào UI phiếu
         document.getElementById('rec-school').innerText = schoolName;
         document.getElementById('rec-class').innerText = classCode;
         document.getElementById('rec-date-today').innerText = todayText();
@@ -1142,7 +1149,6 @@
         document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText = teacherName;
 
-        // QR (gọn, có fallback nếu vẫn quá dài)
         const qrBox = document.getElementById('receipt-qr'); 
         qrBox.innerHTML = "";
 
@@ -1162,8 +1168,7 @@
             correctLevel: QRCode.CorrectLevel.L
           });
         } catch (e) {
-          console.warn("QR overflow, fallback to shorter text", e);
-          // Fallback cực gọn (dùng ký tự viết tắt tên HS)
+          console.warn(logPrefix, "QR overflow, fallback to shorter text", e);
           const fallbackText = `L=${String(classCode).slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
           try {
             new QRCode(qrBox, {
@@ -1179,21 +1184,44 @@
 
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } catch(err){
-        console.error(err);
+        console.error(logPrefix, 'inPhieuThu error', err);
         showToast("Không thể tạo phiếu thu.");
       } finally { hideLoading(); }
     }
 
-    /* === NEW: tải ảnh phiếu thu === */
+    // === Lưu ảnh với fallback mobile ===
     async function downloadReceiptImage(){
-      const node = document.getElementById('receiptA5');
-      const canvas = await html2canvas(node, {scale: 2, backgroundColor:'#ffffff'});
-      const dataURL = canvas.toDataURL("image/png");
-      const a = document.createElement('a');
-      a.href = dataURL; a.download = `phieu-thu-bhyt.png`; a.click();
+      try {
+        const node = document.getElementById('receiptA5');
+        console.log(logPrefix, 'downloadReceiptImage start', { ua: navigator.userAgent, isIOS: isIOS(), isMobile: isMobile() });
+        const canvas = await html2canvas(node, {scale: 2, backgroundColor:'#ffffff'});
+        const dataURL = canvas.toDataURL("image/png");
+
+        const canDownload = 'download' in document.createElement('a') && !isIOS();
+        if (canDownload) {
+          const a = document.createElement('a');
+          a.href = dataURL; a.download = `phieu-thu-bhyt.png`;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          console.log(logPrefix, 'download via anchor/download attribute');
+        } else {
+          const win = window.open();
+          if (win) {
+            win.document.write(`<html><head><title>Lưu ảnh phiếu thu</title></head><body style="margin:0"><img src="${dataURL}" style="max-width:100%;display:block"/></body></html>`);
+            win.document.close();
+            console.log(logPrefix, 'opened new tab with image for manual save');
+          } else {
+            console.warn(logPrefix, 'window.open blocked; fallback to location.href');
+            alert('Trình duyệt chặn tải trực tiếp. Ảnh sẽ mở ở tab mới để bạn lưu thủ công.');
+            window.location.href = dataURL;
+          }
+        }
+      } catch (e) {
+        console.error(logPrefix, 'downloadReceiptImage error', e);
+        alert('Không thể lưu ảnh: ' + (e.message || e));
+      }
     }
 
-    /* === NEW: In CHỈ phần phiếu trong modal === */
+    // === In CHỈ phần phiếu: chuyển QR canvas/img, đợi tải xong rồi print ===
     function getReceiptPrintCSS() {
       return `
         <style>
@@ -1206,25 +1234,103 @@
           .receipt-line{ margin: 2mm 0; }
           .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
           .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
-          .sign-name{ margin-top:20mm; text-align:right; font-weight:600; }
+          .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
           .row{ display:flex; flex-wrap:nowrap; width:100%; }
           .col{ flex:1 1 0; }
           .text-center{ text-align:center; }
         </style>
       `;
     }
+
     function printReceiptOnly() {
-      const wrap = document.getElementById('receiptA5');
-      if (!wrap) return;
-      const w = window.open('', '_blank', 'width=900,height=650');
-      w.document.write('<html><head><title>In phiếu thu</title>');
-      w.document.write(getReceiptPrintCSS());
-      w.document.write('</head><body>');
-      w.document.write(wrap.outerHTML);  // sao chép toàn bộ nội dung phiếu (đã có QR)
-      w.document.write('</body></html>');
-      w.document.close();
-      w.focus();
-      w.onload = function() { w.print(); w.close(); };
+      const src = document.getElementById('receiptA5');
+      if (!src) { console.error(logPrefix, 'printReceiptOnly: #receiptA5 not found'); return; }
+
+      try {
+        console.log(logPrefix, 'printReceiptOnly start', { ua: navigator.userAgent, isMobile: isMobile(), isIOS: isIOS() });
+
+        // Clone và chuyển QR sang IMG để đảm bảo in ra đầy đủ
+        const clone = src.cloneNode(true);
+        const cloneQR = clone.querySelector('#receipt-qr');
+
+        // Lấy cả canvas hoặc img tùy qrcodejs render
+        const origCanvas = document.querySelector('#receipt-qr canvas');
+        const origImg = document.querySelector('#receipt-qr img');
+
+        if (cloneQR && (origCanvas || origImg)) {
+          try {
+            const dataURL = origImg ? origImg.src : origCanvas.toDataURL('image/png');
+            cloneQR.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = dataURL;
+            img.style.width = '90px';
+            img.style.height = '90px';
+            cloneQR.appendChild(img);
+            console.log(logPrefix, 'QR converted to IMG for print');
+          } catch (e) {
+            console.warn(logPrefix, 'convert QR to IMG failed, printing as-is', e);
+          }
+        } else {
+          console.warn(logPrefix, 'QR not found or not rendered, proceed anyway');
+        }
+
+        const html = `
+          <html>
+            <head><title>In phiếu thu</title>${getReceiptPrintCSS()}</head>
+            <body>${clone.outerHTML}</body>
+          </html>
+        `;
+
+        const w = window.open('', '_blank', 'width=900,height=650');
+        if (!w) {
+          console.error(logPrefix, 'print window blocked by browser');
+          alert('Trình duyệt chặn cửa sổ in. Hãy cho phép pop-up rồi thử lại.');
+          return;
+        }
+        w.document.open(); w.document.write(html); w.document.close();
+
+        const triggerPrint = () => {
+          try {
+            console.log(logPrefix, 'triggering print');
+            w.focus(); w.print();
+            if (!isMobile()) {
+              setTimeout(()=>{ try { w.close(); } catch(_){} }, 500);
+            } else {
+              console.log(logPrefix, 'mobile detected: keep window open after print');
+            }
+          } catch (e) {
+            console.error(logPrefix, 'print() failed', e);
+          }
+        };
+
+        w.onload = () => {
+          try {
+            const imgs = w.document.images;
+            if (!imgs || imgs.length === 0) {
+              console.log(logPrefix, 'no images found, print immediately');
+              setTimeout(triggerPrint, 200);
+              return;
+            }
+            let loaded = 0;
+            const done = () => { if (++loaded >= imgs.length) triggerPrint(); };
+            for (const img of imgs) {
+              if (img.complete) done();
+              else {
+                img.onload = done;
+                img.onerror = (e)=>{ console.warn(logPrefix, 'image load error', e); done(); };
+              }
+            }
+            // Fallback đề phòng onload không chạy
+            setTimeout(triggerPrint, 1500);
+          } catch (e) {
+            console.error(logPrefix, 'onload handler error', e);
+            triggerPrint();
+          }
+        };
+      } catch (e) {
+        console.error(logPrefix, 'printReceiptOnly fatal', e);
+        alert('Không thể in phiếu: ' + (e.message || e));
+      }
     }
   </script>
 </body>
