@@ -1106,13 +1106,16 @@
     function initials(str) {
       return String(str||"").trim().split(/\s+/).map(w => w[0]||'').join('').toUpperCase();
     }
-    function buildQRPayload(school, classCode, name, months, endDate) {
-      const s = stripVN(school).slice(0, 60);
-      const c = String(classCode||"").slice(0, 12);
-      const n = stripVN(name).slice(0, 60);
-      const m = String(months||"");
-      const e = String(endDate||"").slice(0, 10);
-      return `S=${s};L=${c};N=${n};M=${m};E=${e}`;
+
+    /* ✅ THÊM MÃ TRƯỜNG Ở ĐẦU CHUỖI QR: dùng khóa 'MT' */
+    function buildQRPayload(schoolCode, school, classCode, name, months, endDate) {
+      const mt = String(schoolCode || "").slice(0, 24);
+      const s  = stripVN(school).slice(0, 60);
+      const c  = String(classCode || "").slice(0, 12);
+      const n  = stripVN(name).slice(0, 60);
+      const m  = String(months || "");
+      const e  = String(endDate || "").slice(0, 10);
+      return `MT=${mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
     }
 
     async function inPhieuThu(stt){
@@ -1153,6 +1156,7 @@
         qrBox.innerHTML = "";
 
         const primaryText = buildQRPayload(
+          user.ma_truong,      // ✅ thêm mã trường lên đầu
           schoolName,
           classCode,
           hs.ho_ten_hoc_sinh || "",
@@ -1169,7 +1173,7 @@
           });
         } catch (e) {
           console.warn(logPrefix, "QR overflow, fallback to shorter text", e);
-          const fallbackText = `L=${String(classCode).slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
+          const fallbackText = `MT=${String(user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
           try {
             new QRCode(qrBox, {
               text: fallbackText,
@@ -1228,7 +1232,7 @@
           @page { size: A5 portrait; margin: 10mm; }
           html,body{ background:#fff; margin:0; padding:0; }
           .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000; margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px; }
-          .receipt-title{ font-weight:700; font-size:22px; text-transform:uppercase; letter-spacing:.4px; }
+          .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
           .receipt-sub{ font-style:italic; }
           .receipt-meta{ font-size:13px; }
           .receipt-line{ margin: 2mm 0; }
