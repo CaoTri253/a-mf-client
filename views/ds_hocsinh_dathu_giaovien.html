@@ -36,16 +36,6 @@
       .action-btns { display: flex; flex-direction: row; gap: 6px; }
     }
 
-
-    /* In chỉ #receiptA5 khi body có class .printing */
-    @media print {
-      body.printing *:not(#receiptA5):not(#receiptA5 *) { display: none !important; }
-      #receiptA5 { display: block !important; box-shadow: none !important; margin: 0 !important; }
-      .modal.open { position: static !important; }
-    }
-
-    
-
     /* Thẻ BHYT (render bằng HTML/CSS) */
     .card-wrap { width: 100%; max-width: 880px; margin: 0 auto; background:#fff; border: 2px solid #2b7bb9; border-radius: 10px; padding: 18px 16px; position: relative; }
     .card-title { text-align:center; font-weight:800; color:#e53935; font-size:24px; letter-spacing:.3px; margin-bottom:6px; }
@@ -66,6 +56,13 @@
     .qr-box { width: 26mm; height: 26mm; border: 1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
     .sign-col { text-align: center; margin-top: 10mm; font-weight: 500; }
     .sign-name { margin-top: 20mm; text-align: center; font-weight: 600; }
+
+    /* In chỉ phần phiếu thu khi nhấn nút In trong modal */
+    @media print {
+      body.printing *:not(#receiptA5):not(#receiptA5 *) { display: none !important; }
+      #receiptA5 { display: block !important; box-shadow: none !important; margin: 0 !important; }
+      .modal.open { position: static !important; }
+    }
   </style>
 </head>
 <body>
@@ -115,7 +112,7 @@
           </div>
           <hr class="hr-soft">
           <div class="card-row">
-            <div class="card-col"><b>Họ và tên học sinh:</b> <span id="the-hoten">—</span></div>
+            <div class="card-col"><b>Họ và tên:</b> <span id="the-hoten">—</span></div>
             <div class="card-col"><b>Giới tính:</b> <span id="the-gioitinh">—</span></div>
             <div class="card-col"><b>Lớp:</b> <span id="the-lop">—</span></div>
           </div>
@@ -243,18 +240,15 @@
     function todayText(){ const d=new Date(); return "Ngày "+String(d.getDate()).padStart(2,'0')+" tháng "+String(d.getMonth()+1).padStart(2,'0')+" năm "+d.getFullYear(); }
     function stripVN(str){ return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
 
-
-    /* ===== Helpers trạng thái & số hồ sơ ===== */
+    // Chuẩn hoá trạng thái/số hồ sơ
     function parseTrangThai(val){
       const n = parseInt(String(val || '0').replace(/[^\d]/g, ''), 10);
-      return isNaN(n) ? 0 : n;                      // 0 | 1
+      return isNaN(n) ? 0 : n;
     }
     function hasSoHoSo(v){
       const s = (v == null) ? '' : String(v).trim();
       return s.length > 0 && s.toLowerCase() !== 'null' && s !== '0';
     }
-
-
 
     /* ===== Sort & paginate ===== */
     function sortIcon(field){ if (sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
@@ -276,7 +270,7 @@
       try{
         const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
         const res = await fetch(url); const j = await res.json();
-        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
+        return (j && (j.ten_truong || (j.data && j.data.ten_truong))) || user.ten_truong || ma_truong || '—';
       }catch(e){ return user.ten_truong || ma_truong || '—'; }
     }
 
@@ -350,9 +344,9 @@
         let action = '';
         if (st===1 && sohoso){
           action = '<div class="action-btns">'
-                +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
-                +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
-                + '</div>';
+                 +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
+                 +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
+                 + '</div>';
         } else {
           // st==0  hoặc (st==1 & chưa có số hồ sơ)
           action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
@@ -366,7 +360,6 @@
           + '<td>'+(hs.so_dinh_danh||"")+'</td>'
           + '</tr>';
       });
-
 
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
@@ -428,54 +421,48 @@
         if (!hoSoRes || !hoSoRes.success || !hoSoRes.data){ toast("Không tìm thấy hồ sơ BHYT để in."); hideLoading(); return; }
         const bhyt = hoSoRes.data;
 
-        // Fallback dữ liệu từ danh sách lớp
+        // Fallback từ danh sách lớp
         const hsListItem = (lastFiltered || allData).find(h => String(h.so_dinh_danh||'').trim() === String(so_dinh_danh||'').trim()) || {};
 
         const months = parseInt(bhyt.so_thang_dong || "12", 10);
         const amount = parseInt(String(bhyt.so_tien||'0').replace(/[^\d]/g,''),10) || 0;
 
-        const { startText, endText } = calcRange(hsListItem.ngay_het_han_bhyt || bhyt.ngay_het_han_bhyt_cu || "", months);
+        const baseOldEnd = hsListItem.ngay_het_han_bhyt || bhyt.ngay_het_han_bhyt_cu || "";
+        const range = calcRange(baseOldEnd, months);
 
         const schoolName = await getTenTruong(user.ma_truong);
         const classCode  = bhyt.lop_hoc || hsListItem.lop_hoc || user.lop_hoc || "";
         const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
 
-        // ➜ Ưu tiên BHYT, nếu trống dùng danh sách lớp
         const tenNguoiNop = bhyt.ho_ten_hoc_sinh || hsListItem.ho_ten_hoc_sinh || "";
         const diaChi      = bhyt.dia_chi || hsListItem.dia_chi || "";
 
         document.getElementById('rec-school').innerText = schoolName;
         document.getElementById('rec-class').innerText = classCode;
         document.getElementById('rec-date-today').innerText = todayText();
-        document.getElementById('rec-student-name').innerText = tenNguoiNop;   // ✅ đã có tên
-        document.getElementById('rec-address').innerText = diaChi;              // ✅ đã có địa chỉ
-        document.getElementById('rec-content').innerText = `Thu tiền BHYT - ${classCode}`;
+        document.getElementById('rec-student-name').innerText = tenNguoiNop;
+        document.getElementById('rec-address').innerText = diaChi;
+        document.getElementById('rec-content').innerText = "Thu tiền BHYT - " + classCode;
         document.getElementById('rec-months').innerText = String(months);
-        document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
+        document.getElementById('rec-range').innerText = "từ ngày " + range.startText + " đến ngày " + range.endText;
         document.getElementById('rec-amount').innerText = amount.toLocaleString('vi-VN');
         document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText = teacherName;
 
         const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML = "";
-        const payload = buildQRPayload(user.ma_truong, schoolName, classCode, tenNguoiNop, months, endText);
-        try {
-          new QRCode(qrBox, { text: payload, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L });
-        } catch {
-          qrBox.innerHTML = '<small>QR quá dài</small>';
-        }
+        const payload = buildQRPayload(user.ma_truong, schoolName, classCode, tenNguoiNop, months, range.endText);
+        try{ new QRCode(qrBox, { text: payload, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L }); }
+        catch(e){ qrBox.innerHTML = '<small>QR quá dài</small>'; }
 
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
-      }catch(err){
-        console.error('[DaThu] inPhieuThu', err);
-        toast('Không thể tạo phiếu thu.');
-      }finally{ hideLoading(); }
+      }catch(err){ console.error('[DaThu] inPhieuThu', err); toast('Không thể tạo phiếu thu.'); }
+      finally{ hideLoading(); }
     }
-
 
     /* ===== Xem thẻ + Lưu ảnh ===== */
     function statusText(st, sohoso){
-      if (Number(st)===0) return {text:'Chờ duyệt', cls:'status-wait', sohoso:''};
-      if (Number(st)===1 && (!sohoso || String(sohoso).toLowerCase()==='null')) return {text:'Đã nộp, chờ kích hoạt', cls:'status-wait', sohoso:''};
+      if (parseTrangThai(st)===0) return {text:'Chờ duyệt', cls:'status-wait', sohoso:''};
+      if (parseTrangThai(st)===1 && !hasSoHoSo(sohoso)) return {text:'Đã nộp, chờ kích hoạt', cls:'status-wait', sohoso:''};
       return {text:'ĐÃ KÍCH HOẠT', cls:'status-activated', sohoso: String(sohoso||'')};
     }
 
@@ -485,6 +472,8 @@
         const hsRes = await getHosoBHYTByHS(so_dinh_danh, user.ma_truong, user.lop_hoc);
         if (!hsRes || !hsRes.success || !hsRes.data){ toast("Không tìm thấy hồ sơ."); hideLoading(); return; }
         const d = hsRes.data;
+
+        const hsListItem = (lastFiltered || allData).find(h => String(h.so_dinh_danh||'').trim() === String(so_dinh_danh||'').trim()) || {};
 
         const oldEnd = parseVNDate(d.ngay_het_han_bhyt_cu||"");
         let startText = "—", endText = "—";
@@ -498,14 +487,14 @@
 
         document.getElementById('the-maso').innerText = d.ma_so_bhxh || "—";
         document.getElementById('the-sodinhdanh').innerText = d.so_dinh_danh || "—";
-        document.getElementById('the-hoten').innerText = d.ho_ten_hoc_sinh || "—";
+        document.getElementById('the-hoten').innerText = d.ho_ten_hoc_sinh || hsListItem.ho_ten_hoc_sinh || "—";
         document.getElementById('the-gioitinh').innerText = d.gioi_tinh || "—";
-        document.getElementById('the-lop').innerText = d.lop_hoc || user.lop_hoc || "—";
+        document.getElementById('the-lop').innerText = d.lop_hoc || hsListItem.lop_hoc || user.lop_hoc || "—";
         document.getElementById('the-ngaysinh').innerText = displayNgaySinh(d.ngay_sinh || "");
         document.getElementById('the-noikham').innerText = d.noi_kham_bhyt || "—";
         document.getElementById('the-thang').innerText = d.so_thang_dong || "—";
         document.getElementById('the-tien').innerText = (parseInt((d.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0).toLocaleString('vi-VN');
-        document.getElementById('the-diachi').innerText = d.dia_chi || "—";
+        document.getElementById('the-diachi').innerText = d.dia_chi || hsListItem.dia_chi || "—";
         document.getElementById('the-ghichu').innerText = d.ghi_chu || "";
         document.getElementById('the-start').innerText = startText;
         document.getElementById('the-end').innerText = endText;
@@ -514,7 +503,7 @@
         stEl.innerText = stInfo.text;
         stEl.classList.remove('status-wait','status-activated');
         stEl.classList.add(stInfo.cls);
-        document.getElementById('the-sohoso').innerText = stInfo.sohoso ? ' ('+stInfo.sohoso+')' : '';
+        document.getElementById('the-sohoso').innerText = hasSoHoSo(stInfo.sohoso) ? ' ('+stInfo.sohoso+')' : '';
 
         new bootstrap.Modal(document.getElementById('modalTheBHYT')).show();
       }catch(err){ console.error('[DaThu] xemThe', err); toast('Không thể hiển thị thẻ.'); }
@@ -531,7 +520,7 @@
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
 
-    /* ===== Lưu/In phiếu thu ===== */
+    /* ===== Lưu/In phiếu thu (in ngay trong modal) ===== */
     async function downloadReceiptImage(){
       try{
         const node = document.getElementById('receiptA5');
@@ -542,15 +531,12 @@
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
     function printReceiptOnly(){
-      // Đảm bảo QR đã render, rồi in ngay tại chỗ (không mở tab)
       document.body.classList.add('printing');
-      // Một nhịp nhỏ cho layout ổn định trước khi gọi print
-      setTimeout(()=>{
+      setTimeout(function(){
         window.print();
-        setTimeout(()=>{ document.body.classList.remove('printing'); }, 100);
+        setTimeout(function(){ document.body.classList.remove('printing'); }, 100);
       }, 150);
     }
-
 
     function toast(msg){
       document.getElementById('toast-message').innerText = msg;
