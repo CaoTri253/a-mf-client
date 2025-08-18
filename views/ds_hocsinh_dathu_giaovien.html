@@ -36,7 +36,7 @@
       .action-btns { display: flex; flex-direction: row; gap: 6px; }
     }
 
-    /* Thẻ BHYT (render bằng HTML/CSS) */
+    /* Thẻ BHYT (render HTML) */
     .card-wrap { width: 100%; max-width: 880px; margin: 0 auto; background:#fff; border: 2px solid #2b7bb9; border-radius: 10px; padding: 18px 16px; position: relative; }
     .card-title { text-align:center; font-weight:800; color:#e53935; font-size:24px; letter-spacing:.3px; margin-bottom:6px; }
     .card-row { display:flex; flex-wrap:wrap; gap:6px 16px; line-height:1.4; font-size:17px; }
@@ -47,7 +47,7 @@
     .num-blue { color:#1565c0; font-weight:800; }
     .num-red { color:#e53935; font-weight:800; }
 
-    /* A5 receipt (dùng khi in phiếu thu) */
+    /* A5 receipt (in phiếu thu) */
     .a5-paper { width: 148mm; min-height: 210mm; background: #fff; margin: 0 auto; padding: 10mm 12mm; color: #000; box-shadow: 0 1px 10px #0002; font-size: 13px; line-height: 1.35; }
     .receipt-title { font-weight: 700; font-size: 22px; text-transform: uppercase; letter-spacing: .4px; }
     .receipt-sub { font-style: italic; }
@@ -57,7 +57,7 @@
     .sign-col { text-align: center; margin-top: 10mm; font-weight: 500; }
     .sign-name { margin-top: 20mm; text-align: center; font-weight: 600; }
 
-    /* In chỉ phần phiếu thu khi nhấn nút In trong modal */
+    /* In chỉ phần phiếu thu khi nhấn In trong modal */
     @media print {
       body.printing *:not(#receiptA5):not(#receiptA5 *) { display: none !important; }
       #receiptA5 { display: block !important; box-shadow: none !important; margin: 0 !important; }
@@ -226,7 +226,7 @@
     function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
     function goBack(){ showLoading(); window.location.href = "bhyt_giaovien.html"; }
 
-    /* ===== Helpers ngày & hiển thị ===== */
+    /* ===== Helpers ngày & text ===== */
     function displayNgaySinh(raw){
       if (!raw) return "";
       if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) { const d = new Date(raw); return d.toLocaleDateString('vi-VN'); }
@@ -239,8 +239,9 @@
     function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
     function todayText(){ const d=new Date(); return "Ngày "+String(d.getDate()).padStart(2,'0')+" tháng "+String(d.getMonth()+1).padStart(2,'0')+" năm "+d.getFullYear(); }
     function stripVN(str){ return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+    function idSafe(v){ return String(v||'').replace(/[^a-zA-Z0-9_-]/g,''); }
 
-    // Chuẩn hoá trạng thái/số hồ sơ
+    // Chuẩn hoá trạng thái / số hồ sơ
     function parseTrangThai(val){
       const n = parseInt(String(val || '0').replace(/[^\d]/g, ''), 10);
       return isNaN(n) ? 0 : n;
@@ -248,6 +249,10 @@
     function hasSoHoSo(v){
       const s = (v == null) ? '' : String(v).trim();
       return s.length > 0 && s.toLowerCase() !== 'null' && s !== '0';
+    }
+    function normalizeSohoso(v){
+      const s = (v == null) ? '' : String(v).trim();
+      return hasSoHoSo(s) ? s : '';
     }
 
     /* ===== Sort & paginate ===== */
@@ -257,7 +262,7 @@
     function detectPageSize(){ const w=window.innerWidth; pageSize = (w<=600)?6:(w<=999?12:20); }
     window.addEventListener('resize', ()=>{ const prev=pageSize; detectPageSize(); if(prev!==pageSize){ currentPage=1; renderAllView(); } });
 
-    /* ===== APIs phụ trợ ===== */
+    /* ===== API wrappers ===== */
     async function getAllBHYT(ma_truong, lop_hoc){
       const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
       const res = await fetch(url); return await res.json();
@@ -267,8 +272,7 @@
       const res = await fetch(url); return await res.json();
     }
     async function getTenTruong(ma_truong){
-      try{
-        const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
+      try{ const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
         const res = await fetch(url); const j = await res.json();
         return (j && (j.ten_truong || (j.data && j.data.ten_truong))) || user.ten_truong || ma_truong || '—';
       }catch(e){ return user.ten_truong || ma_truong || '—'; }
@@ -295,6 +299,37 @@
       );
       currentPage = 1;
       renderAllView();
+    }
+
+    /* ====== KHO SO HỒ SƠ (cache) ====== */
+    const sohosoCache = {}; // key: so_dinh_danh -> so_ho_so (string hoặc '')
+
+    async function ensureSohoso(hs){
+      const key = idSafe(hs.so_dinh_danh||'');
+      if (!key) return;
+      if (sohosoCache[key] !== undefined) return;  // đã có (kể cả rỗng)
+      sohosoCache[key] = ''; // đánh dấu đang fetch (tránh gọi lặp)
+      try{
+        const res = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, user.lop_hoc);
+        const d = (res && res.data) ? res.data : {};
+        const sohoso = normalizeSohoso(d.so_ho_so);
+        sohosoCache[key] = sohoso || '';
+        if (sohoso){
+          // cập nhật ngay giao diện
+          const stCell = document.getElementById('st-'+key);
+          const actCell = document.getElementById('act-'+key);
+          if (stCell){
+            stCell.innerHTML = '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>'
+                             + '<div class="status-blue">'+sohoso+'</div>';
+          }
+          if (actCell){
+            actCell.innerHTML = '<div class="action-btns">'
+                              +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
+                              +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
+                              + '</div>';
+          }
+        }
+      }catch(e){ /* im lặng, giữ trạng thái hiện tại */ }
     }
 
     function renderAllView(){
@@ -332,29 +367,35 @@
 
       ds.forEach(hs=>{
         const st = parseTrangThai(hs.trang_thai);
-        const sohoso = hasSoHoSo(hs.so_ho_so) ? String(hs.so_ho_so).trim() : '';
+        const key = idSafe(hs.so_dinh_danh||'');
+        let sohoso = normalizeSohoso(hs.so_ho_so);
+        if (!sohoso && sohosoCache[key] !== undefined) sohoso = sohosoCache[key];
 
-        const statusHtml = (st===0)
-          ? '<div class="status-badge status-wait">Chờ duyệt</div>'
-          : (!sohoso
-              ? '<div class="status-badge status-wait">Đã nộp, chờ kích hoạt</div>'
-              : '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>'
-                + '<div class="status-blue">'+ sohoso +'</div>');
-
+        let statusHtml = '';
         let action = '';
-        if (st===1 && sohoso){
+
+        if (st===1 && hasSoHoSo(sohoso)){
+          // ĐÃ KÍCH HOẠT
+          statusHtml = '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>'
+                     + '<div class="status-blue">'+sohoso+'</div>';
           action = '<div class="action-btns">'
                  +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
                  +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
                  + '</div>';
+        } else if (st===1){
+          // Đã nộp, chờ kích hoạt (có thể chưa có sohoso ở danh sách → gọi ensure)
+          statusHtml = '<div class="status-badge status-wait">Đã nộp, chờ kích hoạt</div>';
+          action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
+          ensureSohoso(hs); // sẽ tự nâng cấp dòng khi fetch xong
         } else {
-          // st==0  hoặc (st==1 & chưa có số hồ sơ)
+          // Chờ duyệt
+          statusHtml = '<div class="status-badge status-wait">Chờ duyệt</div>';
           action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
         }
 
         html += '<tr>'
-          + '<td>'+action+'</td>'
-          + '<td>'+statusHtml+'</td>'
+          + '<td id="act-'+key+'">'+action+'</td>'
+          + '<td id="st-'+key+'">'+statusHtml+'</td>'
           + '<td>'+(hs.ho_ten_hoc_sinh||"")+'</td>'
           + '<td>'+displayNgaySinh(hs.ngay_sinh)+'</td>'
           + '<td>'+(hs.so_dinh_danh||"")+'</td>'
@@ -536,6 +577,21 @@
         window.print();
         setTimeout(function(){ document.body.classList.remove('printing'); }, 100);
       }, 150);
+    }
+
+    function renderPagination(){
+      const pagin = document.getElementById('pagination'); pagin.innerHTML = '';
+      if (totalPages<=1) return;
+      pagin.innerHTML += '<li class="page-item'+(currentPage===1?' disabled':'')+'"><a class="page-link" href="#" onclick="gotoPage('+(currentPage-1)+');return false;">Trước</a></li>';
+      let minP=Math.max(1,currentPage-2), maxP=Math.min(totalPages,currentPage+2);
+      if (minP>1) pagin.innerHTML += '<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>';
+      if (minP>2) pagin.innerHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+      for (let p=minP;p<=maxP;p++){
+        pagin.innerHTML += '<li class="page-item'+(p===currentPage?' active':'')+'"><a class="page-link" href="#" onclick="gotoPage('+p+');return false;">'+p+'</a></li>';
+      }
+      if (maxP<totalPages-1) pagin.innerHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+      if (maxP<totalPages) pagin.innerHTML += '<li class="page-item"><a class="page-link" href="#" onclick="gotoPage('+totalPages+');return false;">'+totalPages+'</a></li>';
+      pagin.innerHTML += '<li class="page-item'+(currentPage===totalPages?' disabled':'')+'"><a class="page-link" href="#" onclick="gotoPage('+(currentPage+1)+');return false;">Sau</a></li>';
     }
 
     function toast(msg){
