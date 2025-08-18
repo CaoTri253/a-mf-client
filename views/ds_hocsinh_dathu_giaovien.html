@@ -59,9 +59,8 @@
 
     /* In chỉ phần phiếu thu khi nhấn In trong modal */
     @media print {
-      body.printing *:not(#receiptA5):not(#receiptA5 *) { display: none !important; }
-      #receiptA5 { display: block !important; box-shadow: none !important; margin: 0 !important; }
-      .modal.open { position: static !important; }
+      body.printing *:not(#print-area):not(#print-area *) { display: none !important; }
+      #print-area { display:block !important; }
     }
   </style>
 </head>
@@ -239,21 +238,18 @@
     function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
     function todayText(){ const d=new Date(); return "Ngày "+String(d.getDate()).padStart(2,'0')+" tháng "+String(d.getMonth()+1).padStart(2,'0')+" năm "+d.getFullYear(); }
     function stripVN(str){ return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
-    function idSafe(v){ return String(v||'').replace(/[^a-zA-Z0-9_-]/g,''); }
 
-    // Chuẩn hoá trạng thái / số hồ sơ
-    function parseTrangThai(val){
-      const n = parseInt(String(val || '0').replace(/[^\d]/g, ''), 10);
-      return isNaN(n) ? 0 : n;
+    // === Helpers giá trị "sạch" ===
+    function nonEmpty(val){
+      const s = (val == null) ? '' : String(val).trim();
+      return s && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined' ? s : '';
     }
-    function hasSoHoSo(v){
-      const s = (v == null) ? '' : String(v).trim();
-      return s.length > 0 && s.toLowerCase() !== 'null' && s !== '0';
-    }
-    function normalizeSohoso(v){
-      const s = (v == null) ? '' : String(v).trim();
-      return hasSoHoSo(s) ? s : '';
-    }
+    function pick(){ for (let i=0;i<arguments.length;i++){ const s = nonEmpty(arguments[i]); if (s) return s; } return ''; }
+    function parseTrangThai(v){ const n = parseInt(String(v||'0').replace(/[^\d]/g,''),10); return isNaN(n) ? 0 : n; }
+    function hasSoHoSo(v){ const s = nonEmpty(v); return s.length > 3; }
+    function getSoHoSoFromRow(row){ return pick(row?.so_ho_so,row?.['so_ho_so '],row?.sohoso,row?.['số_hồ_sơ'],row?.['số hồ sơ']); }
+    function getDiaChiFromRow(row){ return pick(row?.dia_chi,row?.diachi,row?.['địa_chỉ'],row?.['dia chi'],row?.address); }
+    function idSafe(v){ return String(v||'').replace(/[^a-zA-Z0-9_-]/g,''); }
 
     /* ===== Sort & paginate ===== */
     function sortIcon(field){ if (sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
@@ -308,14 +304,13 @@
       const key = idSafe(hs.so_dinh_danh||'');
       if (!key) return;
       if (sohosoCache[key] !== undefined) return;  // đã có (kể cả rỗng)
-      sohosoCache[key] = ''; // đánh dấu đang fetch (tránh gọi lặp)
+      sohosoCache[key] = ''; // lock
       try{
         const res = await getHosoBHYTByHS(hs.so_dinh_danh, user.ma_truong, user.lop_hoc);
         const d = (res && res.data) ? res.data : {};
-        const sohoso = normalizeSohoso(d.so_ho_so);
-        sohosoCache[key] = sohoso || '';
-        if (sohoso){
-          // cập nhật ngay giao diện
+        const sohoso = pick(getSoHoSoFromRow(d), d?.so_ho_so) || '';
+        sohosoCache[key] = sohoso;
+        if (hasSoHoSo(sohoso)){
           const stCell = document.getElementById('st-'+key);
           const actCell = document.getElementById('act-'+key);
           if (stCell){
@@ -324,12 +319,12 @@
           }
           if (actCell){
             actCell.innerHTML = '<div class="action-btns">'
-                              +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
-                              +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
-                              + '</div>';
+              + '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
+              + '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
+              + '</div>';
           }
         }
-      }catch(e){ /* im lặng, giữ trạng thái hiện tại */ }
+      }catch(e){ /* ignore */ }
     }
 
     function renderAllView(){
@@ -368,33 +363,30 @@
       ds.forEach(hs=>{
         const st = parseTrangThai(hs.trang_thai);
         const key = idSafe(hs.so_dinh_danh||'');
-        let sohoso = normalizeSohoso(hs.so_ho_so);
+        let sohoso = getSoHoSoFromRow(hs);
         if (!sohoso && sohosoCache[key] !== undefined) sohoso = sohosoCache[key];
 
         let statusHtml = '';
-        let action = '';
+        let actionHtml = '';
 
         if (st===1 && hasSoHoSo(sohoso)){
-          // ĐÃ KÍCH HOẠT
           statusHtml = '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>'
-                     + '<div class="status-blue">'+sohoso+'</div>';
-          action = '<div class="action-btns">'
-                 +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
-                 +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
-                 + '</div>';
+                     + '<div class="status-blue">'+ sohoso +'</div>';
+          actionHtml = '<div class="action-btns">'
+                     +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
+                     +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
+                     + '</div>';
         } else if (st===1){
-          // Đã nộp, chờ kích hoạt (có thể chưa có sohoso ở danh sách → gọi ensure)
           statusHtml = '<div class="status-badge status-wait">Đã nộp, chờ kích hoạt</div>';
-          action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
-          ensureSohoso(hs); // sẽ tự nâng cấp dòng khi fetch xong
+          actionHtml = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
+          ensureSohoso(hs);
         } else {
-          // Chờ duyệt
           statusHtml = '<div class="status-badge status-wait">Chờ duyệt</div>';
-          action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
+          actionHtml = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
         }
 
         html += '<tr>'
-          + '<td id="act-'+key+'">'+action+'</td>'
+          + '<td id="act-'+key+'">'+actionHtml+'</td>'
           + '<td id="st-'+key+'">'+statusHtml+'</td>'
           + '<td>'+(hs.ho_ten_hoc_sinh||"")+'</td>'
           + '<td>'+displayNgaySinh(hs.ngay_sinh)+'</td>'
@@ -468,22 +460,22 @@
         const months = parseInt(bhyt.so_thang_dong || "12", 10);
         const amount = parseInt(String(bhyt.so_tien||'0').replace(/[^\d]/g,''),10) || 0;
 
-        const baseOldEnd = hsListItem.ngay_het_han_bhyt || bhyt.ngay_het_han_bhyt_cu || "";
+        const baseOldEnd = pick(hsListItem.ngay_het_han_bhyt, bhyt.ngay_het_han_bhyt_cu, "");
         const range = calcRange(baseOldEnd, months);
 
         const schoolName = await getTenTruong(user.ma_truong);
-        const classCode  = bhyt.lop_hoc || hsListItem.lop_hoc || user.lop_hoc || "";
-        const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
+        const classCode  = pick(bhyt.lop_hoc, hsListItem.lop_hoc, user.lop_hoc);
+        const teacherName = pick(user.ho_ten, user.ten_giao_vien, "(Giáo viên)");
 
-        const tenNguoiNop = bhyt.ho_ten_hoc_sinh || hsListItem.ho_ten_hoc_sinh || "";
-        const diaChi      = bhyt.dia_chi || hsListItem.dia_chi || "";
+        const tenNguoiNop = pick(bhyt.ho_ten_hoc_sinh, hsListItem.ho_ten_hoc_sinh);
+        const diaChi      = pick(getDiaChiFromRow(bhyt), getDiaChiFromRow(hsListItem));
 
         document.getElementById('rec-school').innerText = schoolName;
-        document.getElementById('rec-class').innerText = classCode;
+        document.getElementById('rec-class').innerText = classCode || "—";
         document.getElementById('rec-date-today').innerText = todayText();
-        document.getElementById('rec-student-name').innerText = tenNguoiNop;
-        document.getElementById('rec-address').innerText = diaChi;
-        document.getElementById('rec-content').innerText = "Thu tiền BHYT - " + classCode;
+        document.getElementById('rec-student-name').innerText = tenNguoiNop || "—";
+        document.getElementById('rec-address').innerText = diaChi || "—";
+        document.getElementById('rec-content').innerText = "Thu tiền BHYT - " + (classCode || "");
         document.getElementById('rec-months').innerText = String(months);
         document.getElementById('rec-range').innerText = "từ ngày " + range.startText + " đến ngày " + range.endText;
         document.getElementById('rec-amount').innerText = amount.toLocaleString('vi-VN');
@@ -491,7 +483,7 @@
         document.getElementById('rec-teacher-name').innerText = teacherName;
 
         const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML = "";
-        const payload = buildQRPayload(user.ma_truong, schoolName, classCode, tenNguoiNop, months, range.endText);
+        const payload = buildQRPayload(user.ma_truong, schoolName, classCode||"", tenNguoiNop||"", months, range.endText);
         try{ new QRCode(qrBox, { text: payload, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L }); }
         catch(e){ qrBox.innerHTML = '<small>QR quá dài</small>'; }
 
@@ -535,7 +527,7 @@
         document.getElementById('the-noikham').innerText = d.noi_kham_bhyt || "—";
         document.getElementById('the-thang').innerText = d.so_thang_dong || "—";
         document.getElementById('the-tien').innerText = (parseInt((d.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0).toLocaleString('vi-VN');
-        document.getElementById('the-diachi').innerText = d.dia_chi || hsListItem.dia_chi || "—";
+        document.getElementById('the-diachi').innerText = getDiaChiFromRow(d) || getDiaChiFromRow(hsListItem) || "—";
         document.getElementById('the-ghichu').innerText = d.ghi_chu || "";
         document.getElementById('the-start').innerText = startText;
         document.getElementById('the-end').innerText = endText;
@@ -561,7 +553,7 @@
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
 
-    /* ===== Lưu/In phiếu thu (in ngay trong modal) ===== */
+    /* ===== Lưu/In phiếu thu (in ngay trong modal, không trắng trang) ===== */
     async function downloadReceiptImage(){
       try{
         const node = document.getElementById('receiptA5');
@@ -572,26 +564,26 @@
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
     function printReceiptOnly(){
-      document.body.classList.add('printing');
-      setTimeout(function(){
-        window.print();
-        setTimeout(function(){ document.body.classList.remove('printing'); }, 100);
-      }, 150);
-    }
+      // clone nội dung phiếu vào #print-area tạm
+      const old = document.getElementById('print-area');
+      if (old) old.remove();
 
-    function renderPagination(){
-      const pagin = document.getElementById('pagination'); pagin.innerHTML = '';
-      if (totalPages<=1) return;
-      pagin.innerHTML += '<li class="page-item'+(currentPage===1?' disabled':'')+'"><a class="page-link" href="#" onclick="gotoPage('+(currentPage-1)+');return false;">Trước</a></li>';
-      let minP=Math.max(1,currentPage-2), maxP=Math.min(totalPages,currentPage+2);
-      if (minP>1) pagin.innerHTML += '<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>';
-      if (minP>2) pagin.innerHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
-      for (let p=minP;p<=maxP;p++){
-        pagin.innerHTML += '<li class="page-item'+(p===currentPage?' active':'')+'"><a class="page-link" href="#" onclick="gotoPage('+p+');return false;">'+p+'</a></li>';
-      }
-      if (maxP<totalPages-1) pagin.innerHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
-      if (maxP<totalPages) pagin.innerHTML += '<li class="page-item"><a class="page-link" href="#" onclick="gotoPage('+totalPages+');return false;">'+totalPages+'</a></li>';
-      pagin.innerHTML += '<li class="page-item'+(currentPage===totalPages?' disabled':'')+'"><a class="page-link" href="#" onclick="gotoPage('+(currentPage+1)+');return false;">Sau</a></li>';
+      const wrap = document.createElement('div');
+      wrap.id = 'print-area';
+      wrap.style.position = 'fixed';
+      wrap.style.left = '-99999px';
+      wrap.appendChild(document.getElementById('receiptA5').cloneNode(true));
+      document.body.appendChild(wrap);
+
+      const css = document.createElement('style');
+      css.innerHTML =
+        '@page{size:A5 portrait;margin:10mm;}'
+        + '#print-area{display:block !important;}'
+        + '@media print{ body *{visibility:hidden!important;} #print-area, #print-area *{visibility:visible!important;} #print-area{position:static!important;left:auto!important;}}';
+      wrap.appendChild(css);
+
+      window.print();
+      setTimeout(()=>wrap.remove(), 300);
     }
 
     function toast(msg){
