@@ -36,6 +36,16 @@
       .action-btns { display: flex; flex-direction: row; gap: 6px; }
     }
 
+
+    /* In chỉ #receiptA5 khi body có class .printing */
+    @media print {
+      body.printing *:not(#receiptA5):not(#receiptA5 *) { display: none !important; }
+      #receiptA5 { display: block !important; box-shadow: none !important; margin: 0 !important; }
+      .modal.open { position: static !important; }
+    }
+
+    
+
     /* Thẻ BHYT (render bằng HTML/CSS) */
     .card-wrap { width: 100%; max-width: 880px; margin: 0 auto; background:#fff; border: 2px solid #2b7bb9; border-radius: 10px; padding: 18px 16px; position: relative; }
     .card-title { text-align:center; font-weight:800; color:#e53935; font-size:24px; letter-spacing:.3px; margin-bottom:6px; }
@@ -105,7 +115,7 @@
           </div>
           <hr class="hr-soft">
           <div class="card-row">
-            <div class="card-col"><b>Họ và tên:</b> <span id="the-hoten">—</span></div>
+            <div class="card-col"><b>Họ và tên học sinh:</b> <span id="the-hoten">—</span></div>
             <div class="card-col"><b>Giới tính:</b> <span id="the-gioitinh">—</span></div>
             <div class="card-col"><b>Lớp:</b> <span id="the-lop">—</span></div>
           </div>
@@ -233,6 +243,19 @@
     function todayText(){ const d=new Date(); return "Ngày "+String(d.getDate()).padStart(2,'0')+" tháng "+String(d.getMonth()+1).padStart(2,'0')+" năm "+d.getFullYear(); }
     function stripVN(str){ return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
 
+
+    /* ===== Helpers trạng thái & số hồ sơ ===== */
+    function parseTrangThai(val){
+      const n = parseInt(String(val || '0').replace(/[^\d]/g, ''), 10);
+      return isNaN(n) ? 0 : n;                      // 0 | 1
+    }
+    function hasSoHoSo(v){
+      const s = (v == null) ? '' : String(v).trim();
+      return s.length > 0 && s.toLowerCase() !== 'null' && s !== '0';
+    }
+
+
+
     /* ===== Sort & paginate ===== */
     function sortIcon(field){ if (sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
     function doSort(field){ if (sortField===field) sortDir=-sortDir; else { sortField=field; sortDir=1; } renderAllView(); }
@@ -314,23 +337,24 @@
         + '</tr></thead><tbody>';
 
       ds.forEach(hs=>{
-        const st = Number(hs.trang_thai||0);
-        const sohoso = (hs.so_ho_so && String(hs.so_ho_so).toLowerCase()!=='null') ? String(hs.so_ho_so) : "";
+        const st = parseTrangThai(hs.trang_thai);
+        const sohoso = hasSoHoSo(hs.so_ho_so) ? String(hs.so_ho_so).trim() : '';
+
         const statusHtml = (st===0)
           ? '<div class="status-badge status-wait">Chờ duyệt</div>'
-          : (st===1 && !sohoso)
-            ? '<div class="status-badge status-wait">Đã nộp, chờ kích hoạt</div>'
-            : '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>' + (sohoso? '<div class="status-blue">'+sohoso+'</div>': '');
+          : (!sohoso
+              ? '<div class="status-badge status-wait">Đã nộp, chờ kích hoạt</div>'
+              : '<div class="status-badge status-activated">ĐÃ KÍCH HOẠT</div>'
+                + '<div class="status-blue">'+ sohoso +'</div>');
 
         let action = '';
-        if (st===1 && !sohoso) {
-          action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
-        } else if (st===1 && sohoso) {
+        if (st===1 && sohoso){
           action = '<div class="action-btns">'
-                 + '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
-                 + '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
-                 + '</div>';
+                +   '<button class="btn btn-success btn-sm" onclick="xemThe(\''+(hs.so_dinh_danh||'')+'\')">Xem thẻ</button>'
+                +   '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>'
+                + '</div>';
         } else {
+          // st==0  hoặc (st==1 & chưa có số hồ sơ)
           action = '<button class="btn btn-primary btn-sm" onclick="inPhieuThu(\''+(hs.so_dinh_danh||'')+'\')">In phiếu thu</button>';
         }
 
@@ -342,6 +366,7 @@
           + '<td>'+(hs.so_dinh_danh||"")+'</td>'
           + '</tr>';
       });
+
 
       html += "</tbody></table>";
       document.getElementById('ds-container').innerHTML = html;
@@ -399,40 +424,53 @@
     async function inPhieuThu(so_dinh_danh){
       try{
         showLoading();
-        const hsRes = await getHosoBHYTByHS(so_dinh_danh, user.ma_truong, user.lop_hoc);
-        if (!hsRes || !hsRes.success || !hsRes.data){ toast("Không tìm thấy hồ sơ BHYT để in."); hideLoading(); return; }
-        const hs = hsRes.data;
-        const months = parseInt(hs.so_thang_dong||"12",10);
-        const amount = parseInt((hs.so_tien||"0").toString().replace(/[^\d]/g,''),10) || 0;
+        const hoSoRes = await getHosoBHYTByHS(so_dinh_danh, user.ma_truong, user.lop_hoc);
+        if (!hoSoRes || !hoSoRes.success || !hoSoRes.data){ toast("Không tìm thấy hồ sơ BHYT để in."); hideLoading(); return; }
+        const bhyt = hoSoRes.data;
 
-        const oldEnd = hs.ngay_het_han_bhyt_cu || "";
-        const range = calcRange(oldEnd, months);
+        // Fallback dữ liệu từ danh sách lớp
+        const hsListItem = (lastFiltered || allData).find(h => String(h.so_dinh_danh||'').trim() === String(so_dinh_danh||'').trim()) || {};
+
+        const months = parseInt(bhyt.so_thang_dong || "12", 10);
+        const amount = parseInt(String(bhyt.so_tien||'0').replace(/[^\d]/g,''),10) || 0;
+
+        const { startText, endText } = calcRange(hsListItem.ngay_het_han_bhyt || bhyt.ngay_het_han_bhyt_cu || "", months);
 
         const schoolName = await getTenTruong(user.ma_truong);
-        const classCode = hs.lop_hoc || user.lop_hoc || "";
+        const classCode  = bhyt.lop_hoc || hsListItem.lop_hoc || user.lop_hoc || "";
         const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
+
+        // ➜ Ưu tiên BHYT, nếu trống dùng danh sách lớp
+        const tenNguoiNop = bhyt.ho_ten_hoc_sinh || hsListItem.ho_ten_hoc_sinh || "";
+        const diaChi      = bhyt.dia_chi || hsListItem.dia_chi || "";
 
         document.getElementById('rec-school').innerText = schoolName;
         document.getElementById('rec-class').innerText = classCode;
         document.getElementById('rec-date-today').innerText = todayText();
-        document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh || "";
-        document.getElementById('rec-address').innerText = hs.dia_chi || "";
-        document.getElementById('rec-content').innerText = "Thu tiền BHYT - " + classCode;
+        document.getElementById('rec-student-name').innerText = tenNguoiNop;   // ✅ đã có tên
+        document.getElementById('rec-address').innerText = diaChi;              // ✅ đã có địa chỉ
+        document.getElementById('rec-content').innerText = `Thu tiền BHYT - ${classCode}`;
         document.getElementById('rec-months').innerText = String(months);
-        document.getElementById('rec-range').innerText = "từ ngày " + range.startText + " đến ngày " + range.endText;
+        document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
         document.getElementById('rec-amount').innerText = amount.toLocaleString('vi-VN');
         document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText = teacherName;
 
         const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML = "";
-        const payload = buildQRPayload(user.ma_truong, schoolName, classCode, hs.ho_ten_hoc_sinh||"", months, range.endText);
-        try{ new QRCode(qrBox, { text: payload, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L }); }
-        catch(e){ qrBox.innerHTML = '<small>QR quá dài</small>'; }
+        const payload = buildQRPayload(user.ma_truong, schoolName, classCode, tenNguoiNop, months, endText);
+        try {
+          new QRCode(qrBox, { text: payload, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L });
+        } catch {
+          qrBox.innerHTML = '<small>QR quá dài</small>';
+        }
 
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
-      }catch(err){ console.error('[DaThu] inPhieuThu', err); toast('Không thể tạo phiếu thu.'); }
-      finally{ hideLoading(); }
+      }catch(err){
+        console.error('[DaThu] inPhieuThu', err);
+        toast('Không thể tạo phiếu thu.');
+      }finally{ hideLoading(); }
     }
+
 
     /* ===== Xem thẻ + Lưu ảnh ===== */
     function statusText(st, sohoso){
@@ -504,18 +542,15 @@
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
     function printReceiptOnly(){
-      const src = document.getElementById('receiptA5');
-      const w = window.open('', '_blank'); if(!w){ alert('Trình duyệt chặn popup.'); return; }
-      const css = '<style>@page{size:A5 portrait;margin:10mm;}html,body{background:#fff;margin:0;padding:0;}'
-        + '.a5-paper{width:148mm;min-height:210mm;background:#fff;color:#000;margin:0 auto;padding:10mm 12mm;line-height:1.35;font-size:13px;}'
-        + '.receipt-title{font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.4px;}'
-        + '.receipt-sub{font-style:italic;}.receipt-meta{font-size:13px;}.receipt-line{margin:2mm 0;}'
-        + '.qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto;}'
-        + '.sign-col{text-align:center;margin-top:10mm;font-weight:500;}.sign-name{margin-top:20mm;text-align:center;font-weight:600;}'
-        + '.row{display:flex;flex-wrap:nowrap;width:100%;}.col{flex:1 1 0;}.text-center{text-align:center;}</style>';
-      w.document.write('<html><head><title>In phiếu thu</title>'+css+'</head><body>'+src.outerHTML+'</body></html>');
-      w.document.close(); setTimeout(function(){ w.focus(); w.print(); w.close(); }, 300);
+      // Đảm bảo QR đã render, rồi in ngay tại chỗ (không mở tab)
+      document.body.classList.add('printing');
+      // Một nhịp nhỏ cho layout ổn định trước khi gọi print
+      setTimeout(()=>{
+        window.print();
+        setTimeout(()=>{ document.body.classList.remove('printing'); }, 100);
+      }, 150);
     }
+
 
     function toast(msg){
       document.getElementById('toast-message').innerText = msg;
