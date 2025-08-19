@@ -44,7 +44,7 @@
       .action-btns{ display:flex; flex-direction:row; gap:6px; }
     }
 
-    /* ===== CSS phiếu thu A5 (giữ nguyên logic như trang "chưa thu") ===== */
+    /* ===== Phiếu thu A5 ===== */
     .a5-paper{
       width:148mm; min-height:210mm; background:#fff; margin:0 auto; padding:10mm 12mm;
       color:#000; box-shadow:0 1px 10px #0002; font-size:13px; line-height:1.35;
@@ -66,7 +66,7 @@
       .a5-paper{ box-shadow:none!important; margin:0!important; }
     }
 
-    /* ===== CSS "Thẻ BHYT" trong modal (xem thẻ) ===== */
+    /* ===== “Thẻ BHYT” ===== */
     .card-bhyt{
       width: 800px; max-width: 100%; background:#fff; border:2px solid #2a75f3; border-radius:10px; padding:18px 16px;
       box-shadow:0 1px 12px #0002; font-family: Arial, Helvetica, sans-serif;
@@ -80,16 +80,12 @@
     .card-bhyt .val.green{ color:#1b5e20; }
     .card-bhyt .big{ font-size:18px; }
     .card-bhyt .code-box{ margin-top:6px; background:#fffde7; border-left:6px solid #1976d2; display:inline-block; padding:4px 10px; font-weight:800; color:#1a237e; border-radius:6px; }
-    .card-bhyt .logo{
-      width:64px; height:64px; border-radius:50%; background:#e3f2fd; display:flex; align-items:center; justify-content:center;
-      font-weight:800; color:#1565c0; border:2px solid #90caf9; margin-right:10px;
-    }
+    .card-bhyt .logo{ width:64px; height:64px; border-radius:50%; background:#e3f2fd; display:flex; align-items:center; justify-content:center; font-weight:800; color:#1565c0; border:2px solid #90caf9; margin-right:10px; }
     .card-bhyt .header-line{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .card-bhyt .hr{ height:1px; background:#e0e0e0; margin:10px 0; }
   </style>
 </head>
 <body>
-  <!-- Sticky header & search -->
   <div class="sticky-header-box">
     <div class="header">
       DANH SÁCH HỌC SINH ĐÃ THAM GIA LỚP <span id="lop-hoc"></span>
@@ -114,7 +110,7 @@
     <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading...</span></div>
   </div>
 
-  <!-- Modal XEM THẺ BHYT -->
+  <!-- Modal XEM THẺ -->
   <div class="modal fade" id="modalBHYTCard" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
@@ -159,12 +155,8 @@
             <div class="row-line"><span class="lbl">Ghi chú:</span> <span class="val" id="c_ghichu">—</span></div>
 
             <div class="hr"></div>
-            <div class="row-line">
-              <span class="val green" id="c_status">ĐÃ KÍCH HOẠT</span>
-            </div>
-            <div class="row-line">
-              <span class="code-box" id="c_sohoso">—</span>
-            </div>
+            <div class="row-line"><span class="val green" id="c_status">ĐÃ KÍCH HOẠT</span></div>
+            <div class="row-line"><span class="code-box" id="c_sohoso">—</span></div>
           </div>
         </div>
         <div class="modal-footer">
@@ -175,7 +167,7 @@
     </div>
   </div>
 
-  <!-- Modal Xem trước & In Phiếu thu A5 -->
+  <!-- Modal In Phiếu thu A5 -->
   <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -256,40 +248,26 @@
   <script src="../js/api.js"></script>
 
   <script>
-    /* ====== Khởi tạo ====== */
-    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
-    function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
-    function showToast(msg){ document.getElementById('toast-message').innerText = msg; bootstrap.Toast.getOrCreateInstance(document.getElementById('success-toast')).show(); }
-
+    const logPrefix='[DaThu]';
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
-    /* ====== Helpers ngày & định dạng ====== */
-    function parseVNDate(str){
-      const m = String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if(!m) return null;
-      const d = new Date(+m[3], +m[2]-1, +m[1]);
-      return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1]) ? d : null;
-    }
-    function formatVNDate(d){
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yy = d.getFullYear();
-      return `${dd}/${mm}/${yy}`;
-    }
-    function addDaysExact(dateObj, days){
-      const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0);
-      d.setDate(d.getDate()+days);
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    }
+    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
+    function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
+    function showToast(msg){ document.getElementById('toast-message').innerText = msg; bootstrap.Toast.getOrCreateInstance(document.getElementById('success-toast')).show(); }
+
+    function safeStr(v){ const s = (v===undefined||v===null) ? '' : String(v).trim(); return (s.toLowerCase()==='null') ? '' : s; }
+    function toNum(v, def=0){ const n = Number(v); return isNaN(n)? def : n; }
+
+    function parseVNDate(str){ const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(!m) return null; const d=new Date(+m[3],+m[2]-1,+m[1]); return (d.getFullYear()==+m[3]&&d.getMonth()==+m[2]-1&&d.getDate()==+m[1])? d:null; }
+    function formatVNDate(d){ const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); return `${dd}/${mm}/${yy}`; }
+    function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(),dateObj.getMonth(),dateObj.getDate(),12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
     function calcRangeFromOld(oldEndStr, months){
-      const od = parseVNDate(oldEndStr); const m = parseInt(months,10)||0;
-      if (!od || m<=0) return {startText:"—", endText:"(không xác định)"};
-      const start = addDaysExact(od,1);
-      const end   = new Date(start.getFullYear(), start.getMonth()+m, 0);
+      const od=parseVNDate(oldEndStr); const m=parseInt(months,10)||0;
+      if(!od || m<=0) return {startText:"—", endText:"(không xác định)"};
+      const start=addDaysExact(od,1); const end=new Date(start.getFullYear(), start.getMonth()+m, 0);
       return { startText: formatVNDate(start), endText: formatVNDate(end) };
     }
     function displayNgaySinh(raw){
@@ -299,120 +277,78 @@
       return raw;
     }
 
-    /* ====== API phụ trợ tại trang (do api.js chưa có GetDanhSachBHYT/GetTenTruong) ====== */
-    async function getAllBHYT(ma_truong, lop_hoc){
+    // === API phụ ===
+    async function getDanhSachBHYT(ma_truong, lop_hoc){
       const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
       const res = await fetch(url); return await res.json();
     }
     async function getTenTruong(ma_truong){
-      try{
-        const res = await fetch(`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`);
-        const j = await res.json();
-        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
-      }catch(e){ return user.ten_truong || ma_truong || '—'; }
+      try{ const res=await fetch(`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`); const j=await res.json(); return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'; }
+      catch{ return user.ten_truong||ma_truong||'—'; }
     }
 
-    /* ====== State & phân trang ====== */
-    let pageSize = 20, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [];
-    function detectPageSize(){
-      const w=window.innerWidth; pageSize = w<=600? 6 : (w<=999? 10: 20);
-    }
-    window.addEventListener('resize', () => { const prev=pageSize; detectPageSize(); if (prev!==pageSize){ currentPage=1; renderAllView(); } });
-
+    // === State & paging
+    let pageSize=20, currentPage=1, totalRecords=0, totalPages=1, sortField="ho_ten_hoc_sinh", sortDir=1, allData=[], lastFiltered=[];
+    function detectPageSize(){ const w=window.innerWidth; pageSize = w<=600? 6 : (w<=999? 10: 20); }
+    window.addEventListener('resize', ()=>{ const prev=pageSize; detectPageSize(); if(prev!==pageSize){ currentPage=1; renderAllView(); }});
     function doSearch(){
-      const q = document.getElementById('search-box').value.trim().toLowerCase();
-      lastFiltered = !q ? allData : allData.filter(r =>
-        (r.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
+      const q=document.getElementById('search-box').value.trim().toLowerCase();
+      lastFiltered=!q? allData : allData.filter(r =>
+        (safeStr(r.ho_ten_hoc_sinh)).toLowerCase().includes(q) ||
         (displayNgaySinh(r.ngay_sinh)||"").toLowerCase().includes(q) ||
-        (r.so_dinh_danh||"").toLowerCase().includes(q)
+        (safeStr(r.so_dinh_danh)).toLowerCase().includes(q)
       );
       currentPage=1; renderAllView();
     }
     function sortIcon(field){ if (sortField!==field) return ''; return sortDir===1? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
-    window.doSort = function(field){ if (sortField===field) sortDir=-sortDir; else { sortField=field; sortDir=1; } renderAllView(); };
-
+    window.doSort=function(field){ if(sortField===field) sortDir=-sortDir; else { sortField=field; sortDir=1; } renderAllView(); };
     function renderAllView(){
-      let dataToShow = lastFiltered || allData;
+      let dataToShow=lastFiltered||allData;
       if (sortField){
-        dataToShow = [...dataToShow].sort((a,b)=>{
-          let av = (a[sortField]||"").toString().toLowerCase();
-          let bv = (b[sortField]||"").toString().toLowerCase();
-          if (!isNaN(av) && !isNaN(bv)){ av=Number(av); bv=Number(bv); }
-          if (av<bv) return -sortDir; if (av>bv) return sortDir; return 0;
+        dataToShow=[...dataToShow].sort((a,b)=>{
+          let av=(a[sortField]??"").toString().toLowerCase(), bv=(b[sortField]??"").toString().toLowerCase();
+          if(!isNaN(av)&&!isNaN(bv)){ av=Number(av); bv=Number(bv); }
+          if(av<bv) return -sortDir; if(av>bv) return sortDir; return 0;
         });
       }
-      totalRecords = dataToShow.length;
-      totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-      document.getElementById('total-hs').innerText = `(${totalRecords} hồ sơ)`;
-
-      const start = (currentPage-1)*pageSize;
+      totalRecords=dataToShow.length; totalPages=Math.max(1, Math.ceil(totalRecords/pageSize));
+      document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;
+      const start=(currentPage-1)*pageSize;
       renderDanhSach(dataToShow.slice(start, start+pageSize));
       renderPagination();
     }
     function renderPagination(){
-      const el = document.getElementById('pagination'); el.innerHTML='';
-      if (totalPages<=1) return;
-      el.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
+      const el=document.getElementById('pagination'); el.innerHTML=''; if(totalPages<=1) return;
+      el.innerHTML+=`<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
       let minP=Math.max(1,currentPage-2), maxP=Math.min(totalPages,currentPage+2);
-      if (minP>1) el.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
-      if (minP>2) el.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-      for(let p=minP;p<=maxP;p++){ el.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`; }
-      if (maxP<totalPages-1) el.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-      if (maxP<totalPages) el.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
-      el.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
+      if(minP>1) el.innerHTML+=`<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
+      if(minP>2) el.innerHTML+=`<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      for(let p=minP;p<=maxP;p++){ el.innerHTML+=`<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`; }
+      if(maxP<totalPages-1) el.innerHTML+=`<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      if(maxP<totalPages) el.innerHTML+=`<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
+      el.innerHTML+=`<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
     }
-    window.gotoPage = function(p){ if (p<1||p>totalPages||p===currentPage) return; currentPage=p; renderAllView(); };
+    window.gotoPage=function(p){ if(p<1||p>totalPages||p===currentPage) return; currentPage=p; renderAllView(); };
 
-    /* ====== Lấy dữ liệu ====== */
-    async function fetchDanhSachDaThu(){
-      try{
-        detectPageSize(); showLoading();
-        const res = await getAllBHYT(user.ma_truong, user.lop_hoc);
-        const ds = Array.isArray(res?.data) ? res.data : [];
-
-        // Chỉ giữ hồ sơ của lớp hiện tại (đề phòng backend trả rộng)
-        allData = ds.filter(r => String(r.lop_hoc||"").trim() === String(user.lop_hoc||"").trim());
-        lastFiltered = allData;
-        currentPage = 1;
-        renderAllView();
-      }catch(e){
-        console.error('[DaThu] fetch error', e);
-        allData=[]; lastFiltered=[]; renderAllView();
-      }finally{ hideLoading(); }
-    }
-
-    /* ====== Render danh sách ====== */
+    // === Render hàng
     function statusCell(row){
-      const tt = Number(row.trang_thai||0);
-      const sohoso = (row.so_ho_so===null || String(row.so_ho_so).toLowerCase()==='null' || String(row.so_ho_so).trim()==='') ? null : String(row.so_ho_so);
-      if (tt===0){
-        return `<div class="status-badge status-wait">Chờ duyệt</div>`;
-      }
-      if (tt===1 && !sohoso){
-        return `<div class="status-badge status-pending">Đã nộp, chờ kích hoạt</div>`;
-      }
-      if (tt===1 && sohoso){
-        return `<div class="status-badge status-done">Đã kích hoạt</div><div class="status-code">${sohoso}</div>`;
-      }
+      const tt=toNum(row.trang_thai,0);
+      const sohoso = safeStr(row.so_ho_so);
+      if (tt===0) return `<div class="status-badge status-wait">Chờ duyệt</div>`;
+      if (tt===1 && !sohoso) return `<div class="status-badge status-pending">Đã nộp, chờ kích hoạt</div>`;
+      if (tt===1 && sohoso) return `<div class="status-badge status-done">Đã kích hoạt</div><div class="status-code">${sohoso}</div>`;
       return '';
     }
     function actionButtons(row){
-      const tt = Number(row.trang_thai||0);
-      const sohoso = (row.so_ho_so===null || String(row.so_ho_so).toLowerCase()==='null' || String(row.so_ho_so).trim()==='') ? null : String(row.so_ho_so);
-
-      // Yêu cầu:
-      // - tt=1 & sohoso=null -> chỉ "In phiếu thu"
-      // - tt=1 & sohoso!=null -> "Xem thẻ" + "In phiếu thu"
-      // - tt=0 -> chỉ "In phiếu thu" (hồ sơ chờ duyệt chưa kích hoạt)
-      const btnIn = `<button class="btn btn-primary btn-sm" onclick="inPhieuThu('${row.so_dinh_danh}')">In phiếu thu</button>`;
-      const btnXem = `<button class="btn btn-success btn-sm" onclick="xemThe('${row.so_dinh_danh}')">Xem thẻ</button>`;
-
+      const tt=toNum(row.trang_thai,0);
+      const sohoso=safeStr(row.so_ho_so);
+      const btnIn = `<button class="btn btn-primary btn-sm" onclick="inPhieuThu('${safeStr(row.so_dinh_danh)}')">In phiếu thu</button>`;
+      const btnXem= `<button class="btn btn-success btn-sm" onclick="xemThe('${safeStr(row.so_dinh_danh)}')">Xem thẻ</button>`;
       if (tt===0) return `<div class="action-btns">${btnIn}</div>`;
       if (tt===1 && !sohoso) return `<div class="action-btns">${btnIn}</div>`;
       if (tt===1 && sohoso) return `<div class="action-btns">${btnXem}${btnIn}</div>`;
       return `<div class="action-btns">${btnIn}</div>`;
     }
-
     function renderDanhSach(ds){
       if (!ds || ds.length===0){
         document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có hồ sơ BHYT trong lớp này.</div>`;
@@ -430,181 +366,184 @@
         html += `<tr>
           <td>${statusCell(row)}</td>
           <td>${actionButtons(row)}</td>
-          <td>${row.ho_ten_hoc_sinh||""}</td>
+          <td>${safeStr(row.ho_ten_hoc_sinh)}</td>
           <td>${displayNgaySinh(row.ngay_sinh||"")}</td>
-          <td>${row.so_dinh_danh||""}</td>
+          <td>${safeStr(row.so_dinh_danh)}</td>
         </tr>`;
       });
       html += `</tbody></table>`;
       document.getElementById('ds-container').innerHTML = html;
     }
 
-    /* ====== In Phiếu thu (giống trang chưa thu) ====== */
-    function pad3(n){ n = parseInt(n,10)||0; return String(n).padStart(3,'0'); }
+    // === In phiếu thu (giống trang “chưa thu”)
+    function pad3(n){ n=parseInt(n,10)||0; return String(n).padStart(3,'0'); }
     function todayText(){ const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`; }
     function numberToVietnamese(n){
-      const VI_DIGITS = ["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
-      function readTriple(x){
-        let tr=Math.floor(x/100), ch=Math.floor((x%100)/10), dv=x%10, s="";
-        if (tr>0){ s += VI_DIGITS[tr]+" trăm"; if (ch==0 && dv>0) s+=" lẻ"; }
-        if (ch>1){ s += (s?" ":"")+VI_DIGITS[ch]+" mươi"; if (dv==1) s+=" mốt"; else if (dv==5) s+=" lăm"; else if (dv>0) s+=" "+VI_DIGITS[dv]; }
-        else if (ch==1){ s += (s?" ":"")+"mười"; if (dv==5) s+=" lăm"; else if (dv>0) s+=" "+VI_DIGITS[dv]; }
-        else if (ch==0 && dv>0){ s += (s?" ":"")+VI_DIGITS[dv]; }
-        return s.trim();
-      }
-      n = Math.round(Number(n)||0);
-      if (n===0) return "Không đồng";
-      const units=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"]; let i=0, str="";
-      while(n>0 && i<units.length){ const block=n%1000; if (block>0){ const part=readTriple(block); str = part+units[i]+(str?" "+str:""); } n=Math.floor(n/1000); i++; }
-      str = str.charAt(0).toUpperCase()+str.slice(1)+" đồng"; return str.replace(/\s+/g," ").trim();
+      const VI=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+      function triple(x){let tr=Math.floor(x/100),ch=Math.floor((x%100)/10),dv=x%10,s=""; if(tr>0){s+=VI[tr]+" trăm"; if(ch==0&&dv>0)s+=" lẻ";} if(ch>1){ s+=(s?" ":"")+VI[ch]+" mươi"; if(dv==1)s+=" mốt"; else if(dv==5)s+=" lăm"; else if(dv>0)s+=" "+VI[dv]; } else if(ch==1){ s+=(s?" ":"")+"mười"; if(dv==5)s+=" lăm"; else if(dv>0)s+=" "+VI[dv]; } else if(ch==0&&dv>0){ s+=(s?" ":"")+VI[dv]; } return s.trim(); }
+      n=Math.round(Number(n)||0); if(n===0) return "Không đồng"; const U=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"]; let i=0,str=""; while(n>0&&i<U.length){const b=n%1000;if(b>0){const part=triple(b); str=part+U[i]+(str?" "+str:"");} n=Math.floor(n/1000); i++;} return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim();
     }
-    function stripVN(str){
-      return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
-    }
+    function stripVN(str){ return String(str||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
     function initials(str){ return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase(); }
     function buildQRPayload(schoolCode, school, classCode, name, months, endDate){
       const mt=String(schoolCode||"").slice(0,24), s=stripVN(school).slice(0,60), c=String(classCode||"").slice(0,12), n=stripVN(name).slice(0,60), m=String(months||""), e=String(endDate||"").slice(0,10);
       return `MT=${mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
     }
-    async function getHosoBHYTByHS_local(so_dinh_danh, ma_truong, lop_hoc){
-      // dùng api.js (đã có getHosoBHYTByHS) để đảm bảo đồng nhất
-      return await getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc);
-    }
+    async function getHosoBHYTByHS_local(so_dinh_danh, ma_truong, lop_hoc){ return await getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc); } // từ api.js
     async function inPhieuThu(so_dinh_danh){
       try{
         showLoading();
-        const row = (lastFiltered||allData).find(r => String(r.so_dinh_danh)===String(so_dinh_danh));
+        const row=(lastFiltered||allData).find(r=> safeStr(r.so_dinh_danh)===String(so_dinh_danh));
         if (!row){ hideLoading(); return; }
-
-        const hoSo = await getHosoBHYTByHS_local(row.so_dinh_danh, user.ma_truong, row.lop_hoc||user.lop_hoc||"");
+        const hoSo=await getHosoBHYTByHS_local(row.so_dinh_danh, user.ma_truong, row.lop_hoc||user.lop_hoc||"");
         if (!hoSo || !hoSo.success || !hoSo.data){ hideLoading(); showToast("Không tìm thấy hồ sơ BHYT để in."); return; }
 
-        const months = parseInt(hoSo.data.so_thang_dong || row.so_thang_dong || "12",10);
-        const amount = parseInt(String(hoSo.data.so_tien||row.so_tien||"0").replace(/[^\d]/g,''),10) || 0;
-
-        const {startText, endText} = calcRangeFromOld(row.ngay_het_han_bhyt_cu || row.ngay_het_han_bhyt || "", months);
-        const schoolName = await getTenTruong(user.ma_truong);
-        const classCode  = hoSo.data.lop_hoc || row.lop_hoc || user.lop_hoc || "";
+        const months = toNum(hoSo.data.so_thang_dong ?? row.so_thang_dong, 12);
+        const amount = toNum(String(hoSo.data.so_tien ?? row.so_tien ?? "0").replace(/[^\d]/g,''), 0);
+        const {startText,endText}=calcRangeFromOld(row.ngay_het_han_bhyt_cu || row.ngay_het_han_bhyt || "", months);
+        const schoolName=await getTenTruong(user.ma_truong);
+        const classCode = hoSo.data.lop_hoc || row.lop_hoc || user.lop_hoc || "";
         const seq = pad3(row.stt || 1);
         const teacherName = user.ho_ten || user.ten_giao_vien || "(Giáo viên)";
 
-        document.getElementById('rec-school').innerText = schoolName;
-        document.getElementById('rec-class').innerText = classCode;
-        document.getElementById('rec-date-today').innerText = todayText();
-        document.getElementById('rec-student-name').innerText = row.ho_ten_hoc_sinh || "";
-        document.getElementById('rec-address').innerText = row.dia_chi || "";
-        document.getElementById('rec-content').innerText = `Thu tiền BHYT - ${classCode}${seq}`;
-        document.getElementById('rec-months').innerText = String(months);
-        document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
-        document.getElementById('rec-amount').innerText = amount.toLocaleString('vi-VN');
-        document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
-        document.getElementById('rec-teacher-name').innerText = teacherName;
+        document.getElementById('rec-school').innerText=schoolName;
+        document.getElementById('rec-class').innerText=classCode;
+        document.getElementById('rec-date-today').innerText=todayText();
+        document.getElementById('rec-student-name').innerText=row.ho_ten_hoc_sinh||"";
+        document.getElementById('rec-address').innerText=row.dia_chi||"";
+        document.getElementById('rec-content').innerText=`Thu tiền BHYT - ${classCode}${seq}`;
+        document.getElementById('rec-months').innerText=String(months);
+        document.getElementById('rec-range').innerText=`từ ngày ${startText} đến ngày ${endText}`;
+        document.getElementById('rec-amount').innerText=amount.toLocaleString('vi-VN');
+        document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
+        document.getElementById('rec-teacher-name').innerText=teacherName;
 
-        const qrBox = document.getElementById('receipt-qr'); qrBox.innerHTML="";
-        const primaryText = buildQRPayload(user.ma_truong, schoolName, classCode, row.ho_ten_hoc_sinh||"", months, endText);
-        try{ new QRCode(qrBox, { text: primaryText, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L }); }
-        catch(e){
-          const fallbackText = `MT=${String(user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
-          try{ new QRCode(qrBox, { text: fallbackText, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L }); }
-          catch(e2){ qrBox.innerHTML = '<small>QR quá dài</small>'; }
+        const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
+        const payload=buildQRPayload(user.ma_truong, schoolName, classCode, row.ho_ten_hoc_sinh||"", months, endText);
+        try{ new QRCode(qrBox,{text:payload,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }
+        catch(e){ const fb=`MT=${String(user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
+          try{ new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); } catch{ qrBox.innerHTML='<small>QR quá dài</small>'; }
         }
 
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
-      }catch(err){
-        console.error('[DaThu] inPhieuThu error', err); showToast('Không thể tạo phiếu thu.');
-      }finally{ hideLoading(); }
+      }catch(err){ console.error(logPrefix,'inPhieuThu error',err); showToast('Không thể tạo phiếu thu.'); }
+      finally{ hideLoading(); }
     }
-
-    function getReceiptPrintCSS(){
-      return `
-      <style>
-        @page { size: A5 portrait; margin: 10mm; }
-        html,body{ background:#fff; margin:0; padding:0; }
-        .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000; margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px; }
-        .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
-        .receipt-sub{ font-style:italic; } .receipt-meta{ font-size:13px; } .receipt-line{ margin: 2mm 0; }
-        .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
-        .sign-col{ text-align:center; margin-top:10mm; font-weight:500; } .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
-        .row{ display:flex; flex-wrap:nowrap; width:100%; } .col{ flex:1 1 0; } .text-center{ text-align:center; }
-      </style>`;
-    }
+    function getReceiptPrintCSS(){ return `<style>@page{size:A5 portrait;margin:10mm}html,body{background:#fff;margin:0;padding:0}.a5-paper{width:148mm;min-height:210mm;background:#fff;color:#000;margin:0 auto;padding:10mm 12mm;line-height:1.35;font-size:13px}.receipt-title{font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.4px}.receipt-sub{font-style:italic}.receipt-meta{font-size:13px}.receipt-line{margin:2mm 0}.qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}.sign-col{text-align:center;margin-top:10mm;font-weight:500}.sign-name{margin-top:20mm;text-align:center;font-weight:600}.row{display:flex;flex-wrap:nowrap;width:100%}.col{flex:1 1 0}.text-center{text-align:center}</style>`; }
     async function downloadReceiptImage(){
       try{
-        const node = document.getElementById('receiptA5');
-        const canvas = await html2canvas(node, {scale:2, backgroundColor:'#ffffff'});
-        const dataURL = canvas.toDataURL("image/png");
-        const canDownload = 'download' in document.createElement('a') && !isIOS();
-        if (canDownload){ const a=document.createElement('a'); a.href=dataURL; a.download='phieu-thu-bhyt.png'; document.body.appendChild(a); a.click(); a.remove(); }
-        else { const win=window.open(); if (win){ win.document.write(`<html><head><title>Lưu ảnh</title></head><body style="margin:0"><img src="${dataURL}" style="max-width:100%;display:block"/></body></html>`); win.document.close(); } else { window.location.href=dataURL; } }
+        const canvas=await html2canvas(document.getElementById('receiptA5'),{scale:2,backgroundColor:'#ffffff'});
+        const dataURL=canvas.toDataURL("image/png");
+        const a=document.createElement('a'); a.href=dataURL; a.download='phieu-thu-bhyt.png'; document.body.appendChild(a); a.click(); a.remove();
       }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
     function printReceiptOnly(){
-      const src = document.getElementById('receiptA5');
-      if (!src){ console.error('printReceiptOnly: #receiptA5 not found'); return; }
-      const head = getReceiptPrintCSS();
-      const w = window.open('', '_blank', 'noopener,noreferrer');
-      if (!w){ alert('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup.'); return; }
-      w.document.open();
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8">${head}</head><body>${src.outerHTML}</body></html>`);
-      w.document.close();
-      w.onload = ()=>{ w.focus(); w.print(); setTimeout(()=>w.close(), 200); };
+      const src=document.getElementById('receiptA5'); if(!src) return;
+      const w=window.open('','','noopener,noreferrer'); if(!w){ alert('Hãy cho phép popup để in.'); return; }
+      w.document.open(); w.document.write(`<!doctype html><html><head><meta charset="utf-8">${getReceiptPrintCSS()}</head><body>${src.outerHTML}</body></html>`); w.document.close();
+      w.onload=()=>{ w.focus(); w.print(); setTimeout(()=>w.close(),200); };
     }
 
-    /* ====== XEM THẺ BHYT ====== */
+    // === Xem thẻ
     async function xemThe(so_dinh_danh){
       try{
         showLoading();
-        const row = (lastFiltered||allData).find(r => String(r.so_dinh_danh)===String(so_dinh_danh));
-        if (!row){ hideLoading(); return; }
-
-        const months = parseInt(row.so_thang_dong||"12",10);
+        const row=(lastFiltered||allData).find(r=> safeStr(r.so_dinh_danh)===String(so_dinh_danh));
+        if(!row){ hideLoading(); return; }
+        const months = toNum(row.so_thang_dong, 12);
         const range = calcRangeFromOld(row.ngay_het_han_bhyt_cu || row.ngay_het_han_bhyt || "", months);
-        const from = range.startText;
-        const to   = range.endText;
-
-        // Fill card
-        document.getElementById('c_ma_so').innerText = row.ma_so_bhxh || "—";
-        document.getElementById('c_sdd').innerText = row.so_dinh_danh || "—";
-        document.getElementById('c_hoten').innerText = row.ho_ten_hoc_sinh || "—";
-        document.getElementById('c_ngaysinh').innerText = displayNgaySinh(row.ngay_sinh||"") || "—";
-        document.getElementById('c_gioitinh').innerText = row.gioi_tinh || "—";
-        document.getElementById('c_lop').innerText = row.lop_hoc || user.lop_hoc || "—";
-        document.getElementById('c_noikham').innerText = row.noi_kham_bhyt || "—";
-        document.getElementById('c_from').innerText = from;
+        document.getElementById('c_ma_so').innerText = safeStr(row.ma_so_bhxh)||"—";
+        document.getElementById('c_sdd').innerText   = safeStr(row.so_dinh_danh)||"—";
+        document.getElementById('c_hoten').innerText = safeStr(row.ho_ten_hoc_sinh)||"—";
+        document.getElementById('c_ngaysinh').innerText = displayNgaySinh(row.ngay_sinh||"")||"—";
+        document.getElementById('c_gioitinh').innerText = safeStr(row.gioi_tinh)||"—";
+        document.getElementById('c_lop').innerText   = safeStr(row.lop_hoc||user.lop_hoc)||"—";
+        document.getElementById('c_noikham').innerText= safeStr(row.noi_kham_bhyt)||"—";
+        document.getElementById('c_from').innerText  = range.startText;
         document.getElementById('c_thang').innerText = String(months);
-        document.getElementById('c_to').innerText = to;
-        document.getElementById('c_tien').innerText = (parseInt(String(row.so_tien||"0").replace(/[^\d]/g,''),10)||0).toLocaleString('vi-VN');
-        document.getElementById('c_diachi').innerText = row.dia_chi || "—";
-        document.getElementById('c_sdt').innerText = row.sdt_lienhe || "—";
-        document.getElementById('c_ghichu').innerText = (String(row.ghi_chu||"").toLowerCase()==="null")? "" : (row.ghi_chu||"");
-
-        const tt = Number(row.trang_thai||0);
-        const sohoso = (row.so_ho_so===null || String(row.so_ho_so).toLowerCase()==='null' || String(row.so_ho_so).trim()==='')? null : String(row.so_ho_so);
-        const statusEl = document.getElementById('c_status');
+        document.getElementById('c_to').innerText    = range.endText;
+        document.getElementById('c_tien').innerText  = toNum(String(row.so_tien||"0").replace(/[^\d]/g,''),0).toLocaleString('vi-VN');
+        document.getElementById('c_diachi').innerText= safeStr(row.dia_chi)||"—";
+        document.getElementById('c_sdt').innerText   = safeStr(row.sdt_lienhe)||"—";
+        document.getElementById('c_ghichu').innerText= safeStr(row.ghi_chu)||"";
+        const tt=toNum(row.trang_thai,0); const sohoso=safeStr(row.so_ho_so);
+        const statusEl=document.getElementById('c_status');
         if (tt===1 && sohoso){ statusEl.className='val green'; statusEl.innerText='ĐÃ KÍCH HOẠT'; }
         else if (tt===1 && !sohoso){ statusEl.className='val red'; statusEl.innerText='ĐÃ NỘP, CHỜ KÍCH HOẠT'; }
         else { statusEl.className='val red'; statusEl.innerText='CHỜ DUYỆT'; }
         document.getElementById('c_sohoso').innerText = sohoso || '—';
-
         new bootstrap.Modal(document.getElementById('modalBHYTCard')).show();
-      }catch(e){
-        console.error('[DaThu] xemThe error', e);
-      }finally{ hideLoading(); }
+      }catch(e){ console.error(logPrefix,'xemThe error',e); }
+      finally{ hideLoading(); }
     }
-
     async function downloadBHYTCard(){
       try{
-        const node = document.getElementById('bhytCard');
-        const canvas = await html2canvas(node, {scale:2, backgroundColor:'#ffffff'});
-        const dataURL = canvas.toDataURL("image/png");
-        const a = document.createElement('a'); a.href = dataURL; a.download = 'the-bhyt.png'; document.body.appendChild(a); a.click(); a.remove();
+        const canvas=await html2canvas(document.getElementById('bhytCard'),{scale:2,backgroundColor:'#ffffff'});
+        const dataURL=canvas.toDataURL("image/png"); const a=document.createElement('a'); a.href=dataURL; a.download='the-bhyt.png'; document.body.appendChild(a); a.click(); a.remove();
       }catch(e){ alert('Không thể lưu ảnh thẻ: '+(e.message||e)); }
     }
 
-    /* ====== Điều hướng ====== */
+    // === Điều hướng
     function goBack(){ showLoading(); window.location.href = "bhyt_giaovien.html"; }
 
-    /* ====== Start ====== */
+    // === Nạp danh sách + Fallback an toàn
+    async function fetchDanhSachDaThu(){
+      try{
+        detectPageSize(); showLoading();
+        console.log(logPrefix,'fetchDanhSachDaThu start with', { ma_truong:user.ma_truong, lop:user.lop_hoc });
+
+        // 1) Thử lấy trực tiếp từ DanhSach_BHYT
+        let ds=[];
+        try{
+          const res = await getDanhSachBHYT(user.ma_truong, user.lop_hoc);
+          console.log(logPrefix,'GetDanhSachBHYT resp=', res);
+          if (res && res.success && Array.isArray(res.data)) ds = res.data;
+        }catch(e){ console.error(logPrefix,'GetDanhSachBHYT error',e); }
+
+        // 2) Fallback: nếu không có dữ liệu → lọc theo Status từng HS
+        if (!ds || ds.length===0){
+          console.warn(logPrefix,'Fallback by GetAllDanhSachHocsinh + GetBHYTStatus per HS');
+          const hsRes = await getAllDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+          const listHS = (hsRes && hsRes.success && Array.isArray(hsRes.data)) ? hsRes.data : [];
+          // Giới hạn đồng thời 10 lời gọi để tránh nghẽn
+          const batchSize=10; let result=[];
+          for (let i=0; i<listHS.length; i+=batchSize){
+            const chunk = listHS.slice(i, i+batchSize);
+            const statuses = await Promise.all(chunk.map(h=> getBHYTStatus(safeStr(h.so_dinh_danh), user.ma_truong, user.lop_hoc).catch(()=>({success:false})) ));
+            chunk.forEach((h,idx)=>{
+              const st = statuses[idx];
+              if (st && st.success && (st.status===0 || st.status===1 || st.trang_thai===0 || st.trang_thai===1)){
+                // coi như có hồ sơ; ghép tối thiểu
+                result.push({
+                  ...h,
+                  trang_thai: toNum(st.status ?? st.trang_thai, 1),
+                  so_ho_so: safeStr(st.so_ho_so || st.code || ""),
+                  so_tien: st.so_tien || "",
+                  so_thang_dong: st.so_thang_dong || 12
+                });
+              }
+            });
+          }
+          ds = result;
+        }
+
+        // Chuẩn hoá, lọc theo lớp
+        const lopGV = String(user.lop_hoc||"").trim();
+        allData = (ds||[]).map(r=>({
+          ...r,
+          lop_hoc: safeStr(r.lop_hoc),
+          so_ho_so: safeStr(r.so_ho_so),
+          trang_thai: toNum(r.trang_thai, toNum(r.status, 0))
+        })).filter(r => String(r.lop_hoc||"").trim() === lopGV);
+
+        lastFiltered = allData; currentPage=1; renderAllView();
+        console.log(logPrefix,'fetch done',{count:allData.length});
+      }catch(e){
+        console.error(logPrefix,'fetchDanhSachDaThu fatal', e);
+        allData=[]; lastFiltered=[]; renderAllView();
+      }finally{ hideLoading(); }
+    }
+
     window.onload = fetchDanhSachDaThu;
   </script>
 </body>
