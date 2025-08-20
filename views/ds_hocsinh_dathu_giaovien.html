@@ -370,6 +370,8 @@
     function makeRange(row){const end=row.han_su_dung_bhyt_moi||row.ngay_het_han_bhyt_moi||"";const months=Number(row.so_thang_dong||0);const e=parseDate(end);if(!e||!months)return{tu:"",den:""};const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);return {tu:formatDateVN2(s),den:formatDateVN2(e)}}
 
     function onViewCard(row){
+      const LOGO_BHXH = "../assets/image/bhxh-logo.png"; // đổi đường dẫn nếu cần
+      const doiTuong = cleanVal(row.doi_tuong_dong) || "Học sinh";
       const sohoso=getSoHoSo(row)||"—";
       const lop=user.lop_hoc||row.lop_hoc||"—";
       const thang=cleanVal(row.so_thang_dong)||"—";
@@ -381,9 +383,10 @@
 
       getTenTruong(user.ma_truong).then(truong=>{
         // Điền dữ liệu vào card theo mẫu
+        document.getElementById('c-logo').src = LOGO_BHXH;
         document.getElementById('c-ms').innerText = row.ma_so_bhxh || '—';
         document.getElementById('c-sdd').innerText = row.so_dinh_danh || '—';
-        document.getElementById('c-hs').innerText = 'HS';
+        document.getElementById('c-doituong').innerText = doiTuong;
         document.getElementById('c-hoten').innerText = row.ho_ten_hoc_sinh || '—';
         document.getElementById('c-ngaysinh').innerText = displayDate(row.ngay_sinh)||'—';
         document.getElementById('c-noikham').innerText = row.noi_kham_bhyt || '—';
@@ -394,6 +397,7 @@
         document.getElementById('c-ghichu').innerText = ghichu || '—';
         document.getElementById('c-gioitinh').innerText = gioiTinh || '—';
         document.getElementById('c-lop').innerText = lop;
+        document.getElementById('c-lop-big').innerText = lop;   // <-- thêm dòng này
         document.getElementById('c-thang').innerText = thang;
         document.getElementById('c-sotien').innerText = soTien ? Number(String(soTien).replace(/[^\d]/g,'')||0).toLocaleString('vi-VN') : '—';
         document.getElementById('c-truong').innerText = truong;
