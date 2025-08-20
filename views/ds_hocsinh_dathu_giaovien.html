@@ -154,6 +154,14 @@
   }
 
   
+
+  /* font ổn định & spacing nhẹ khi xuất ảnh */
+  .bhyt-card.exporting, .bhyt-card.exporting *{
+    font-family: Arial, "Helvetica Neue", Helvetica, Roboto, system-ui, sans-serif;
+    letter-spacing: .2px;
+  }
+
+
   
   </style>
 </head>
@@ -530,7 +538,47 @@
       }).catch(()=>hideLoading());
     }
 
-    async function downloadCardImage(){ showLoading(); const node=document.getElementById('cardArea');const canvas=await html2canvas(node,{scale:devicePixelRatio||2});const a=document.createElement('a');a.download='the-bhyt.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
+    async function downloadCardImage(){
+      try{
+        showLoading();
+
+        // 1) Lấy kích thước gốc của thẻ (landscape)
+        const W = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue('--cardW')) || 920;
+        const H = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue('--cardH')) || 560;
+
+        // 2) Clone #cardArea sang offscreen, KHÔNG transform
+        const src   = document.getElementById('cardArea');
+        const clone = src.cloneNode(true);
+        clone.id = 'cardExport';
+        clone.classList.add('exporting'); // tăng font + spacing chỉ khi xuất
+        Object.assign(clone.style, {
+          position:'fixed', left:'-10000px', top:'0',
+          width: W + 'px', height: H + 'px',
+          transform:'none', overflow:'hidden',
+          background:'#ffffff', zIndex:'-1'
+        });
+        document.body.appendChild(clone);
+
+        // 3) Chờ layout ổn định rồi chụp với scale cao (chữ sắc nét, không dính)
+        await new Promise(r=>setTimeout(r, 20));
+        const canvas = await html2canvas(clone, {
+          scale: 3,                 // chất lượng cao
+          backgroundColor: '#ffffff',
+          useCORS: true             // để logo BHXH load được nếu là file tĩnh
+        });
+
+        // 4) Xoá bản sao và tải về
+        document.body.removeChild(clone);
+        const a = document.createElement('a');
+        a.download = 'the-bhyt.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      }finally{
+        hideLoading();
+      }
+    }
     async function downloadReceiptImage(){ showLoading(); const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhyt.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
 
     // CSS nhúng cho cửa sổ in riêng
