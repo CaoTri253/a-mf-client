@@ -194,7 +194,7 @@
   <div class="modal fade" id="modalTheBHYT" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Thẻ bảo hiểm y tế</h5>
+        <h5 class="modal-title">Thẻ bảo hiểm y tế  </h5>
         <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -253,6 +253,10 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
       </div>
     </div></div>
   </div>
@@ -557,7 +561,8 @@
           position:'fixed', left:'-10000px', top:'0',
           width: W + 'px', height: H + 'px',
           transform:'none', overflow:'hidden',
-          background:'#ffffff', zIndex:'-1'
+          background:'#ffffff', zIndex:'-1',
+          paddingBottom: '40px'   // thêm chỗ trống tránh chữ đè
         });
         document.body.appendChild(clone);
 
