@@ -550,44 +550,46 @@
       try{
         showLoading();
 
-        // 1) Lấy kích thước gốc của thẻ (landscape)
+        // Lấy kích thước gốc theo cấu hình (chỉ để set chiều rộng)
         const W = parseFloat(getComputedStyle(document.documentElement)
                     .getPropertyValue('--cardW')) || 920;
-        const H = parseFloat(getComputedStyle(document.documentElement)
-                    .getPropertyValue('--cardH')) || 560;
 
-        // 2) Clone #cardArea sang offscreen, KHÔNG transform
+        // Clone #cardArea sang offscreen, KHÔNG transform & KHÔNG khóa chiều cao
         const src   = document.getElementById('cardArea');
         const clone = src.cloneNode(true);
         clone.id = 'cardExport';
-        clone.classList.add('exporting'); // tăng font + spacing chỉ khi xuất
+        clone.classList.add('exporting'); // áp CSS exporting ở trên
         Object.assign(clone.style, {
-          position:'fixed', left:'-10000px', top:'0',
-          width: W + 'px', height: H + 'px',
-          transform:'none', overflow:'hidden',
-          background:'#ffffff', zIndex:'-1',
-          paddingBottom: '40px'   // thêm chỗ trống tránh chữ đè
+          position:'fixed',
+          left:'-10000px', top:'0',
+          width: W + 'px',
+          height: 'auto',            // ← không cố định chiều cao
+          transform:'none',
+          overflow:'visible',        // ← không cắt nội dung đáy
+          background:'#ffffff',
+          zIndex:'-1'
         });
         document.body.appendChild(clone);
 
-        // 3) Chờ layout ổn định rồi chụp với scale cao (chữ sắc nét, không dính)
+        // Chờ layout ổn định rồi chụp, tăng scale cho nét
         await new Promise(r=>setTimeout(r, 20));
         const canvas = await html2canvas(clone, {
-          scale: 3,                 // chất lượng cao
+          scale: 3,
           backgroundColor: '#ffffff',
-          useCORS: true             // để logo BHXH load được nếu là file tĩnh
+          useCORS: true
         });
 
-        // 4) Xoá bản sao và tải về
         document.body.removeChild(clone);
+
         const a = document.createElement('a');
         a.download = 'the-bhyt.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
-      }finally{
+      } finally {
         hideLoading();
       }
     }
+
     async function downloadReceiptImage(){ showLoading(); const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhyt.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
 
     // CSS nhúng cho cửa sổ in riêng
