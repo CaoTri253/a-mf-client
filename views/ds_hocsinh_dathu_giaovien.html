@@ -111,6 +111,50 @@
   .bhyt-footer{display:flex;justify-content:center;gap:16px;margin-top:8px}
   .bhyt-stamp{font-weight:900;color:#16a34a;font-size:28px}
   .bhyt-sohoso{padding:6px 14px;border-radius:6px;background:#fff3b0;border:2px solid #facc15;font-weight:900;color:#1d4ed8;display:inline-block}
+  
+  
+  /* ===== KÍCH THƯỚC THẺ NGANG + SCALE ===== */
+
+  /* Kích thước “gốc” của thẻ (khổ ngang chuẩn). 
+    Có thể tinh chỉnh nếu muốn: */
+  :root{
+    --cardW: 920px;     /* chiều rộng thẻ ở desktop */
+    --cardH: 560px;     /* chiều cao thẻ ở desktop  */
+  }
+
+  /* Bọc ngoài để scale: */
+  #cardScaleWrap{
+    position: relative;
+    width: var(--cardW);
+    height: var(--cardH);
+    transform-origin: top left;
+    margin: 0 auto;
+  }
+
+  /* Ấn định thẻ theo khổ ngang (không bị kéo dãn):
+    phần .bhyt-card hiện có ta chỉ thêm width/height */
+  .bhyt-card{
+    width: var(--cardW);
+    height: var(--cardH);
+    overflow: hidden; /* đề phòng tràn chữ */
+  }
+
+  /* Giữ padding bên trong hợp lý khi thu nhỏ */
+  .bhyt-inner{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Khi in riêng phần thẻ: ép khổ ngang */
+  @media print{
+    @page{ size: A6 landscape; margin: 6mm; }
+    #cardScaleWrap{ width: 148mm; height: 105mm; transform: none !important; }
+    .bhyt-card{ width: 148mm; height: 105mm; }
+  }
+
+  
+  
   </style>
 </head>
 <body>
@@ -147,59 +191,60 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div id="cardArea" class="bhyt-card">
-          <div class="bhyt-inner">
-            <div class="bhyt-top">
-              <!-- logo + đối tượng đóng (HS, Cận nghèo, ...) -->
-              <div class="bhyt-logo-wrap">
-                <div class="bhyt-logo">
-                  <!-- đổi đường dẫn logo nếu bạn để file ở nơi khác -->
-                  <img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN">
+        <div id="cardScaleWrap">
+          <div id="cardArea" class="bhyt-card">
+            <div class="bhyt-inner">
+              <div class="bhyt-top">
+                <!-- logo + đối tượng đóng (HS, Cận nghèo, ...) -->
+                <div class="bhyt-logo-wrap">
+                  <div class="bhyt-logo">
+                    <!-- đổi đường dẫn logo nếu bạn để file ở nơi khác -->
+                    <img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN">
+                  </div>
+                  <div class="bhyt-obj" id="c-doituong">Học sinh</div>
                 </div>
-                <div class="bhyt-obj" id="c-doituong">Học sinh</div>
+
+                <!-- tiêu đề -->
+                <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
+
+                <!-- hiển thị lớp to (kiểu 3B) -->
+                <div class="bhyt-lop-big" id="c-lop-big"> </div>
               </div>
 
-              <!-- tiêu đề -->
-              <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
+              <!-- Mã số + Số định danh -->
+              <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
+              <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
 
-              <!-- hiển thị lớp to (kiểu 3B) -->
-              <div class="bhyt-lop-big" id="c-lop-big"> </div>
-            </div>
+              <!-- Lưới thông tin -->
+              <div class="bhyt-grid">
+                <div class="bhyt-col">
+                  <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
+                  <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
+                  <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
+                  <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
+                  <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
+                  <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
+                  <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
+                  <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                </div>
 
-            <!-- Mã số + Số định danh -->
-            <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
-            <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
-
-            <!-- Lưới thông tin -->
-            <div class="bhyt-grid">
-              <div class="bhyt-col">
-                <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
-                <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
-                <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
-                <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
-                <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
-                <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
-                <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
-                <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                <div class="bhyt-col">
+                  <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
+                  <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
+                  <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
+                  <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
+                  <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
+                  <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+                </div>
               </div>
 
-              <div class="bhyt-col">
-                <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
-                <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
-                <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
-                <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
-                <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
-                <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+              <div class="bhyt-footer">
+                <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
+                <div class="bhyt-sohoso" id="c-sohoso">—</div>
               </div>
-            </div>
-
-            <div class="bhyt-footer">
-              <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
-              <div class="bhyt-sohoso" id="c-sohoso">—</div>
             </div>
           </div>
         </div>
-
       </div>
     </div></div>
   </div>
@@ -410,6 +455,44 @@
         m.show(); hideLoading();
       }).catch(()=>hideLoading());
     }
+
+    /* Tính scale để thẻ luôn vừa khung hiển thị (desktop/mobile) */
+    function scaleCardToViewport(){
+      const wrap = document.getElementById('cardScaleWrap');
+      if(!wrap) return;
+
+      const W = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW')) || 920;
+      const H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH')) || 560;
+
+      // Vùng hiển thị khả dụng trong modal
+      const modalBody = document.querySelector('#modalTheBHYT .modal-body');
+      const pad = 24; // chừa khoảng cách
+      const vw = Math.max(320, modalBody.clientWidth  - pad);
+      const vh = Math.max(240, modalBody.clientHeight - pad);
+
+      // Tính tỉ lệ co: min theo 2 chiều
+      const s = Math.min(vw / W, vh / H);
+
+      wrap.style.transform = `scale(${s})`;
+      // Để modal không sinh thanh cuộn khó chịu:
+      wrap.style.marginBottom = (H * (s - 1)) + 'px';
+    }
+
+    /* Khi modal show: scale 1 lần, sau đó lắng nghe resize để scale lại */
+    document.getElementById('modalTheBHYT')?.addEventListener('shown.bs.modal', () => {
+      setTimeout(scaleCardToViewport, 10);
+      window.addEventListener('resize', scaleCardToViewport);
+    });
+
+    /* Khi đóng modal: bỏ listener */
+    document.getElementById('modalTheBHYT')?.addEventListener('hidden.bs.modal', () => {
+      window.removeEventListener('resize', scaleCardToViewport);
+    });
+
+
+
+
+
 
     /* ====== QR & In phiếu thu (giữ nguyên cơ chế đã chạy tốt) ====== */
     function stripVN(s){return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')}
