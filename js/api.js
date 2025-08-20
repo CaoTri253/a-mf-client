@@ -139,6 +139,17 @@ async function xoaNhieuHocsinh(ids) {
 
 
 
+
+
+
+
+// Lấy danh sách BHYT theo trường/lớp (trả đủ cột, có so_ho_so)
+async function getDanhSachBHYT(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
 // Trạng thái BHYT theo HS
 async function getBHYTStatus(so_dinh_danh, ma_truong, lop_hoc) {
   const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
@@ -178,3 +189,4 @@ async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
   });
   return await res.json();
 }
+
