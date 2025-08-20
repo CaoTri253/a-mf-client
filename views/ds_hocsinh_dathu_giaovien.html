@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,7 +8,7 @@
   <style>
     body{background:#f8f9fa;min-height:100vh;padding:20px}
     .sticky-header-box{position:sticky;top:0;z-index:999;background:#f8f9fa;padding-bottom:2px}
-    .header{font-size:22px;font-weight:bold;margin-bottom:8px;padding-bottom:6px;background:#f8f9fa}
+    .header{font-size:22px;font-weight:700;margin-bottom:8px;padding-bottom:6px}
     .search-row{display:flex;flex-wrap:wrap;align-items:center;margin-bottom:10px;gap:10px;position:sticky;top:52px;z-index:998;background:#f8f9fa;padding-bottom:4px}
     .search-input{flex:1;min-width:180px}
     .table-hs{background:#fff;border-radius:8px;box-shadow:0 1px 6px #0002}
@@ -17,9 +17,11 @@
     th.th-action{min-width:170px}
     th.sortable{cursor:pointer;user-select:none}
     th.sortable:hover{background:#f1f1f1}
-    .sort-icon{font-size:14px;margin-left:6px}
-    .btn-back{position:fixed;bottom:26px;right:20px;z-index:1099;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 14px #0003;font-size:25px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #eee;color:#2563eb;transition:box-shadow .12s}
+    .sort-icon{font-size:13px;margin-left:4px;vertical-align:middle}
+
+    .btn-back{position:fixed;bottom:26px;right:20px;z-index:1099;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 14px #0003;font-size:25px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #eee;color:#2563eb}
     .btn-back:hover{box-shadow:0 4px 24px #2563eb33;color:#fff;background:#2563eb}
+
     @media(max-width:600px){
       .header{font-size:18px}
       th.th-action{min-width:120px}
@@ -29,12 +31,14 @@
     }
     @media(min-width:601px){.action-btns{display:flex;flex-direction:row;gap:6px}}
 
+    /* trạng thái */
     .status-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:600;font-size:12px}
     .status-pending{color:#b91c1c;background:#fee2e2}
     .status-paid-wait{color:#b91c1c;background:#ffe4e6}
     .status-active{color:#065f46;background:#d1fae5}
     .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px}
 
+    /* khung A5 xem trước */
     .a5-paper{width:148mm;min-height:210mm;background:#fff;margin:0 auto;padding:10mm 12mm;color:#000;box-shadow:0 1px 10px #0002;font-size:13px;line-height:1.35}
     .receipt-title{font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.4px}
     .receipt-sub{font-style:italic}
@@ -46,14 +50,10 @@
 
     @media print{
       @page{size:A5 portrait;margin:10mm}
-      body{background:#fff!important}
-      .modal{position:static!important}
-      .modal-dialog{width:auto!important;max-width:none!important}
-      .modal-content{box-shadow:none!important;border:none!important}
       .no-print{display:none!important}
-      .a5-paper{box-shadow:none!important;margin:0!important}
     }
 
+    /* Card xem thẻ */
     .card-wrap{width:540px;max-width:100%;margin:0 auto;background:linear-gradient(135deg,#e0f2fe,#bfdbfe);border-radius:16px;padding:18px;color:#0f172a;box-shadow:0 2px 10px rgba(0,0,0,.08)}
     .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .card-title{font-weight:800;letter-spacing:.3px;color:#0c4a6e}
@@ -136,7 +136,7 @@
             <div class="col text-center"><div class="receipt-meta"><div><strong>Mẫu số:</strong> C45-BB</div><div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div><div>ngày 10/10/2017 của Bộ Tài Chính</div></div></div>
           </div>
           <div class="row align-items-center mt-3">
-            <div class="col-4" style="max-width: 36mm;"><div class="qr-box"><div id="receipt-qr"></div></div></div>
+            <div class="col-4" style="max-width:36mm;"><div class="qr-box"><div id="receipt-qr"></div></div></div>
             <div class="col text-center"><div class="receipt-title">BIÊN LAI THU TIỀN</div><div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div></div>
           </div>
           <div class="mt-3">
@@ -167,6 +167,7 @@
   <script src="../js/api.js"></script>
 
   <script>
+    /* ====== INIT ====== */
     const isMobile=()=>/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     let user=JSON.parse(localStorage.getItem("user")||"{}");
     if(!user.sdt||user.phan_quyen!=="giao_vien") location.href="../index.html";
@@ -181,13 +182,15 @@
     function detectPageSize(){const w=innerWidth;if(w<=600)pageSize=5;else if(w<=999)pageSize=10;else pageSize=20}
     addEventListener('resize',()=>{const old=pageSize;detectPageSize();if(old!==pageSize){currentPage=1;renderAllView()}});
 
+    /* ====== API (giữ luồng đang chạy tốt) ====== */
     async function getAllBHYT(ma_truong,lop){const u=`${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;const r=await fetch(u);return await r.json()}
     async function getTenTruong(ma_truong){try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;const r=await fetch(u);const j=await r.json();return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'}catch(e){return user.ten_truong||ma_truong||'—'}}
 
     function displayDate(raw){if(!raw)return"";if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw))return new Date(raw).toLocaleDateString('vi-VN');if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw)){const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}return raw}
     function cleanVal(v){const s=String(v??"").trim();return (!s||s==='null'||s==='NULL'||s==='undefined'||s==='NaN'||s==='-')?"":s}
     function getSoHoSo(row){return cleanVal(row.so_ho_so??row.sohoso??row.so_hs)}
-    function sortIcon(field){if(sortField!==field) return '<span class="sort-icon">⇅</span>';return sortDir===1?'<span class="sort-icon">▲</span>':'<span class="sort-icon">▼</span>'}
+
+    function sortIcon(field){ if(sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
 
     async function fetchDaThuBHYT(){
       try{
@@ -199,31 +202,39 @@
       }catch(e){allData=[];doSearch()}finally{hideLoading()}
     }
 
+    /* ====== Table ====== */
     function statusCell(row){
       const st=Number(row.trang_thai??-1), shs=getSoHoSo(row);
-      if(st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
-      if(st===1&&!shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
-      if(st===1&&shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${escapeHtml(shs)}</span></div>`;
+      if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
+      if (st===1 && !shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
+      if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${escapeHtml(shs)}</span></div>`;
       return `<span class="status-badge status-pending">Đang xử lý</span>`;
     }
     function actionsCell(i,row){
       const st=Number(row.trang_thai??-1),shs=getSoHoSo(row);
-      if(st===1&&shs) return `<div class="action-btns"><button class="btn btn-sm btn-info" onclick="onViewCardIdx(${i})">Xem thẻ</button><button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button></div>`;
+      if (st===1 && shs) return `<div class="action-btns"><button class="btn btn-sm btn-info" onclick="onViewCardIdx(${i})">Xem thẻ</button><button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button></div>`;
       return `<div class="action-btns"><button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button></div>`;
+    }
+
+    function buildTableHead(){
+      return `
+        <thead>
+          <tr>
+            <th class="th-action">Thao tác</th>
+            <th>Trạng thái</th>
+            <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
+            <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh ${sortIcon('ngay_sinh')}</th>
+            <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh ${sortIcon('so_dinh_danh')}</th>
+            <th>Nơi khám</th>
+            <th class="sortable" onclick="doSort('so_thang_dong')">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
+            <th class="sortable" onclick="doSort('han_su_dung_bhyt_moi')">Hạn mới ${sortIcon('han_su_dung_bhyt_moi')}</th>
+          </tr>
+        </thead>`;
     }
 
     function renderDanhSachHS(ds,startIdx){
       if(!ds||ds.length===0){document.getElementById('ds-container').innerHTML=`<div class='text-center text-secondary mt-4'>Không có hồ sơ BHYT trong lớp này.</div>`;return}
-      const thead=`<thead><tr>
-        <th class="th-action">Thao tác</th>
-        <th>Trạng thái</th>
-        <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
-        <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh ${sortIcon('ngay_sinh')}</th>
-        <th class="">Số định danh</th>
-        <th class="">Nơi khám</th>
-        <th class="sortable" onclick="doSort('so_thang_dong')">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
-        <th>Hạn mới</th>
-      </tr></thead>`;
+      const thead = buildTableHead();
       const rows=ds.map((r,i)=>{
         const iView=startIdx+i,hanMoi=displayDate(r.han_su_dung_bhyt_moi||r.ngay_het_han_bhyt_moi||"");
         return `<tr>
@@ -251,14 +262,14 @@
     function gotoPage(p){if(p<1||p>totalPages) return; currentPage=p; renderAllView()}
     function doSearch(){const q=document.getElementById('search-box').value.trim().toLowerCase();lastFiltered=!q?allData:allData.filter(h=> (h.ho_ten_hoc_sinh||"").toLowerCase().includes(q)||(displayDate(h.ngay_sinh)||"").toLowerCase().includes(q)||(h.so_dinh_danh||"").toLowerCase().includes(q)||(h.noi_kham_bhyt||"").toLowerCase().includes(q));currentPage=1;renderAllView()}
     function renderAllView(){let data=lastFiltered||allData;if(sortField){data=[...data].sort((a,b)=>{let av=(a[sortField]??"").toString().toLowerCase(),bv=(b[sortField]??"").toString().toLowerCase();if(!isNaN(+av)&&!isNaN(+bv)){av=+av;bv=+bv}return av<bv?-sortDir:av>bv?sortDir:0})}window._viewData=data;totalRecords=data.length;totalPages=Math.max(1,Math.ceil(totalRecords/pageSize));document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;const start=(currentPage-1)*pageSize;renderDanhSachHS(data.slice(start,start+pageSize),start);renderPagination()}
-    function doSort(f){if(sortField===f)sortDir=-sortDir;else{sortField=f;sortDir=1}renderAllView()}
 
+    /* ====== Actions (Xem thẻ / In) ====== */
     function onViewCardIdx(i){const row=window._viewData[i];if(row) onViewCard(row)}
     function onPrintReceiptIdx(i){const row=window._viewData[i];if(row) onPrintReceipt(row)}
 
     function parseDate(s){if(!s)return null;if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)}if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);return null}
     function formatDateVN2(d){const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=d.getFullYear();return `${dd}/${mm}/${yy}`}
-    function makeRangeText(row){const end=row.han_su_dung_bhyt_moi||row.ngay_het_han_bhyt_moi||"";const months=Number(row.so_thang_dong||0);const endDate=parseDate(end);if(!endDate||!months)return"";const s=new Date(endDate.getFullYear(),endDate.getMonth()-months,endDate.getDate()+1);return `từ ${formatDateVN2(s)} đến ${formatDateVN2(endDate)}`}
+    function makeRangeText(row){const end=row.han_su_dung_bhyt_moi||row.ngay_het_han_bhyt_moi||"";const months=Number(row.so_thang_dong||0);const e=parseDate(end);if(!e||!months)return"";const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);return `từ ${formatDateVN2(s)} đến ${formatDateVN2(e)}`}
 
     function onViewCard(row){
       const sohoso=getSoHoSo(row)||"—";const lop=user.lop_hoc||row.lop_hoc||"—";
@@ -277,6 +288,7 @@
       });
     }
 
+    /* ====== QR & In phiếu thu ====== */
     function stripVN(s){return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')}
     function initials(str){return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase()}
     function buildQRPayload(mt,school,cls,name,months,endDate){const _mt=String(mt||"").slice(0,24),s=stripVN(school).slice(0,60),c=String(cls||"").slice(0,12),n=stripVN(name).slice(0,60),m=String(months||""),e=String(endDate||"").slice(0,10);return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`}
@@ -292,9 +304,11 @@
         const months=parseInt(row.so_thang_dong||"12",10);
         const amount=parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
         const end=row.han_su_dung_bhyt_moi||row.ngay_het_han_bhyt_moi||"";
-        const endDate=parseDate(end);
+        const e=parseDate(end);
         let startText="—",endText="(không xác định)";
-        if(endDate&&months>0){const s=new Date(endDate.getFullYear(),endDate.getMonth()-months,endDate.getDate()+1);startText=formatDateVN2(s);endText=formatDateVN2(endDate)}
+        if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN2(s);endText=formatDateVN2(e)}
+
+        // Điền dữ liệu vào modal
         document.getElementById('rec-school').innerText=truong;
         document.getElementById('rec-class').innerText=lop;
         document.getElementById('rec-date-today').innerText=todayText();
@@ -306,10 +320,13 @@
         document.getElementById('rec-amount').innerText=toVND(amount);
         document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText=user.ho_ten||"(Giáo viên)";
+
+        // QR
         const qrBox=document.getElementById('receipt-qr');qrBox.innerHTML="";
         const text=buildQRPayload(user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
         try{new QRCode(qrBox,{text,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-        catch(e){const fb=`MT=${String(user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;try{new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}catch(e2){qrBox.innerHTML='<small>QR quá dài</small>'}}
+        catch(e2){const fb=`MT=${String(user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;try{new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}catch(_){qrBox.innerHTML='<small>QR quá dài</small>'}}
+
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       });
     }
@@ -317,6 +334,7 @@
     async function downloadCardImage(){const node=document.getElementById('cardArea');const canvas=await html2canvas(node,{scale:devicePixelRatio||2});const a=document.createElement('a');a.download='the-bhyt.png';a.href=canvas.toDataURL('image/png');a.click()}
     async function downloadReceiptImage(){const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhyt.png';a.href=canvas.toDataURL('image/png');a.click()}
 
+    // CSS nhúng vào cửa sổ in riêng
     function getReceiptPrintCSS(){return `
       <style>
         @page{size:A5 portrait;margin:10mm}
@@ -329,27 +347,42 @@
         .row{display:flex;flex-wrap:nowrap;width:100%}.col{flex:1 1 0}.text-center{text-align:center}
       </style>`}
 
+    // In CHỈ phần phiếu: clone node, convert QR -> IMG, chờ ảnh load rồi print
     function printReceiptOnly(){
       const src=document.getElementById('receiptA5'); if(!src) return;
       const clone=src.cloneNode(true);
-      // convert QR canvas/img to <img> with dataURL so print window hiển thị chắc chắn
-      const liveQR=src.querySelector('#receipt-qr canvas, #receipt-qr img');
-      if(liveQR){
-        const img=document.createElement('img');
-        img.src=(liveQR.tagName.toLowerCase()==='canvas')?liveQR.toDataURL('image/png'):liveQR.src;
-        const target=clone.querySelector('#receipt-qr'); target.innerHTML=''; target.appendChild(img);
+
+      // convert QR (canvas/img) thành IMG dataURL
+      const live=src.querySelector('#receipt-qr canvas, #receipt-qr img');
+      if(live){
+        try{
+          const dataURL=(live.tagName.toLowerCase()==='canvas')?live.toDataURL('image/png'):live.src;
+          const target=clone.querySelector('#receipt-qr'); target.innerHTML='';
+          const img=document.createElement('img'); img.src=dataURL; img.width=90; img.height=90; target.appendChild(img);
+        }catch(e){}
       }
-      const w=window.open('','_blank');
+
+      const w=window.open('','_blank','width=900,height=650');
+      if(!w){ alert('Trình duyệt đang chặn popup in. Hãy cho phép rồi thử lại.'); return; }
+      w.document.open();
       w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>In phiếu thu</title>${getReceiptPrintCSS()}</head><body>${clone.outerHTML}</body></html>`);
-      w.document.close(); w.focus();
-      const imgs=w.document.images; const promises=[];
-      for(let i=0;i<imgs.length;i++){ if(!imgs[i].complete){ promises.push(new Promise(r=>{imgs[i].addEventListener('load',r);imgs[i].addEventListener('error',r);})); } }
-      Promise.all(promises).then(()=>{ w.print(); w.close(); });
+      w.document.close();
+
+      const triggerPrint=()=>{ try{ w.focus(); w.print(); setTimeout(()=>{try{w.close()}catch(_){}},500); }catch(e){} };
+
+      w.onload=()=>{
+        try{
+          const imgs=w.document.images; if(!imgs||imgs.length===0){ setTimeout(triggerPrint,200); return; }
+          let loaded=0; const done=()=>{ if(++loaded>=imgs.length) triggerPrint(); };
+          for(const img of imgs){ if(img.complete) done(); else { img.onload=done; img.onerror=done; } }
+          setTimeout(triggerPrint,1500); // fallback
+        }catch(e){ triggerPrint(); }
+      };
     }
 
     function escapeHtml(s){return (s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 
-    (async function(){await fetchDaThuBHYT()})();
+    (async function(){ await fetchDaThuBHYT(); })();
   </script>
 </body>
 </html>
