@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DS học sinh đã tham gia - Giáo viên</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <style>
+    body { background: #f8f9fa; min-height: 100vh; padding: 20px; }
+    .sticky-header-box {
+      position: sticky; top: 0; z-index: 999;
+      background: #f8f9fa; padding-bottom: 2px;
+    }
+    .header {
+      font-size: 22px; font-weight: bold; margin-bottom: 8px;
+      padding-bottom: 6px; background: #f8f9fa;
+    }
+    .search-row {
+      display: flex; flex-wrap: wrap; align-items: center;
+      margin-bottom: 10px; gap: 10px;
+      position: sticky; top: 52px; z-index: 998;
+      background: #f8f9fa; padding-bottom: 4px;
+    }
+    .search-input { flex: 1; min-width: 200px; }
+    .table-hs { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px #0002;}
+    .table-responsive { overflow-x: auto; }
+    .total-count { font-size: 1rem; font-weight: 400; color: #444;}
+    th.th-action { min-width: 170px; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { background: #f1f1f1; }
+    .sort-icon { font-size: 15px; vertical-align: middle; margin-left: 3px; }
+
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-weight: 600; font-size: 12px; }
+    .status-pending { color: #b91c1c; background: #fee2e2; }         /* Chờ duyệt */
+    .status-paid-wait { color: #b91c1c; background: #ffe4e6; }        /* Đã nộp, chờ kích hoạt */
+    .status-active { color: #065f46; background: #d1fae5; }           /* Đã kích hoạt */
+    .hoso-text { display: block; font-size: 12px; color: #1d4ed8; margin-top: 4px; }
+
+    .btn-back {
+      position: fixed; bottom: 26px; right: 20px; z-index: 1099;
+      border-radius: 50%; width: 54px; height: 54px;
+      box-shadow: 0 2px 14px #0003; font-size: 25px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: 2px solid #eee; color: #2563eb;
+      transition: box-shadow 0.12s;
+    }
+    .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
+
+    @media (max-width: 600px) {
+      .header { font-size: 18px; }
+      th.th-action { min-width: 140px; }
+      .search-row { flex-direction: column; align-items: stretch; }
+      .action-btns { display: flex; flex-direction: column; gap: 6px; }
+      .action-btns .btn { width: 100%; }
+    }
+    @media (min-width: 601px) {
+      .action-btns { display: flex; flex-direction: row; gap: 6px; }
+    }
+
+    /* === CSS phiếu thu A5 & chế độ in === */
+    .a5-paper {
+      width: 148mm; min-height: 210mm; background: #fff;
+      margin: 0 auto; padding: 10mm 12mm; color: #000;
+      box-shadow: 0 1px 10px #0002; font-size: 13px; line-height: 1.35;
+    }
+    .receipt-title { font-weight: 700; font-size: 22px; text-transform: uppercase; letter-spacing: .4px; }
+    .receipt-sub { font-style: italic; }
+    .receipt-meta { font-size: 13px; }
+    .receipt-line { margin: 2mm 0; }
+    .qr-box { width: 26mm; height: 26mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+    .sign-col { text-align: center; margin-top: 10mm; font-weight: 500; }
+    .sign-name { margin-top: 20mm; text-align: center; font-weight: 600; }
+
+    /* Chỉ in nội dung phiếu thu trong modal */
+    @media print {
+      @page { size: A5 portrait; margin: 10mm; }
+      body { background: #fff !important; }
+      .no-print { display: none !important; }
+      .modal { position: static !important; }
+      .modal-dialog { width: auto !important; max-width: none !important; }
+      .modal-content { box-shadow: none !important; border: none !important; }
+      /* Ẩn tất cả ngoài tờ a5 */
+      body * { visibility: hidden; }
+      #receiptA5, #receiptA5 * { visibility: visible; }
+      #receiptA5 { position: absolute; left: 0; top: 0; }
+    }
+
+    /* === Thẻ BHYT (Xem thẻ) === */
+    .card-wrap {
+      width: 540px; max-width: 100%;
+      margin: 0 auto; background: linear-gradient(135deg, #e0f2fe, #bfdbfe);
+      border-radius: 16px; padding: 18px; color: #0f172a; box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+    }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+    .card-title { font-weight: 800; letter-spacing: .3px; color: #0c4a6e; }
+    .card-body { background:#fff; border-radius:12px; padding: 14px; box-shadow: inset 0 0 0 1px #e5e7eb; }
+    .kv { display:flex; gap:10px; margin-bottom:6px; align-items:flex-start; }
+    .kv .k { width: 160px; color:#475569; font-weight:600; font-size: 13px;}
+    .kv .v { flex:1; color:#0f172a; font-weight:600; }
+    .note { font-size: 12px; color:#334155; margin-top: 8px; }
+    .card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+    .stamp { font-weight: 700; color:#065f46; background:#d1fae5; padding: 4px 8px; border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <!-- Sticky header & search -->
+  <div class="sticky-header-box">
+    <div class="header">
+      DANH SÁCH HỌC SINH ĐÃ THAM GIA LỚP <span id="lop-hoc"></span>
+      <span class="total-count" id="total-hs"></span>
+    </div>
+    <div class="search-row mb-2">
+      <input class="form-control search-input" id="search-box" placeholder="Tìm theo tên, ngày sinh, số định danh..." oninput="doSearch()">
+    </div>
+  </div>
+
+  <div class="table-responsive" id="ds-container"></div>
+  <nav>
+    <ul class="pagination justify-content-center" id="pagination"></ul>
+  </nav>
+
+  <!-- Nút quay về -->
+  <button class="btn btn-back" onclick="goBack()" title="Quay về">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
+    </svg>
+  </button>
+
+  <!-- Loading -->
+  <div id="loadingSpinner" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(255,255,255,0.5);align-items:center;justify-content:center;">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Modal XEM THẺ BHYT -->
+  <div class="modal fade" id="modalTheBHYT" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thẻ bảo hiểm y tế</h5>
+        <div class="d-flex gap-2 no-print">
+          <button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="cardArea" class="card-wrap">
+          <div class="card-header">
+            <div class="card-title">THẺ BHYT - HỌC SINH</div>
+            <div class="stamp" id="card-status">ĐÃ KÍCH HOẠT</div>
+          </div>
+          <div class="card-body">
+            <div class="kv"><div class="k">Số hồ sơ</div><div class="v" id="card-sohoso">—</div></div>
+            <div class="kv"><div class="k">Họ và tên</div><div class="v" id="card-hoten">—</div></div>
+            <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="card-ngaysinh">—</div></div>
+            <div class="kv"><div class="k">Số định danh</div><div class="v" id="card-sodinhdanh">—</div></div>
+            <div class="kv"><div class="k">Lớp</div><div class="v" id="card-lop">—</div></div>
+            <div class="kv"><div class="k">Trường</div><div class="v" id="card-truong">—</div></div>
+            <div class="kv"><div class="k">Nơi khám</div><div class="v" id="card-noikham">—</div></div>
+            <div class="kv"><div class="k">Hiệu lực</div><div class="v" id="card-range">—</div></div>
+          </div>
+          <div class="card-footer">
+            <div class="note">* Thẻ dùng khi khám chữa bệnh đúng tuyến theo quy định.</div>
+            <div id="card-qr"></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Modal xem trước & in Phiếu thu A5 -->
+  <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
+          <div class="no-print d-flex gap-2">
+            <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
+            <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="display:flex;justify-content:center;">
+          <div id="receiptA5" class="a5-paper">
+            <!-- Hàng 1 -->
+            <div class="row">
+              <div class="col">
+                <div class="receipt-meta">
+                  <div><strong id="rec-school">Trường …</strong></div>
+                  <div>Lớp: <strong id="rec-class">—</strong></div>
+                </div>
+              </div>
+              <div class="col text-center">
+                <div class="receipt-meta">
+                  <div><strong>Mẫu số:</strong> C45-BB</div>
+                  <div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div>
+                  <div>ngày 10/10/2017 của Bộ Tài Chính</div>
+                </div>
+              </div>
+            </div>
+            <!-- Hàng 2 -->
+            <div class="row align-items-center mt-3">
+              <div class="col-4" style="max-width: 36mm;">
+                <div class="qr-box"><div id="receipt-qr"></div></div>
+              </div>
+              <div class="col text-center">
+                <div class="receipt-title">BIÊN LAI THU TIỀN</div>
+                <div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div>
+              </div>
+            </div>
+            <!-- Thông tin -->
+            <div class="mt-3">
+              <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name">—</strong></div>
+              <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
+              <div class="receipt-line">Nội dung thu: <span id="rec-content">—</span></div>
+              <div class="receipt-line">
+                Số tháng đóng: <span id="rec-months">—</span> tháng
+                (<span id="rec-range">từ ngày … đến ngày …</span>)
+              </div>
+              <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
+              <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
+            </div>
+            <!-- Chữ ký -->
+            <div class="row">
+              <div class="col sign-col">
+                NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small>
+              </div>
+              <div class="col sign-col">
+                NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small>
+                <div class="sign-name" id="rec-teacher-name">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer no-print">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
+          <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END Modal phiếu thu -->
+
+  <!-- Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toast-message">Thao tác thành công!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- QR & html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- API -->
+  <script src="../js/api.js"></script>
+
+  <script>
+    const logPrefix = '[BHYT-DaThu]';
+    const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    let user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
+    document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
+
+    let pageSize = 20, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [];
+
+    function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
+    function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
+    function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
+
+    function formatDateVN(raw) {
+      if (!raw) return "";
+      if (typeof raw === 'string' && raw.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        const d = new Date(raw); return d.toLocaleDateString('vi-VN');
+      }
+      if (typeof raw === 'string' && raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [y,m,d] = raw.split('-'); return `${d}/${m}/${y}`;
+      }
+      return raw; // đã là dd/mm/yyyy
+    }
+
+    function detectPageSize() {
+      const width = window.innerWidth;
+      if (width <= 600) pageSize = 5;
+      else if (width <= 999) pageSize = 10;
+      else pageSize = 20;
+    }
+    window.addEventListener('resize', () => {
+      const prev = pageSize; detectPageSize();
+      if (pageSize !== prev) { currentPage = 1; renderAllView(); }
+    });
+
+    // ======= DATA FETCH =======
+    async function getAllBHYT(ma_truong, lop) {
+      const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`;
+      const res = await fetch(url);
+      return await res.json();
+    }
+    async function getTenTruong(ma_truong) {
+      try {
+        const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
+        const res = await fetch(url);
+        const j = await res.json();
+        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
+      } catch(e){ return user.ten_truong || ma_truong || '—'; }
+    }
+
+    async function fetchDaThuBHYT() {
+      try {
+        detectPageSize(); showLoading();
+        const bhytRes = await getAllBHYT(user.ma_truong, user.lop_hoc);
+        const rows = Array.isArray(bhytRes?.data) ? bhytRes.data : [];
+
+        // Chỉ hiển thị các dòng đã có hồ sơ trong DanhSach_BHYT (trạng thái 0 hoặc 1)
+        allData = rows.filter(r => r && r.so_dinh_danh);
+        // Bảo toàn kiểu số cho trang_thai nếu backend trả về string
+        allData = allData.map(r => ({ ...r, trang_thai: r.trang_thai === undefined ? undefined : Number(r.trang_thai) }));
+
+        currentPage = 1;
+        doSearch(); // cũng render
+        console.log(logPrefix, 'Loaded', allData.length);
+      } catch (e) {
+        console.error(logPrefix, 'fetchDaThuBHYT error', e);
+        allData = []; doSearch();
+      } finally { hideLoading(); }
+    }
+
+    // ======= RENDER =======
+    function statusCell(row) {
+      const st = Number(row.trang_thai ?? -1);
+      const sohoso = (row.so_ho_so ?? row.sohoso ?? row.so_hs ?? "").toString().trim() || "";
+      if (st === 0) {
+        return `<span class="status-badge status-pending">Chờ duyệt</span>`;
+      }
+      if (st === 1 && !sohoso) {
+        return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
+      }
+      if (st === 1 && sohoso) {
+        return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${escapeHtml(sohoso)}</span></div>`;
+      }
+      return `<span class="status-badge status-pending">Đang xử lý</span>`;
+    }
+
+    function actionsCell(row) {
+      const st = Number(row.trang_thai ?? -1);
+      const sohoso = (row.so_ho_so ?? row.sohoso ?? row.so_hs ?? "").toString().trim() || "";
+
+      // Quy tắc:
+      // - st=1 & so_ho_so=null  => chỉ "In phiếu thu"
+      // - st=1 & so_ho_so!=null => "Xem thẻ" + "In phiếu thu"
+      // - st=0                  => chỉ "In phiếu thu"
+      let btns = [];
+      if (st === 1 && sohoso) {
+        btns.push(`<button class="btn btn-sm btn-info" onclick='onViewCard(${JSON.stringify(safeRowForAttr(row))})'>Xem thẻ</button>`);
+        btns.push(`<button class="btn btn-sm btn-primary" onclick='onPrintReceipt(${JSON.stringify(safeRowForAttr(row))})'>In phiếu thu</button>`);
+      } else {
+        btns.push(`<button class="btn btn-sm btn-primary" onclick='onPrintReceipt(${JSON.stringify(safeRowForAttr(row))})'>In phiếu thu</button>`);
+      }
+      return `<div class="action-btns">${btns.join(' ')}</div>`;
+    }
+
+    function renderDanhSachHS(ds) {
+      if (!ds || ds.length === 0) {
+        document.getElementById('ds-container').innerHTML = `<div class='text-center text-secondary mt-4'>Không có hồ sơ BHYT trong lớp này.</div>`;
+        return;
+      }
+      let thead = `
+        <thead>
+          <tr>
+            <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên <span class="sort-icon">⇅</span></th>
+            <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh <span class="sort-icon">⇅</span></th>
+            <th>Số định danh</th>
+            <th>Nơi khám</th>
+            <th class="sortable" onclick="doSort('so_thang_dong')">Số tháng đóng <span class="sort-icon">⇅</span></th>
+            <th>Hạn mới</th>
+            <th>Trạng thái</th>
+            <th class="th-action">Thao tác</th>
+          </tr>
+        </thead>
+      `;
+      let rows = ds.map(r => {
+        const ngaySinh = formatDateVN(r.ngay_sinh);
+        const hanMoi = formatDateVN(r.han_su_dung_bhyt_moi || r.ngay_het_han_bhyt_moi || "");
+        const noiKham = r.noi_kham_bhyt || "";
+        const soThang = r.so_thang_dong || "";
+        const sdd = r.so_dinh_danh || "";
+        const stCell = statusCell(r);
+        const action = actionsCell(r);
+        return `
+          <tr>
+            <td>${escapeHtml(r.ho_ten_hoc_sinh || "")}</td>
+            <td>${escapeHtml(ngaySinh)}</td>
+            <td>${escapeHtml(sdd)}</td>
+            <td>${escapeHtml(noiKham)}</td>
+            <td class="text-center">${escapeHtml(soThang.toString())}</td>
+            <td>${escapeHtml(hanMoi)}</td>
+            <td>${stCell}</td>
+            <td>${action}</td>
+          </tr>
+        `;
+      }).join('');
+      const html = `
+        <table class="table table-bordered table-hs align-middle">
+          ${thead}
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      document.getElementById('ds-container').innerHTML = html;
+    }
+
+    function renderPagination() {
+      let html = '';
+      if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+      const add = (page, label, active=false, disabled=false) =>
+        `<li class="page-item ${active?'active':''} ${disabled?'disabled':''}">
+          <a class="page-link" href="javascript:void(0)" onclick="gotoPage(${page})">${label}</a>
+        </li>`;
+      html += add(Math.max(1, currentPage-1), "&laquo;", false, currentPage===1);
+      for (let i = 1; i <= totalPages; i++) html += add(i, i, i===currentPage, false);
+      html += add(Math.min(totalPages, currentPage+1), "&raquo;", false, currentPage===totalPages);
+      document.getElementById('pagination').innerHTML = html;
+    }
+
+    function gotoPage(p) { if (p<1||p>totalPages) return; currentPage = p; renderAllView(); }
+
+    window.renderAllView = function() {
+      try {
+        let dataToShow = lastFiltered || allData;
+        if (sortField) {
+          dataToShow = [...dataToShow].sort((a,b)=>{
+            let av = (a[sortField] ?? "").toString().toLowerCase();
+            let bv = (b[sortField] ?? "").toString().toLowerCase();
+            if (!isNaN(+av) && !isNaN(+bv)) { av = +av; bv = +bv; }
+            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+          });
+        }
+        totalRecords = dataToShow.length;
+        totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+        document.getElementById('total-hs').innerText = `(${totalRecords} hồ sơ)`;
+        const start = (currentPage - 1) * pageSize;
+        const ds = dataToShow.slice(start, start + pageSize);
+        renderDanhSachHS(ds); renderPagination();
+      } catch (e) { console.error(logPrefix, 'renderAllView error', e); }
+    };
+
+    window.doSort = function(field) {
+      if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
+      renderAllView();
+    };
+
+    function doSearch() {
+      let q = document.getElementById('search-box').value.trim().toLowerCase();
+      lastFiltered = !q ? allData : allData.filter(hs =>
+        (hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
+        (formatDateVN(hs.ngay_sinh)||"").toLowerCase().includes(q) ||
+        (hs.so_dinh_danh||"").toLowerCase().includes(q) ||
+        (hs.noi_kham_bhyt||"").toLowerCase().includes(q)
+      );
+      currentPage = 1; renderAllView();
+    }
+
+    // ======= HÀNH ĐỘNG =======
+    function safeRowForAttr(row) {
+      // Giảm payload khi nhúng JSON vào onclick
+      const {
+        ho_ten_hoc_sinh, ngay_sinh, so_dinh_danh, noi_kham_bhyt, so_thang_dong,
+        han_su_dung_bhyt_moi, ngay_het_han_bhyt_moi, so_tien, hoa_hong, trang_thai,
+        so_ho_so, ma_truong, lop_hoc, dia_chi
+      } = row;
+      return {
+        ho_ten_hoc_sinh, ngay_sinh, so_dinh_danh, noi_kham_bhyt, so_thang_dong,
+        han_su_dung_bhyt_moi, ngay_het_han_bhyt_moi, so_tien, hoa_hong, trang_thai,
+        so_ho_so, ma_truong, lop_hoc, dia_chi
+      };
+    }
+
+    async function onViewCard(row) {
+      try {
+        // Điền dữ liệu thẻ
+        const sohoso = (row.so_ho_so ?? "").toString().trim() || "—";
+        const truong = await getTenTruong(user.ma_truong);
+        const lop = user.lop_hoc || row.lop_hoc || "—";
+        const range = makeRangeText(row);
+
+        document.getElementById('card-sohoso').innerText = sohoso;
+        document.getElementById('card-hoten').innerText = row.ho_ten_hoc_sinh || "—";
+        document.getElementById('card-ngaysinh').innerText = formatDateVN(row.ngay_sinh) || "—";
+        document.getElementById('card-sodinhdanh').innerText = row.so_dinh_danh || "—";
+        document.getElementById('card-lop').innerText = lop;
+        document.getElementById('card-truong').innerText = truong;
+        document.getElementById('card-noikham').innerText = row.noi_kham_bhyt || "—";
+        document.getElementById('card-range').innerText = range || "—";
+
+        // QR mã hóa so_ho_so + sđd
+        const cardQrEl = document.getElementById('card-qr');
+        cardQrEl.innerHTML = "";
+        new QRCode(cardQrEl, { text: JSON.stringify({ so_ho_so: sohoso, so_dinh_danh: row.so_dinh_danh||"" }), width: 80, height: 80 });
+
+        const modal = new bootstrap.Modal(document.getElementById('modalTheBHYT'));
+        modal.show();
+      } catch(e){ console.error(logPrefix, 'onViewCard error', e); }
+    }
+
+    async function onPrintReceipt(row) {
+      try {
+        const truong = await getTenTruong(user.ma_truong);
+        const lop = user.lop_hoc || row.lop_hoc || "—";
+        document.getElementById('rec-school').innerText = truong;
+        document.getElementById('rec-class').innerText = lop;
+        document.getElementById('rec-student-name').innerText = row.ho_ten_hoc_sinh || "—";
+        document.getElementById('rec-address').innerText = (row.dia_chi || "—");
+        document.getElementById('rec-content').innerText = "Thu BHYT học sinh";
+        document.getElementById('rec-months').innerText = (row.so_thang_dong || "—");
+        document.getElementById('rec-range').innerText = makeRangeText(row) || "—";
+        document.getElementById('rec-amount').innerText = toVND(row.so_tien);
+        document.getElementById('rec-amount-text').innerText = toWordsViet(row.so_tien || 0);
+        document.getElementById('rec-teacher-name').innerText = user.ho_ten || "—";
+
+        // Ngày hôm nay
+        const d = new Date();
+        document.getElementById('rec-date-today').innerText = `Ngày ${d.getDate()} tháng ${d.getMonth()+1} năm ${d.getFullYear()}`;
+
+        // QR
+        const qrEl = document.getElementById('receipt-qr');
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, { text: JSON.stringify({ sdd: row.so_dinh_danh||"", months: row.so_thang_dong||"", amount: row.so_tien||0 }), width: 90, height: 90 });
+
+        const modal = new bootstrap.Modal(document.getElementById('modalPhieuThu'));
+        modal.show();
+      } catch (e) { console.error(logPrefix, 'onPrintReceipt error', e); }
+    }
+
+    function makeRangeText(row) {
+      // Ưu tiên han_su_dung_bhyt_moi; nếu không có thì dùng ngay_het_han_bhyt_moi
+      const end = row.han_su_dung_bhyt_moi || row.ngay_het_han_bhyt_moi || "";
+      const months = Number(row.so_thang_dong || 0);
+      const endDate = parseDate(end);
+      if (!endDate || !months) return "";
+
+      // Khoảng: từ (end - months + 1 day) đến end
+      const startDate = new Date(endDate.getTime());
+      // Lùi theo tháng rồi +1 ngày
+      startDate.setMonth(startDate.getMonth() - months);
+      startDate.setDate(startDate.getDate() + 1);
+
+      return `từ ${formatDateVN2(startDate)} đến ${formatDateVN2(endDate)}`;
+    }
+
+    function formatDateVN2(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    function parseDate(s) {
+      if (!s) return null;
+      if (typeof s === 'string' && s.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        const [dd,mm,yyyy] = s.split('/').map(x=>parseInt(x,10));
+        return new Date(yyyy, mm-1, dd);
+      }
+      if (typeof s === 'string' && s.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return new Date(s);
+      }
+      return null;
+    }
+
+    // ======= TẢI ẢNH & IN =======
+    async function downloadCardImage() {
+      const node = document.getElementById('cardArea');
+      const canvas = await html2canvas(node, { scale: window.devicePixelRatio || 2 });
+      const link = document.createElement('a');
+      link.download = 'the-bhyt.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    async function downloadReceiptImage() {
+      const node = document.getElementById('receiptA5');
+      const canvas = await html2canvas(node, { scale: window.devicePixelRatio || 2 });
+      const link = document.createElement('a');
+      link.download = 'phieu-thu-bhyt.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    function printReceiptOnly() {
+      // CSS @media print đã ẩn mọi thứ trừ #receiptA5
+      window.print();
+    }
+
+    // ======= UTILS =======
+    function escapeHtml(str) {
+      return (str ?? '').toString()
+        .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
+    }
+    function toVND(n) {
+      const v = Number(n||0);
+      return v.toLocaleString('vi-VN');
+    }
+    // Rút gọn đọc số (đủ dùng cho phiếu): triệu, nghìn, trăm...
+    function toWordsViet(n) {
+      n = Math.floor(Number(n||0));
+      if (!n) return "không đồng";
+      const dv = [""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];
+      const toBlock = (num) => {
+        const a = ["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+        let s = "", tram = Math.floor(num/100), chuc = Math.floor((num%100)/10), donvi = num%10;
+        if (tram) s += a[tram] + " trăm";
+        if (chuc) s += (s?" ":"") + (chuc===1?"mười":a[chuc]+" mươi");
+        else if (donvi && tram) s += " linh";
+        if (donvi) {
+          let dvw = a[donvi];
+          if (chuc>=1 && donvi===1) dvw="mốt";
+          if (chuc>=1 && donvi===5) dvw="lăm";
+          s += (s?" ":"") + dvw;
+        }
+        return s || "không";
+      };
+      let parts = [], i = 0;
+      while (n>0) {
+        const block = n % 1000;
+        if (block) parts.unshift(toBlock(block) + dv[i]);
+        n = Math.floor(n/1000); i++;
+      }
+      return (parts.join(' ') + " đồng").replace(/\s+/g,' ').trim();
+    }
+
+    // ======= INIT =======
+    (async function init(){
+      await fetchDaThuBHYT();
+    })();
+  </script>
+</body>
+</html>
