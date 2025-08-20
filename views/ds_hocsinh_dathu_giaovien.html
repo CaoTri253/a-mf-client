@@ -63,7 +63,7 @@
   .bhyt-inner{
     border:3px solid #2d66d5;             /* viền trong mảnh hơn */
     border-radius:12px;
-    padding:18px 22px;
+    padding: 18px 22px 34px;  /* tăng padding-bottom để footer không chạm viền */
   }
 
   .bhyt-top{
@@ -99,9 +99,9 @@
   .bhyt-col .kv{display:flex;gap:12px;margin:6px 0;align-items:flex-start}
   .kv .k{min-width:160px;color:#6b7280;font-weight:800}
   .kv .v{color:#111827;font-weight:800}
-  .v-blue{color:#0b53ff}   /* Sử dụng từ */
-  .v-red{color:#e11d48}    /* Ngày hết hạn */
-  .v-green{color:#0f9d58}  /* Số tiền đóng */
+  .kv .v.v-blue  { color:#0b53ff !important; }  /* Sử dụng từ: xanh dương */
+  .kv .v.v-red   { color:#e11d48 !important; }  /* Ngày hết hạn: đỏ */
+  .kv .v.v-green { color:#0f9d58 !important; }  /* Số tiền đóng: xanh lá */
 
   /* ô lớp to bên phải như “3B” */
   .bhyt-lop-big{
@@ -119,7 +119,7 @@
     Có thể tinh chỉnh nếu muốn: */
   :root{
     --cardW: 920px;     /* chiều rộng thẻ ở desktop */
-    --cardH: 560px;     /* chiều cao thẻ ở desktop  */
+    --cardH: 580px;     /* chiều cao thẻ ở desktop  */
   }
 
   /* Bọc ngoài để scale: */
@@ -464,19 +464,16 @@
       const W = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW')) || 920;
       const H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH')) || 560;
 
-      // Vùng hiển thị khả dụng trong modal
       const modalBody = document.querySelector('#modalTheBHYT .modal-body');
-      const pad = 24; // chừa khoảng cách
+      const pad = 24;
       const vw = Math.max(320, modalBody.clientWidth  - pad);
       const vh = Math.max(240, modalBody.clientHeight - pad);
 
-      // Tính tỉ lệ co: min theo 2 chiều
       const s = Math.min(vw / W, vh / H);
-
       wrap.style.transform = `scale(${s})`;
-      // Để modal không sinh thanh cuộn khó chịu:
-      wrap.style.marginBottom = (H * (s - 1)) + 'px';
+      wrap.style.marginBottom = '0px';        // <-- thay vì (H*(s-1)) gây âm
     }
+
 
     /* Khi modal show: scale 1 lần, sau đó lắng nghe resize để scale lại */
     document.getElementById('modalTheBHYT')?.addEventListener('shown.bs.modal', () => {
