@@ -493,11 +493,11 @@
           sdt_lienhe: _currentHS.sdt_lienhe || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
           ten_cha_me: _currentHS.ten_cha_me || "null",
-          doi_tuong_dong: "HS",
+          doi_tuong_dong: "Học sinh",
           ghi_chu: "null",
           so_tien, hoa_hong,
           trang_thai: 0,
-          so_ho_so: `BHTN-${Date.now()}`,
+          so_ho_so: "null",
           ma_truong: user.ma_truong || "null"
         };
 
@@ -614,11 +614,11 @@
             sdt_lienhe: hs.sdt_lienhe || "null",
             so_dinh_danh: hs.so_dinh_danh || "null",
             ten_cha_me: hs.ten_cha_me || "null",
-            doi_tuong_dong: "HS",
+            doi_tuong_dong: "Học sinh",
             ghi_chu: "null",
             so_tien: price, hoa_hong,
             trang_thai: 0,
-            so_ho_so: `BHTN-${Date.now()}`,
+            so_ho_so: "null",
             ma_truong: user.ma_truong || "null"
           };
           const res = await nopHoSoBHTN(payload);
