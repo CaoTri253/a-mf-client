@@ -190,3 +190,76 @@ async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
   return await res.json();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ====== BHTN: API tương thích model/controller mới ====== */
+
+// Lấy danh sách BHTN theo trường/lớp
+async function getDanhSachBHTN(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetDanhSachBHTN&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Trạng thái BHTN theo HS (đã đóng/chưa đóng)
+async function getBHTNStatus(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetBHTNStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy hồ sơ BHTN theo HS (1 học sinh)
+async function getHosoBHTNByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetHosoBHTNByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Bảng giá BHTN (12 tháng)
+async function getGiaBHTN() {
+  const url = `${API_BASE}?func=GetGiaBHTN`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+/**
+ * Nộp hồ sơ BHTN (tạo mới/ghi đè nếu đã tồn tại theo so_dinh_danh + lớp + trường)
+ * Lưu ý:
+ *  - ma_so_bhtn có thể rỗng (admin kích hoạt sau).
+ *  - so_thang_dong cố định 12 ở backend (không cần gửi).
+ *  - KHÔNG có trường noi_kham_bhyt.
+ *  - có thể truyền so_tien/hoa_hong để override, nếu không backend sẽ lấy theo Gia_BHTN.
+ */
+async function nopHoSoBHTN(payload) {
+  const qs = Object.entries(payload).map(([k, v]) =>
+    `${encodeURIComponent(k)}=${encodeURIComponent(v ?? "")}`
+  ).join("&");
+  const url = `${API_BASE}?func=NopHoSoBHTN&${qs}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+/**
+ * Sửa hồ sơ BHTN
+ *  - Nếu không muốn thay đổi ma_so_bhtn, có thể KHÔNG gửi field này.
+ *  - Backend sẽ tính lại hạn 12 tháng dựa trên ngay_het_han_bhtn_cu nếu bạn gửi cập nhật.
+ */
+async function suaHoSoBHTN(payload) {
+  const qs = Object.entries(payload).map(([k, v]) =>
+    `${encodeURIComponent(k)}=${encodeURIComponent(v ?? "")}`
+  ).join("&");
+  const url = `${API_BASE}?func=SuaHoSoBHTN&${qs}`;
+  const res = await fetch(url);
+  return await res.json();
+}
