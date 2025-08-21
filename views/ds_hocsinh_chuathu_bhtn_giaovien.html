@@ -577,13 +577,17 @@
       if (invalidOld.length>0){ document.getElementById('bulk-error').innerText='Một số học sinh thiếu "Ngày hết hạn BHTN cũ". Hãy cập nhật trước.'; if (bulkBtn) bulkBtn.disabled = true; }
       else { if (bulkBtn) bulkBtn.disabled = false; }
 
-      ensureGiaBHTN().then(gia=>{
-        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
-        const { exp, note } = computeExp12M(selected[0]?.ngay_het_han_bhtn || "");
-        document.getElementById('bulk-exp-preview').innerText = exp;
-        document.getElementById('bulk-amount-preview').innerText = price.toLocaleString('vi-VN');
-        setExpNote('bulk-exp-note', note);
-      });
+      let _cachedGiaBHTN = null;
+
+      async function ensureGiaBHTN(){
+        if (_cachedGiaBHTN) return _cachedGiaBHTN;
+        const res = await getGiaBHTN();
+        // Chuẩn hoá: nếu backend trả {success, data:[{...}]}, lấy phần tử đầu tiên
+        // nếu trả thẳng object, dùng object đó
+        const payload = (res && res.data !== undefined) ? res.data : res;
+        _cachedGiaBHTN = Array.isArray(payload) ? (payload[0] || {}) : (payload || {});
+        return _cachedGiaBHTN;
+      }
 
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
     }
@@ -600,6 +604,7 @@
         const gia = await ensureGiaBHTN();
         const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
+
 
         let ok=0, fail=0, failNames=[];
         for (const hs of selected){
