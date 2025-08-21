@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Thống kê BHYT - Giáo viên</title>
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <style>
+    :root { --card-radius: 14px; }
+    body { background:#f5f7fb; min-height:100vh; padding:18px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .page-title { font-weight:800; letter-spacing:.2px; }
+    .sub-title { color:#6b7280; font-size:14px; }
+
+    /* KPI grid */
+    .kpi { display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
+    .kpi-item {
+      grid-column: span 12; padding:16px; border-radius: var(--card-radius);
+      background:#fff; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      display:flex; gap:14px; align-items:center;
+    }
+    .kpi-item .icon {
+      width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:22px; flex:0 0 auto;
+    }
+    .kpi-item .val { font-size:24px; font-weight:800; line-height:1; }
+    .kpi-item .lbl { font-size:13px; color:#334155; margin-top:2px; }
+    .kpi-total .icon { background:#0ea5e9; }
+    .kpi-paid  .icon { background:#10b981; }
+    .kpi-unpaid .icon { background:#ef4444; }
+    .kpi-rate  .icon { background:#6366f1; }
+    .kpi-rate .val { font-size:22px; }
+
+    @media (min-width:576px){ .kpi-item{ grid-column: span 6; } }
+    @media (min-width:992px){ .kpi-item{ grid-column: span 3; } }
+
+    /* Chart card */
+    .card-box {
+      background:#fff; border-radius: var(--card-radius);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06); padding:16px;
+    }
+    .chart-canvas-wrap { position:relative; width:100%; height:360px; }
+    #pieChart { width:100%!important; height:100%!important; }
+
+    /* Back button */
+    .btn-back{
+      position: fixed; bottom: 24px; right: 20px; z-index: 20;
+      border-radius: 999px; padding: 10px 16px; font-weight: 700;
+      background:#0d47a1; color:#fff; border: none; box-shadow: 0 6px 20px #0d47a133;
+    }
+    .btn-back:hover{ filter: brightness(1.05); }
+
+    /* Loading */
+    #loadingSpinner{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(255,255,255,0.6); backdrop-filter: blur(1px);
+      align-items:center; justify-content:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-2 mb-3">
+      <div>
+        <div class="page-title h4 mb-1">Thống kê BHYT – Giáo viên</div>
+        <div class="sub-title">
+          Lớp: <strong id="lbl-lop">—</strong> · Trường: <strong id="lbl-truong">—</strong>
+        </div>
+      </div>
+      <div class="text-secondary small">Giáo viên: <span id="lbl-user">—</span></div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi mb-3">
+      <div class="kpi-item kpi-total">
+        <div class="icon"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="val" id="kpi-total">0</div>
+          <div class="lbl">Tổng số học sinh</div>
+        </div>
+      </div>
+      <div class="kpi-item kpi-paid">
+        <div class="icon"><i class="bi bi-check2-circle"></i></div>
+        <div>
+          <div class="val" id="kpi-paid">0</div>
+          <div class="lbl">Số học sinh đã đóng</div>
+        </div>
+      </div>
+      <div class="kpi-item kpi-unpaid">
+        <div class="icon"><i class="bi bi-x-circle"></i></div>
+        <div>
+          <div class="val" id="kpi-unpaid">0</div>
+          <div class="lbl">Số học sinh chưa đóng</div>
+        </div>
+      </div>
+      <div class="kpi-item kpi-rate">
+        <div class="icon"><i class="bi bi-speedometer"></i></div>
+        <div>
+          <div class="val" id="kpi-rate">0%</div>
+          <div class="lbl">Tỉ lệ hoàn thành</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie chart -->
+    <div class="card-box">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-bold">Tỷ lệ đóng BHYT trong lớp</div>
+        <div class="text-secondary small">Đơn vị: % và số lượng</div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-back" onclick="goBack()">⬅ Trở về</button>
+
+  <!-- Loading -->
+  <div id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Plugin hiển thị nhãn trên lát cắt -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="../js/api.js"></script>
+
+  <script>
+    /* ===== Helpers ===== */
+    const pct = (num, den)=> den>0 ? (num*100/den) : 0;
+    function fmtPercent(x){ return x.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%'; }
+    function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
+    function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
+    function goBack(){ showLoading(); window.location.href = "bhyt_giaovien.html"; }
+
+    /* ===== State ===== */
+    let user = {};
+    let chart;
+
+    /* ===== Init ===== */
+    (async function init(){
+      user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.sdt || user.phan_quyen !== "giao_vien") { location.href = "../index.html"; return; }
+      document.getElementById('lbl-user').innerText   = user.ho_ten || user.sdt || '—';
+      document.getElementById('lbl-truong').innerText = user.ten_truong || '—';
+      document.getElementById('lbl-lop').innerText    = user.lop_hoc || '—';
+
+      try {
+        showLoading();
+
+        // 1) Tổng số học sinh của lớp
+        const resHS = await getAllDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+        const allHS = Array.isArray(resHS?.data) ? resHS.data : [];
+        const total = allHS.length;
+
+        // 2) Danh sách BHYT theo lớp
+        const resBHYT = await getDanhSachBHYT(user.ma_truong, user.lop_hoc);
+        const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
+
+        // Tập học sinh đã đóng (unique theo so_dinh_danh) — quy ước: so_tien>0 hoặc trang_thai=="1"
+        const paidSet = new Set();
+        for (const r of ds) {
+          const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+          const trang_thai = String(r.trang_thai ?? '');
+          const isPaid = (so_tien > 0) || (trang_thai === '1');
+          if (isPaid && r.so_dinh_danh) paidSet.add(String(r.so_dinh_danh));
+        }
+
+        const paid = paidSet.size;
+        const unpaid = Math.max(0, total - paid);
+        const rate = pct(paid, total);
+
+        // Cập nhật KPI
+        document.getElementById('kpi-total').innerText = total.toLocaleString('vi-VN');
+        document.getElementById('kpi-paid').innerText  = paid.toLocaleString('vi-VN');
+        document.getElementById('kpi-unpaid').innerText= unpaid.toLocaleString('vi-VN');
+        document.getElementById('kpi-rate').innerText  = fmtPercent(rate);
+
+        // Render biểu đồ tròn
+        renderPie(unpaid, paid, total);
+      } catch (e) {
+        console.error(e);
+        alert("Không tải được dữ liệu. Vui lòng thử lại.");
+      } finally {
+        hideLoading();
+      }
+    })();
+
+    /* ===== Chart (pie/doughnut with percentage + counts) ===== */
+    function renderPie(unpaid, paid, total){
+      const ctx = document.getElementById('pieChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      // Đăng ký plugin nhãn
+      Chart.register(ChartDataLabels);
+
+      chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Chưa đóng', 'Đã đóng'],
+          datasets: [{
+            data: [unpaid, paid],
+            // Màu sắc nhã, đồng bộ dashboard
+            backgroundColor: ['#fca5a5', '#86efac'],
+            borderColor: ['#ffffff', '#ffffff'],
+            borderWidth: 2,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const v = ctx.parsed;
+                  const p = total>0 ? (v*100/total) : 0;
+                  const label = ctx.label || '';
+                  return `${label}: ${v.toLocaleString('vi-VN')} (${p.toLocaleString('vi-VN',{maximumFractionDigits:1})}%)`;
+                }
+              }
+            },
+            datalabels: {
+              color: '#111827',
+              font: { weight: '700', size: 12 },
+              formatter: (value, context) => {
+                const data = context.chart.data.datasets[0].data;
+                const sum = data.reduce((a,b)=>a+b,0);
+                const p = sum>0 ? value*100/sum : 0;
+                // Hiện "xx% • n"
+                return `${p.toFixed(1)}%\n${value.toLocaleString('vi-VN')}`;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // (tùy chọn) đảm bảo chart fit khi resize
+    addEventListener('resize', ()=>{ if (chart) chart.resize(); });
+  </script>
+</body>
+</html>
