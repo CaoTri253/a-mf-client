@@ -84,7 +84,7 @@
           Lớp: <strong id="lbl-lop">—</strong> · Trường: <strong id="lbl-truong">—</strong>
         </div>
       </div>
-      <div class="text-secondary small">Người dùng: <span id="lbl-user">—</span></div>
+      <div class="text-secondary small">Giáo viên: <span id="lbl-user">—</span></div>
     </div>
 
     <!-- KPI -->
@@ -130,7 +130,11 @@
       </div>
 
       <div class="kpi-item kpi-12m">
-        <div class="icon"><i class="bi bi-123"></i></div>
+        <div class="position-relative d-inline-block">
+            <i class="bi bi-circle-fill fs-3 text-primary"></i>
+            <span class="position-absolute top-50 start-50 translate-middle text-white fw-bold">12</span>
+        </div>
+
         <div>
           <div class="val"><span id="kpi-12m-count">0</span> HS</div>
           <div class="lbl">Đóng 12 tháng · Thù lao: <strong id="kpi-12m-commission">0</strong></div>
@@ -253,43 +257,74 @@
       }
     })();
 
-    /* ===== Chart ===== */
+    /* ===== Chart (dual-axis: bar + line) ===== */
     function renderBarChart(labels, counts, commissions) {
-      const ctx = document.getElementById('barChart').getContext('2d');
-      if (chart) chart.destroy(); // đảm bảo không render chồng
+        const ctx = document.getElementById('barChart').getContext('2d');
+        if (chart) chart.destroy();
 
-      chart = new Chart(ctx, {
-        type: 'bar',
+        chart = new Chart(ctx, {
         data: {
-          labels,
-          datasets: [
-            { label: 'Số hồ sơ (đã đóng)', data: counts, borderWidth: 1 },
-            { label: 'Tổng thù lao (VND)', data: commissions, borderWidth: 1 }
-          ]
+            labels,
+            datasets: [
+            {
+                type: 'bar',
+                label: 'Số hồ sơ (đã đóng)',
+                data: counts,
+                yAxisID: 'yCount',
+                borderWidth: 1
+            },
+            {
+                type: 'line',
+                label: 'Tổng thù lao (VND)',
+                data: commissions,
+                yAxisID: 'yMoney',
+                borderWidth: 2,
+                tension: 0.25,
+                pointRadius: 3
+            }
+            ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false, /* dùng chiều cao container */
-          scales: {
-            y: { beginAtZero: true, ticks: { callback: (v)=>v.toLocaleString('vi-VN') } }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const name = ctx.dataset.label || '';
-                  const v = ctx.parsed.y;
-                  return name.includes('VND') ? `${name}: ${fmtMoney(v)}` : `${name}: ${v.toLocaleString('vi-VN')}`;
-                }
-              }
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+            yCount: {
+                position: 'left',
+                beginAtZero: true,
+                ticks: { callback: v => v.toLocaleString('vi-VN') },
+                grid: { drawOnChartArea: true }
             },
-            legend: { position: 'bottom' }
-          }
+            yMoney: {
+                position: 'right',
+                beginAtZero: true,
+                ticks: {
+                callback: v => Number(v).toLocaleString('vi-VN', {
+                    style: 'currency', currency: 'VND', maximumFractionDigits: 0
+                })
+                },
+                grid: { drawOnChartArea: false } // tránh rối mắt
+            },
+            x: { grid: { display: false } }
+            },
+            plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                label: (ctx) => {
+                    const name = ctx.dataset.label || '';
+                    const v = ctx.parsed.y;
+                    return name.includes('VND')
+                    ? `${name}: ${Number(v).toLocaleString('vi-VN', { style:'currency', currency:'VND', maximumFractionDigits:0 })}`
+                    : `${name}: ${v.toLocaleString('vi-VN')}`;
+                }
+                }
+            }
+            }
         }
-      });
+        });
     }
 
-    // (tùy chọn) nếu muốn biểu đồ tự “fit” khi resize nhanh:
+    // (không bắt buộc) giúp chart “fit” khi resize
     addEventListener('resize', ()=>{ if (chart) chart.resize(); });
   </script>
 </body>
