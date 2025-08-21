@@ -124,7 +124,7 @@
         <div class="flower-grid">
           <div class="flower-item flower-top-left" onclick="goToDSHocsinh()">DS Học sinh</div>
           <div class="flower-item flower-top-right" onclick="goToBHYT_giaovien()">BHYT</div>
-          <div class="flower-item flower-bottom-left">BHTN</div>
+          <div class="flower-item flower-bottom-left onclick="goToBHTN_giaovien()"">BHTN</div>
           <div class="flower-item flower-bottom-right">KHÁC</div>
         </div>`;
     } else {
@@ -164,6 +164,12 @@
     function goToBHYT_giaovien() {
       showLoading();
       window.location.href = "bhyt_giaovien.html";
+    }
+
+    /** Chuyển đến BHYT giáo viên */
+    function goToBHTN_giaovien() {
+      showLoading();
+      window.location.href = "bhtn_giaovien.html";
     }
 
     /* =============================
