@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Thù lao BHYT - Giáo viên</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --card-radius: 14px;
+    }
+    body { background: #f5f7fb; min-height: 100vh; padding: 18px; }
+    .page-title { font-weight: 800; letter-spacing: .2px; }
+    .sub-title { color:#6b7280; font-size: 14px; }
+    .wrap {
+      max-width: 1200px; margin: 0 auto;
+    }
+    .kpi {
+      background: #fff; border-radius: var(--card-radius);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 16px;
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+    .kpi-item {
+      grid-column: span 12;
+      border: 1px dashed #e5e7eb; border-radius: 12px; padding: 14px;
+      display:flex; gap:12px; align-items:center; background: #fafafa;
+    }
+    .kpi-item .icon {
+      width: 42px; height: 42px; border-radius: 10px; display:flex; align-items:center; justify-content:center;
+      background: #eef2ff; font-weight: 800; color:#3b82f6;
+    }
+    .kpi-item .val { font-size: 20px; font-weight: 800; }
+    .kpi-item .lbl { font-size: 13px; color:#6b7280; margin-top: -3px; }
+    .kpi-item .sub { font-size: 12px; color:#9ca3af; }
+    .kpi-item strong { color: #111827; }
+    .kpi-divider { grid-column: 1 / -1; height: 1px; background: #f1f5f9; margin: 2px 0; }
+
+    .card-box {
+      background:#fff; border-radius: var(--card-radius);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 16px;
+    }
+
+    .chart-card { margin-top: 16px; }
+    .btn-back {
+      position: fixed; bottom: 24px; right: 20px; z-index: 20;
+      border-radius: 999px; padding: 10px 16px; font-weight: 700;
+      background:#0d47a1; color:#fff; border: none; box-shadow: 0 6px 20px #0d47a133;
+    }
+    .btn-back:hover { filter: brightness(1.05); }
+
+    @media (min-width: 576px) {
+      .kpi-item { grid-column: span 6; }
+    }
+    @media (min-width: 992px) {
+      .kpi-item { grid-column: span 4; }
+    }
+
+    /* Loading overlay */
+    #loadingSpinner {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(255,255,255,0.6); backdrop-filter: blur(1px);
+      align-items:center; justify-content:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-2 mb-3">
+      <div>
+        <div class="page-title h4 mb-1">Thù lao BHYT – Giáo viên</div>
+        <div class="sub-title">
+          Lớp: <strong id="lbl-lop">—</strong> · Trường: <strong id="lbl-truong">—</strong>
+        </div>
+      </div>
+      <div class="text-secondary small">
+        Người dùng: <span id="lbl-user">—</span>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi mb-3">
+      <div class="kpi-item">
+        <div class="icon">HS</div>
+        <div>
+          <div class="val"><span id="kpi-da-nop">0</span> / <span id="kpi-tong-hs">0</span></div>
+          <div class="lbl">Tổng hồ sơ đã nộp / tổng số học sinh</div>
+          <div class="sub">Tính theo danh sách BHYT đã có hồ sơ</div>
+        </div>
+      </div>
+
+      <div class="kpi-item">
+        <div class="icon">₫</div>
+        <div>
+          <div class="val" id="kpi-tong-tien">0</div>
+          <div class="lbl">Tổng số tiền đã thu</div>
+          <div class="sub">Cộng trường <strong>so_tien</strong> của <em>DanhSach_BHYT</em></div>
+        </div>
+      </div>
+
+      <div class="kpi-item">
+        <div class="icon">%</div>
+        <div>
+          <div class="val" id="kpi-tong-hoa-hong">0</div>
+          <div class="lbl">Tổng thù lao</div>
+          <div class="sub">Cộng trường <strong>hoa_hong</strong> của <em>DanhSach_BHYT</em></div>
+        </div>
+      </div>
+
+      <div class="kpi-divider"></div>
+
+      <div class="kpi-item">
+        <div>
+          <div class="lbl mb-1">HS đóng <strong>3 tháng</strong></div>
+          <div class="val"><span id="kpi-3m-count">0</span> HS</div>
+          <div class="sub">Tổng hoa hồng: <strong id="kpi-3m-commission">0</strong></div>
+        </div>
+      </div>
+
+      <div class="kpi-item">
+        <div>
+          <div class="lbl mb-1">HS đóng <strong>6 tháng</strong></div>
+          <div class="val"><span id="kpi-6m-count">0</span> HS</div>
+          <div class="sub">Tổng hoa hồng: <strong id="kpi-6m-commission">0</strong></div>
+        </div>
+      </div>
+
+      <div class="kpi-item">
+        <div>
+          <div class="lbl mb-1">HS đóng <strong>12 tháng</strong></div>
+          <div class="val"><span id="kpi-12m-count">0</span> HS</div>
+          <div class="sub">Tổng hoa hồng: <strong id="kpi-12m-commission">0</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card-box chart-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-bold">Thống kê hồ sơ & hoa hồng theo gói tháng</div>
+        <div class="text-secondary small">Đơn vị: hồ sơ / VNĐ</div>
+      </div>
+      <canvas id="barChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <button class="btn-back" onclick="goBack()">⬅ Trở về</button>
+
+  <!-- Loading -->
+  <div id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="../js/api.js"></script>
+
+  <script>
+    /* ==========================
+      TIỆN ÍCH
+    ========================== */
+    const fmtMoney = (n) => {
+      const x = Number(n);
+      if (!isFinite(x)) return "0";
+      return x.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
+    };
+    const toNum = (v) => {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') {
+        const s = v.replaceAll(',', '').replaceAll(' ', '');
+        const n = Number(s);
+        return isNaN(n) ? 0 : n;
+      }
+      return 0;
+    };
+
+    function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
+    function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
+    function goBack(){ showLoading(); window.location.href = "bhyt_giaovien.html"; }
+
+    /* ==========================
+      BIẾN TOÀN CỤC
+    ========================== */
+    let user = {};
+    let chart;
+
+    /* ==========================
+      LUỒNG CHÍNH
+    ========================== */
+    (async function init(){
+      user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.sdt || user.phan_quyen !== "giao_vien") {
+        window.location.href = "../index.html";
+        return;
+      }
+      document.getElementById('lbl-user').innerText = user.ho_ten || user.sdt || '—';
+      document.getElementById('lbl-truong').innerText = user.ten_truong || '—';
+      document.getElementById('lbl-lop').innerText = user.lop_hoc || '—';
+
+      try {
+        showLoading();
+
+        // 1) Tổng số học sinh của lớp
+        const resHS = await getAllDanhSachHocsinh(user.ma_truong, user.lop_hoc);
+        const allHS = Array.isArray(resHS?.data) ? resHS.data : [];
+        const totalStudents = allHS.length;
+
+        // 2) Danh sách BHYT đã nộp hồ sơ (theo lớp)
+        const resBHYT = await getDanhSachBHYT(user.ma_truong, user.lop_hoc);
+        const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
+
+        // Hồ sơ đã nộp hiểu là có record trong DanhSach_BHYT
+        const submittedCount = ds.length;
+
+        // Tổng số tiền đã thu & tổng thù lao
+        let totalMoney = 0, totalCommission = 0;
+
+        // Gom nhóm theo gói tháng & hoa hồng
+        const buckets = {3:{count:0, commission:0}, 6:{count:0, commission:0}, 12:{count:0, commission:0}};
+        for (const r of ds) {
+          const so_tien = toNum(r.so_tien);
+          const hoa_hong = toNum(r.hoa_hong);
+          totalMoney += so_tien;
+          totalCommission += hoa_hong;
+
+          const thang = Number(r.so_thang_dong) || 0;
+          if (buckets[thang]) {
+            // xem là “đã đóng” nếu có số tiền > 0
+            if (so_tien > 0) {
+              buckets[thang].count += 1;
+              buckets[thang].commission += hoa_hong;
+            }
+          }
+        }
+
+        // Cập nhật KPI
+        document.getElementById('kpi-tong-hs').innerText = totalStudents;
+        document.getElementById('kpi-da-nop').innerText = submittedCount;
+        document.getElementById('kpi-tong-tien').innerText = fmtMoney(totalMoney);
+        document.getElementById('kpi-tong-hoa-hong').innerText = fmtMoney(totalCommission);
+
+        document.getElementById('kpi-3m-count').innerText = buckets[3].count;
+        document.getElementById('kpi-6m-count').innerText = buckets[6].count;
+        document.getElementById('kpi-12m-count').innerText = buckets[12].count;
+
+        document.getElementById('kpi-3m-commission').innerText = fmtMoney(buckets[3].commission);
+        document.getElementById('kpi-6m-commission').innerText = fmtMoney(buckets[6].commission);
+        document.getElementById('kpi-12m-commission').innerText = fmtMoney(buckets[12].commission);
+
+        // Render biểu đồ
+        renderBarChart(
+          ['3 tháng','6 tháng','12 tháng'],
+          [buckets[3].count, buckets[6].count, buckets[12].count],
+          [buckets[3].commission, buckets[6].commission, buckets[12].commission]
+        );
+      } catch (err) {
+        console.error(err);
+        alert("Không tải được dữ liệu. Vui lòng thử lại.");
+      } finally {
+        hideLoading();
+      }
+    })();
+
+    /* ==========================
+      BIỂU ĐỒ
+    ========================== */
+    function renderBarChart(labels, counts, commissions) {
+      const ctx = document.getElementById('barChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Số hồ sơ (đã đóng)',
+              data: counts,
+              borderWidth: 1
+            },
+            {
+              label: 'Tổng hoa hồng (VND)',
+              data: commissions,
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: (v)=>v.toLocaleString('vi-VN') } }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const dsLabel = ctx.dataset.label || '';
+                  const v = ctx.parsed.y;
+                  if (dsLabel.includes('hoa hồng')) return `${dsLabel}: ${fmtMoney(v)}`;
+                  return `${dsLabel}: ${v.toLocaleString('vi-VN')}`;
+                }
+              }
+            },
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
