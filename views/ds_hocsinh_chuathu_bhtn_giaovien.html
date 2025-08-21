@@ -304,7 +304,9 @@
         const bhtnMap = {};
         dsBHTN.forEach(row => {
           const key = String(row.so_dinh_danh).replace(/^'/,'').trim();
-          bhtnMap[key] = row.trang_thai;
+          // Chuẩn hoá trạng thái: bỏ dấu ' rồi ép số
+          const st = Number(String(row.trang_thai).replace(/^'/,'').trim());
+          bhtnMap[key] = isNaN(st) ? undefined : st;
         });
 
         // 3) Merge & filter ra HS chưa đóng (trang_thai != 1)
@@ -312,6 +314,7 @@
           const trangThai = bhtnMap[hs.so_dinh_danh];
           return { ...hs, _bhtn_trangthai: (trangThai === undefined ? undefined : Number(trangThai)), trang_thai: trangThai };
         }).filter(hs => hs._bhtn_trangthai !== 1);
+
 
         currentPage = 1; doSearch();
       } catch (e) {
