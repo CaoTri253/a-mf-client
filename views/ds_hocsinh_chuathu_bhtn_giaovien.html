@@ -114,13 +114,6 @@
             <input class="form-check-input" type="radio" name="nhs-doi-tuong" id="nhs-dt-can-ngheo" value="Cận nghèo">
             <label class="form-check-label" for="nhs-dt-can-ngheo">Cận nghèo</label>
           </div>
-          <div class="small text-muted mt-2">
-            Hoa hồng:
-            <ul class="mb-0">
-              <li>Học sinh: <code>gia_tien × hoa_hong_12_thang</code></li>
-              <li>Cận nghèo: <code>gia_tien_can_ngheo × hoa_hong_12_thang</code></li>
-            </ul>
-          </div>
         </div>
 
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
@@ -492,15 +485,32 @@
     // === BỔ SUNG HÀM HỖ TRỢ TÍNH HOA HỒNG THEO ĐỐI TƯỢNG ===
     function _toNum(x){ const n = Number(String(x||0).replace(/[^\d.-]/g,'')); return isNaN(n)?0:n; }
     function _toRate(x){ const r = _toNum(x); return (r>1)?(r/100):r; }
+    // [FIXED] — so_tien phụ thuộc đối tượng (CN dùng gia_tien_can_ngheo)
     function calcAmountCommissionByCategory(gia, category){
       const giaTien = _toNum(gia?.gia_tien);
       const giaTienCanNgheo = _toNum(gia?.gia_tien_can_ngheo);
       const rate = _toRate(gia?.hoa_hong_12_thang);
       const cat = String(category||'Học sinh').toLowerCase();
-      const so_tien = giaTien; // theo yêu cầu: so_tien luôn = gia_tien
-      const baseForCommission = (cat==='cận nghèo' || cat==='can ngheo') ? giaTienCanNgheo : giaTien;
+      const isCN = (cat==='cận nghèo' || cat==='can ngheo');
+      const so_tien = isCN ? giaTienCanNgheo : giaTien;          // <— cập nhật đúng quy tắc
+      const baseForCommission = isCN ? giaTienCanNgheo : giaTien; // hoa hồng cũng theo giá tương ứng
       const hoa_hong = Math.round(baseForCommission * rate);
       return { so_tien, hoa_hong };
+    }
+
+    // === BỔ SUNG: cập nhật preview số tiền theo radio (Nộp)
+    function refreshNopAmountPreview(gia){
+      const isCN = document.getElementById('nhs-dt-can-ngheo').checked;
+      const cat = isCN ? 'Cận nghèo' : 'Học sinh';
+      const { so_tien } = calcAmountCommissionByCategory(gia, cat);
+      document.getElementById('nhs-amount-preview').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
+    }
+    // === BỔ SUNG: cập nhật preview số tiền theo radio (Sửa)
+    function refreshSuaAmountPreview(gia){
+      const isCN = document.getElementById('shs-dt-can-ngheo').checked;
+      const cat = isCN ? 'Cận nghèo' : 'Học sinh';
+      const { so_tien } = calcAmountCommissionByCategory(gia, cat);
+      document.getElementById('shs-amount-preview').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
     }
 
     function showNopHoSoModal(stt){
@@ -513,19 +523,22 @@
       document.getElementById('nhs-error').innerText = "";
 
       ensureGiaBHTN().then(gia=>{
-        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const { exp, note } = computeExp12M(_currentHS.ngay_het_han_bhtn);
         document.getElementById('nhs-exp-preview').innerText = exp;
-        document.getElementById('nhs-amount-preview').innerText = (price).toLocaleString('vi-VN');
         setExpNote('nhs-exp-note', note);
 
-        // === BỔ SUNG: Lắng nghe thay đổi radio để preview (so_tien không đổi, chỉ để người dùng chọn) ===
+        // === BỔ SUNG: set preview số tiền đúng theo radio đang chọn
+        refreshNopAmountPreview(gia);
+
+        // === BỔ SUNG: Lắng nghe thay đổi radio để preview cập nhật ngay
         const rHS = document.getElementById('nhs-dt-hocsinh');
         const rCN = document.getElementById('nhs-dt-can-ngheo');
         if (rHS && rCN){
-          const refresh = ()=>{ /* so_tien hiển thị vẫn là gia_tien theo yêu cầu */ };
-          rHS.addEventListener('change', refresh);
-          rCN.addEventListener('change', refresh);
+          const onChange = ()=> refreshNopAmountPreview(gia);
+          // remove listener cũ (nếu có)
+          rHS.onchange = null; rCN.onchange = null;
+          rHS.addEventListener('change', onChange);
+          rCN.addEventListener('change', onChange);
         }
 
         const btn = document.getElementById('btnNopHoSo');
@@ -544,7 +557,7 @@
       try{
         const gia = await ensureGiaBHTN();
 
-        // === BỔ SUNG: đọc đối tượng đóng + tính so_tien/hoa_hong đúng quy tắc ===
+        // === BỔ SUNG: đọc đối tượng đóng + tính so_tien/hoa_hong đúng quy tắc
         const selectedCat = document.getElementById('nhs-dt-can-ngheo').checked ? 'Cận nghèo' : 'Học sinh';
         const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
 
@@ -561,12 +574,12 @@
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
           ten_cha_me: _currentHS.ten_cha_me || "null",
 
-          // === BỔ SUNG: ghi nhận đối tượng đóng ===
+          // === BỔ SUNG: ghi nhận đối tượng đóng
           doi_tuong_dong: selectedCat,
 
           ghi_chu: "null",
 
-          // === SỬA QUY TẮC: so_tien & hoa_hong ===
+          // === SỬA QUY TẮC: so_tien & hoa_hong
           so_tien, hoa_hong,
 
           trang_thai: 0,
@@ -601,21 +614,30 @@
         const hsRes = await getHosoBHTNByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
         const r = hsRes?.data || {};
 
-        // === BỔ SUNG: Set radio theo doi_tuong_dong trong DB ===
-        const cat = (r.doi_tuong_dong || 'Học sinh').trim().toLowerCase();
+        // === BỔ SUNG: Set radio theo doi_tuong_dong trong DB
+        const catLower = String(r.doi_tuong_dong || 'Học sinh').trim().toLowerCase();
         const shsHS = document.getElementById('shs-dt-hocsinh');
         const shsCN = document.getElementById('shs-dt-can-ngheo');
         if (shsHS && shsCN){
-          if (cat === 'cận nghèo' || cat === 'can ngheo'){ shsCN.checked = true; } else { shsHS.checked = true; }
+          if (catLower === 'cận nghèo' || catLower === 'can ngheo'){ shsCN.checked = true; } else { shsHS.checked = true; }
         }
 
         // hiển thị preview hạn/giá 12T
         const gia = await ensureGiaBHTN();
-        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const { exp, note } = computeExp12M(hs.ngay_het_han_bhtn);
         document.getElementById('shs-exp-preview').innerText = exp;
-        document.getElementById('shs-amount-preview').innerText = price.toLocaleString('vi-VN');
         setExpNote('shs-exp-note', note);
+
+        // === BỔ SUNG: set preview số tiền theo radio hiện tại
+        refreshSuaAmountPreview(gia);
+
+        // === BỔ SUNG: lắng nghe đổi radio để cập nhật preview
+        if (shsHS && shsCN){
+          const onChange = ()=> refreshSuaAmountPreview(gia);
+          shsHS.onchange = null; shsCN.onchange = null;
+          shsHS.addEventListener('change', onChange);
+          shsCN.addEventListener('change', onChange);
+        }
       }catch(e){ console.error(logPrefix, 'suaHoSo prepare error', e); }
       finally{ hideLoading(); new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN')).show(); }
     }
@@ -626,7 +648,7 @@
       try{
         const gia = await ensureGiaBHTN();
 
-        // === BỔ SUNG: đọc đối tượng đóng + tính lại so_tien/hoa_hong ===
+        // === BỔ SUNG: đọc đối tượng đóng + tính lại so_tien/hoa_hong
         const selectedCat = document.getElementById('shs-dt-can-ngheo').checked ? 'Cận nghèo' : 'Học sinh';
         const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
 
@@ -635,10 +657,10 @@
           ma_truong: user.ma_truong,
           lop_hoc: _currentHS_Sua.lop_hoc,
 
-          // === BỔ SUNG: gửi đối tượng đóng ===
+          // === BỔ SUNG: gửi đối tượng đóng
           doi_tuong_dong: selectedCat,
 
-          // === SỬA QUY TẮC: so_tien & hoa_hong ===
+          // === SỬA QUY TẮC: so_tien & hoa_hong
           so_tien, hoa_hong,
 
           trang_thai: 0 // vẫn chờ duyệt
