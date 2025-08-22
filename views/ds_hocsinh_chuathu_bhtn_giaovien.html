@@ -905,27 +905,56 @@
         printRoot.id = 'printArea';
         document.body.appendChild(printRoot);
       }
-      printRoot.innerHTML = ''; // clear
+      printRoot.innerHTML = '';
 
-      // Clone nội dung A5 để in (tránh vấn đề in phần tử ẩn trong modal)
+      // Clone nội dung A5
       const clone = src.cloneNode(true);
+
+      // ✅ Chốt QR: canvas -> <img dataURL>, đảm bảo in được trên mobile
+      try{
+        const liveQR = src.querySelector('#receipt-qr canvas, #receipt-qr img');
+        const cloneQRHolder = clone.querySelector('#receipt-qr');
+        if (liveQR && cloneQRHolder){
+          const dataURL = (liveQR.tagName.toLowerCase() === 'canvas')
+            ? liveQR.toDataURL('image/png')
+            : liveQR.src;
+          const img = document.createElement('img');
+          img.src = dataURL;
+          img.style.display = 'block';
+          img.style.width = '90px';
+          img.style.height = '90px';
+          cloneQRHolder.innerHTML = '';
+          cloneQRHolder.appendChild(img);
+        }
+      }catch(e){ /* bỏ qua nếu trình duyệt không hỗ trợ */ }
+
       printRoot.appendChild(clone);
 
       // Kích hoạt chế độ in-tại-chỗ
       document.body.classList.add('print-active');
 
-      // In và dọn dẹp sau khi in xong
+      // In và dọn dẹp (kèm fallback cho mobile không bắn afterprint)
       const cleanup = () => {
         document.body.classList.remove('print-active');
-        // Có thể giữ lại printArea trống để tái sử dụng, hoặc remove nếu muốn:
-        // printRoot.remove();
         window.removeEventListener('afterprint', cleanup);
       };
       window.addEventListener('afterprint', cleanup);
 
-      // Gọi hộp thoại in của trình duyệt
-      window.print();
+      const doPrint = () => window.print();
+
+      // Đợi QR-img nạp xong rồi in (tránh trắng ảnh trên iOS/Android)
+      const qrImg = clone.querySelector('#receipt-qr img');
+      if (qrImg && !qrImg.complete){
+        qrImg.onload = () => setTimeout(doPrint, 50);
+        qrImg.onerror = () => setTimeout(doPrint, 50);
+        // fallback dọn dẹp nếu mobile không bắn afterprint
+        setTimeout(cleanup, 2500);
+      } else {
+        setTimeout(doPrint, 50);
+        setTimeout(cleanup, 2500);
+      }
     }
+
 
 
     function showToast(msg){
