@@ -103,6 +103,26 @@
           <div><strong>Số tiền cần đóng (12T):</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
+        <!-- ✅ ĐỐI TƯỢNG ĐÓNG: THÊM MỚI -->
+        <div class="mt-3">
+          <label class="fw-semibold d-block mb-2">Đối tượng đóng:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="nhs-doi-tuong" id="nhs-dt-hocsinh" value="Học sinh" checked>
+            <label class="form-check-label" for="nhs-dt-hocsinh">Học sinh</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="nhs-doi-tuong" id="nhs-dt-can-ngheo" value="Cận nghèo">
+            <label class="form-check-label" for="nhs-dt-can-ngheo">Cận nghèo</label>
+          </div>
+          <div class="small text-muted mt-2">
+            Hoa hồng:
+            <ul class="mb-0">
+              <li>Học sinh: <code>gia_tien × hoa_hong_12_thang</code></li>
+              <li>Cận nghèo: <code>gia_tien_can_ngheo × hoa_hong_12_thang</code></li>
+            </ul>
+          </div>
+        </div>
+
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
       </div>
       <div class="modal-footer">
@@ -128,6 +148,19 @@
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
           <div id="shs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng (12T):</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
+        </div>
+
+        <!-- ✅ ĐỐI TƯỢNG ĐÓNG (SỬA): THÊM MỚI -->
+        <div class="mt-3">
+          <label class="fw-semibold d-block mb-2">Đối tượng đóng:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="shs-doi-tuong" id="shs-dt-hocsinh" value="Học sinh" checked>
+            <label class="form-check-label" for="shs-dt-hocsinh">Học sinh</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="shs-doi-tuong" id="shs-dt-can-ngheo" value="Cận nghèo">
+            <label class="form-check-label" for="shs-dt-can-ngheo">Cận nghèo</label>
+          </div>
         </div>
 
         <div id="shs-error" class="text-danger" style="min-height:18px"></div>
@@ -456,6 +489,20 @@
     /* ====== NỘP/SỬA ĐƠN LẺ (BHTN) ====== */
     let _currentHS = null, _currentHS_Sua = null;
 
+    // === BỔ SUNG HÀM HỖ TRỢ TÍNH HOA HỒNG THEO ĐỐI TƯỢNG ===
+    function _toNum(x){ const n = Number(String(x||0).replace(/[^\d.-]/g,'')); return isNaN(n)?0:n; }
+    function _toRate(x){ const r = _toNum(x); return (r>1)?(r/100):r; }
+    function calcAmountCommissionByCategory(gia, category){
+      const giaTien = _toNum(gia?.gia_tien);
+      const giaTienCanNgheo = _toNum(gia?.gia_tien_can_ngheo);
+      const rate = _toRate(gia?.hoa_hong_12_thang);
+      const cat = String(category||'Học sinh').toLowerCase();
+      const so_tien = giaTien; // theo yêu cầu: so_tien luôn = gia_tien
+      const baseForCommission = (cat==='cận nghèo' || cat==='can ngheo') ? giaTienCanNgheo : giaTien;
+      const hoa_hong = Math.round(baseForCommission * rate);
+      return { so_tien, hoa_hong };
+    }
+
     function showNopHoSoModal(stt){
       showLoading();
       const hs = (lastFiltered || allData).find(h => String(h.stt)===String(stt));
@@ -472,6 +519,15 @@
         document.getElementById('nhs-amount-preview').innerText = (price).toLocaleString('vi-VN');
         setExpNote('nhs-exp-note', note);
 
+        // === BỔ SUNG: Lắng nghe thay đổi radio để preview (so_tien không đổi, chỉ để người dùng chọn) ===
+        const rHS = document.getElementById('nhs-dt-hocsinh');
+        const rCN = document.getElementById('nhs-dt-can-ngheo');
+        if (rHS && rCN){
+          const refresh = ()=>{ /* so_tien hiển thị vẫn là gia_tien theo yêu cầu */ };
+          rHS.addEventListener('change', refresh);
+          rCN.addEventListener('change', refresh);
+        }
+
         const btn = document.getElementById('btnNopHoSo');
         const hasOld = !!parseVNDate(_currentHS.ngay_het_han_bhtn);
         if (!hasOld){ document.getElementById('nhs-error').innerText = 'Chưa có "Ngày hết hạn BHTN cũ" — cần cập nhật trước khi nộp.'; if (btn) btn.disabled = true; }
@@ -487,8 +543,10 @@
       showLoading();
       try{
         const gia = await ensureGiaBHTN();
-        const so_tien = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
-        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
+
+        // === BỔ SUNG: đọc đối tượng đóng + tính so_tien/hoa_hong đúng quy tắc ===
+        const selectedCat = document.getElementById('nhs-dt-can-ngheo').checked ? 'Cận nghèo' : 'Học sinh';
+        const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
 
         const payload = {
           // BHTN không yêu cầu ma_so_bhtn lúc đầu
@@ -502,9 +560,15 @@
           sdt_lienhe: _currentHS.sdt_lienhe || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
           ten_cha_me: _currentHS.ten_cha_me || "null",
-          doi_tuong_dong: "Học sinh",
+
+          // === BỔ SUNG: ghi nhận đối tượng đóng ===
+          doi_tuong_dong: selectedCat,
+
           ghi_chu: "null",
+
+          // === SỬA QUY TẮC: so_tien & hoa_hong ===
           so_tien, hoa_hong,
+
           trang_thai: 0,
           so_ho_so: "null",
           ma_truong: user.ma_truong || "null"
@@ -535,6 +599,16 @@
       try{
         // lấy hồ sơ hiện tại (nếu có)
         const hsRes = await getHosoBHTNByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
+        const r = hsRes?.data || {};
+
+        // === BỔ SUNG: Set radio theo doi_tuong_dong trong DB ===
+        const cat = (r.doi_tuong_dong || 'Học sinh').trim().toLowerCase();
+        const shsHS = document.getElementById('shs-dt-hocsinh');
+        const shsCN = document.getElementById('shs-dt-can-ngheo');
+        if (shsHS && shsCN){
+          if (cat === 'cận nghèo' || cat === 'can ngheo'){ shsCN.checked = true; } else { shsHS.checked = true; }
+        }
+
         // hiển thị preview hạn/giá 12T
         const gia = await ensureGiaBHTN();
         const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
@@ -551,14 +625,22 @@
       showLoading();
       try{
         const gia = await ensureGiaBHTN();
-        const so_tien = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
-        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
+
+        // === BỔ SUNG: đọc đối tượng đóng + tính lại so_tien/hoa_hong ===
+        const selectedCat = document.getElementById('shs-dt-can-ngheo').checked ? 'Cận nghèo' : 'Học sinh';
+        const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
 
         const payload = {
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: user.ma_truong,
           lop_hoc: _currentHS_Sua.lop_hoc,
+
+          // === BỔ SUNG: gửi đối tượng đóng ===
+          doi_tuong_dong: selectedCat,
+
+          // === SỬA QUY TẮC: so_tien & hoa_hong ===
           so_tien, hoa_hong,
+
           trang_thai: 0 // vẫn chờ duyệt
         };
         const res = await suaHoSoBHTN(payload);
@@ -607,7 +689,8 @@
       try{
         const gia = await ensureGiaBHTN();
         const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
-        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
+        const rateNum = _toRate(gia?.hoa_hong_12_thang);
+        const hoa_hong = Math.round(price * rateNum); // bulk mặc định "Học sinh"
 
         let ok=0, fail=0, failNames=[];
         for (const hs of selected){
@@ -622,7 +705,7 @@
             sdt_lienhe: hs.sdt_lienhe || "null",
             so_dinh_danh: hs.so_dinh_danh || "null",
             ten_cha_me: hs.ten_cha_me || "null",
-            doi_tuong_dong: "Học sinh",
+            doi_tuong_dong: "Học sinh",  // giữ nguyên như trước khi chưa có tuỳ chọn bulk
             ghi_chu: "null",
             so_tien: price, hoa_hong,
             trang_thai: 0,
