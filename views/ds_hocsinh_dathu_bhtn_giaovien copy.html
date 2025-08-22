@@ -14,17 +14,16 @@
     .table-hs{background:#fff;border-radius:8px;box-shadow:0 1px 6px #0002}
     .table-responsive{overflow-x:auto}
     .total-count{font-size:1rem;font-weight:400;color:#444}
-    th.th-action{min-width:170px}
+    th.th-action{min-width:220px}
     th.sortable{cursor:pointer;user-select:none}
     th.sortable:hover{background:#f1f1f1}
     .sort-icon{font-size:13px;margin-left:4px;vertical-align:middle}
-
     .btn-back{position:fixed;bottom:26px;right:20px;z-index:1099;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 14px #0003;font-size:25px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #eee;color:#2563eb}
     .btn-back:hover{box-shadow:0 4px 24px #2563eb33;color:#fff;background:#2563eb}
 
     @media(max-width:600px){
       .header{font-size:18px}
-      th.th-action{min-width:120px}
+      th.th-action{min-width:180px}
       .search-row{flex-direction:column;align-items:stretch}
       .action-btns{display:flex;flex-direction:column;gap:6px}
       .action-btns .btn{width:100%}
@@ -38,17 +37,54 @@
     .status-active{color:#065f46;background:#d1fae5}
     .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px}
 
-    /* Khung phiếu A5 */
-    .a5-paper{width:148mm;min-height:210mm;background:#fff;margin:0 auto;padding:10mm 12mm;color:#000;box-shadow:0 1px 10px #0002;font-size:13px;line-height:1.35}
-    .receipt-title{font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.4px}
-    .receipt-sub{font-style:italic}
-    .receipt-meta{font-size:13px}
-    .receipt-line{margin:2mm 0}
-    .qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}
-    .sign-col{text-align:center;margin-top:10mm;font-weight:500}
-    .sign-name{margin-top:20mm;text-align:center;font-weight:600}
+    /* ==== THẺ BHTN ==== */
+    :root{
+      /* thu nhỏ thẻ để vừa nội dung, vẫn auto-scale theo modal */
+      --cardW-bhtn: 900px;
+      --cardH-bhtn: 560px;
+      --orange: #f59e0b;
+    }
+    #cardScaleWrapBHTN{
+      position:relative; width:var(--cardW-bhtn); height:var(--cardH-bhtn);
+      transform-origin: top left; margin:0 auto;
+    }
+    .bhtn-card{
+      width:var(--cardW-bhtn); height:var(--cardH-bhtn);
+      background:#fff; border:8px solid var(--orange); border-radius:14px; padding:8px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06); overflow:hidden; position:relative;
+    }
+    .bhtn-inner{height:100%; border:3px solid var(--orange); border-radius:12px; padding:16px 24px 24px; display:flex; flex-direction:column;}
+    .bhtn-top{display:flex; align-items:center; justify-content:center; margin-bottom:4px}
+    .bhtn-logo{height:60px; object-fit:contain}
 
-    @media print{ @page{size:A5 portrait;margin:10mm} .no-print{display:none!important} }
+    .bhtn-grid{display:grid; grid-template-columns: 1.4fr 1fr; gap:22px; margin-top:6px}
+    .kv{display:flex; gap:12px; margin:8px 0; align-items:flex-start}
+    .kv .k{min-width:190px; color:#6b7280; font-weight:800}
+    .kv .v{color:#111827; font-weight:800}
+    .v-blue{color:#0b53ff!important}
+    .v-red{color:#e11d48!important}
+    .v-green{color:#0f9d58!important}
+    .bhtn-lop{ font-size:56px; font-weight:900; color:#9ca3af; text-align:right; }
+    .bhtn-stamp{ margin-top:8px; text-align:center; font-weight:900; color:#16a34a; font-size:30px}
+    .bhtn-badge{ margin-top:8px; display:flex; justify-content:center }
+    .bhtn-badge span{ background:#fff3b0; border:2px solid #facc15; padding:8px 16px; border-radius:6px; font-weight:900; color:#1d4ed8}
+
+    /* QR cố định góc phải dưới */
+    .bhtn-qr{
+      position:absolute; right:16px; bottom:16px;
+      width:96px; height:96px; border:2px solid #e5e7eb; display:flex; align-items:center; justify-content:center;
+      background:#fff; border-radius:6px;
+    }
+
+    /* khi in riêng thẻ: ép A6 ngang */
+    @media print{
+      @page{ size:A6 landscape; margin:6mm }
+      #cardScaleWrapBHTN{ width:148mm; height:105mm; transform:none !important }
+      .bhtn-card{ width:148mm; height:105mm }
+    }
+    /* khi xuất ảnh: nới đáy */
+    .bhtn-card.exporting{ height:auto !important; overflow:visible !important }
+    .bhtn-card.exporting .bhtn-inner{ padding-bottom:56px !important }
   </style>
 </head>
 <body>
@@ -74,6 +110,61 @@
   <!-- Loading overlay -->
   <div id="loadingSpinner" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(255,255,255,0.6);backdrop-filter: blur(1px);align-items:center;justify-content:center;">
     <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading...</span></div>
+  </div>
+
+  <!-- Modal XEM THẺ BHTN -->
+  <div class="modal fade" id="modalTheBHTN" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thẻ bảo hiểm tai nạn</h5>
+        <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="cardScaleWrapBHTN">
+          <div id="cardAreaBHTN" class="bhtn-card">
+            <div class="bhtn-inner">
+              <!-- Logo ở giữa -->
+              <div class="bhtn-top">
+                <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'"/>
+              </div>
+
+              <!-- Lưới thông tin -->
+              <div class="kv"><div class="k">Đối tượng đóng</div><div class="v" id="c-doituong">—</div></div>
+              <div class="kv"><div class="k">Số thẻ</div><div class="v v-blue" id="c-so-the">—</div></div>
+
+              <div class="bhtn-grid">
+                <div>
+                  <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
+                  <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
+                  <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
+                  <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
+                  <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
+                  <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
+                  <div class="kv"><div class="k">Tên Cha/Mẹ</div><div class="v" id="c-tencha">—</div></div>
+                </div>
+                <div>
+                  <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
+                  <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
+                  <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
+                  <div class="bhtn-lop" id="c-lop-big"> </div>
+                </div>
+              </div>
+
+              <div class="bhtn-stamp">ĐÃ KÍCH HOẠT</div>
+              <div class="bhtn-badge"><span id="c-badge">—</span></div>
+
+              <!-- QR dưới góc phải -->
+              <div id="card-qr" class="bhtn-qr"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div></div>
   </div>
 
   <!-- Modal xem trước & in Phiếu thu A5 (BHTN) -->
@@ -141,10 +232,9 @@
     addEventListener('resize',()=>{const old=pageSize;detectPageSize();if(old!==pageSize){currentPage=1;renderAllView()}});
 
     /* ====== API ====== */
-    // đã có trong ../js/api.js cho BHTN:
-    // getDanhSachBHTN(ma_truong, lop_hoc)
     async function getTenTruong(ma_truong){try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;const r=await fetch(u);const j=await r.json();return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'}catch(e){return user.ten_truong||ma_truong||'—'}}
 
+    /* ====== Helpers ====== */
     function displayDate(raw){
       if(!raw) return "";
       if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
@@ -153,9 +243,10 @@
     }
     function cleanVal(v){const s=String(v??"").trim();return (!s||s==='null'||s==='NULL'||s==='undefined'||s==='NaN'||s==='-')?"":s}
     function getSoHoSo(row){return cleanVal(row.so_ho_so??row.sohoso??row.so_hs)}
-
     function sortIcon(field){ if(sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
+    function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 
+    /* ====== Fetch ====== */
     async function fetchDaThuBHTN(){
       try{
         detectPageSize();showLoading();
@@ -175,10 +266,17 @@
       return `<span class="status-badge status-pending">Đang xử lý</span>`;
     }
     function actionsCell(i,row){
-      // Với BHTN: chỉ cần in phiếu thu
-      return `<div class="action-btns"><button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button></div>`;
+      const st=Number(row.trang_thai??-1),shs=getSoHoSo(row);
+      if (st===1 && shs){
+        return `<div class="action-btns">
+                  <button class="btn btn-sm btn-info" onclick="onViewCardIdx(${i})">Xem thẻ</button>
+                  <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button>
+                </div>`;
+      }
+      return `<div class="action-btns">
+                <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button>
+              </div>`;
     }
-
     function buildTableHead(){
       return `
         <thead>
@@ -194,7 +292,6 @@
           </tr>
         </thead>`;
     }
-
     function attachSortHandlers(){
       document.querySelectorAll('th.sortable').forEach(th=>{
         th.addEventListener('click', ()=>{
@@ -202,10 +299,9 @@
           if (!field) return;
           if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
           renderAllView();
-        }, {once:false});
+        });
       });
     }
-
     function renderDanhSachHS(ds,startIdx){
       if(!ds||ds.length===0){document.getElementById('ds-container').innerHTML=`<div class='text-center text-secondary mt-4'>Không có hồ sơ BHTN trong lớp này.</div>`;return}
       const thead = buildTableHead();
@@ -225,7 +321,6 @@
       document.getElementById('ds-container').innerHTML=`<table class="table table-bordered table-hs align-middle">${thead}<tbody>${rows}</tbody></table>`;
       attachSortHandlers();
     }
-
     function renderPagination(){
       const el=document.getElementById('pagination');let html='';if(totalPages<=1){el.innerHTML='';return}
       const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="gotoPage(${p})">${lab}</a></li>`;
@@ -262,33 +357,90 @@
       renderPagination()
     }
 
-    /* ====== Actions (In phiếu) ====== */
+    /* ====== Actions ====== */
+    function onViewCardIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onViewCard(row), 50);}
     function onPrintReceiptIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onPrintReceipt(row), 50);}
 
     function parseDate(s){
-      if(!s)return null;
+      if(!s) return null;
       if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)}
-      if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);
-      return null
+      if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+      return null;
     }
-    function formatDateVN2(d){const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=d.getFullYear();return `${dd}/${mm}/${yy}`}
+    function formatDateVN(d){const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=d.getFullYear();return `${dd}/${mm}/${yy}`}
+    function makeRangeBHTN(row){const end=row.han_su_dung_bhtn_moi||"";const months=Number(row.so_thang_dong||0);const e=parseDate(end);if(!e||!months)return{tu:"",den:""};const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);return {tu:formatDateVN(s),den:formatDateVN(e)}}
     function toVND(n){return Number(n||0).toLocaleString('vi-VN')}
     const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
     function readTriple(n){let tr=Math.floor(n/100),ch=Math.floor((n%100)/10),dv=n%10,s="";if(tr>0){s+=VI_DIGITS[tr]+" trăm";if(ch==0&&dv>0)s+=" lẻ"}if(ch>1){s+=(s?" ":"")+VI_DIGITS[ch]+" mươi";if(dv==1)s+=" mốt";else if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==1){s+=(s?" ":"")+"mười";if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==0&&dv>0){s+=(s?" ":"")+VI_DIGITS[dv]}return s.trim()}
     function numberToVietnamese(n){n=Math.round(Number(n)||0);if(n===0)return"Không đồng";const u=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];let i=0,str="";while(n>0&&i<u.length){const b=n%1000;if(b>0){const p=readTriple(b);str=p+u[i]+(str?" "+str:"")}n=Math.floor(n/1000);i++}return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim()}
     function todayText(){const d=new Date();return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`}
 
+    function buildQRPayload(mt,school,cls,name,months,endDate){const _mt=String(mt||"").slice(0,24),s=(school||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').slice(0,60),c=String(cls||"").slice(0,12),n=(name||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').slice(0,60),m=String(months||""),e=String(endDate||"").slice(0,10);return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`}
+
+    function onViewCard(row){
+      const {tu,den}=makeRangeBHTN(row);
+      const sohoso=getSoHoSo(row)||"—";
+      const lop=row.lop_hoc||user.lop_hoc||"—";
+      document.getElementById('c-doituong').innerText = row.doi_tuong_dong || 'Học sinh';
+      document.getElementById('c-so-the').innerText  = sohoso;
+      document.getElementById('c-hoten').innerText   = row.ho_ten_hoc_sinh || '—';
+      document.getElementById('c-ngaysinh').innerText= displayDate(row.ngay_sinh)||'—';
+      document.getElementById('c-tu').innerText      = tu || '—';
+      document.getElementById('c-den').innerText     = den || '—';
+      document.getElementById('c-diachi').innerText  = cleanVal(row.dia_chi)||'—';
+      document.getElementById('c-sdt').innerText     = cleanVal(row.sdt_lienhe||row.sdt)||'—';
+      document.getElementById('c-tencha').innerText  = cleanVal(row.ten_cha_me)||'—';
+      document.getElementById('c-gioitinh').innerText= cleanVal(row.gioi_tinh)||'—';
+      document.getElementById('c-lop').innerText     = lop;
+      document.getElementById('c-lop-big').innerText = lop;
+      document.getElementById('c-sotien').innerText  = toVND(row.so_tien||0);
+      document.getElementById('c-badge').innerText   = sohoso; // ô vàng = số hồ sơ
+
+      // QR góc phải dưới
+      const qrBox=document.getElementById('card-qr'); qrBox.innerHTML='';
+      const months=parseInt(row.so_thang_dong||"12",10);
+      const schoolName = user.ten_truong || '';
+      const qrText=buildQRPayload(user.ma_truong,schoolName,lop,row.ho_ten_hoc_sinh||"",months,den);
+      try{new QRCode(qrBox,{text:qrText,width:92,height:92,correctLevel:QRCode.CorrectLevel.L})}catch(_){qrBox.innerHTML='<small>QR</small>'}
+
+      const m=new bootstrap.Modal(document.getElementById('modalTheBHTN'));
+      m.show(); hideLoading();
+      setTimeout(scaleCardToViewportBHTN, 10);
+    }
+
+    function scaleCardToViewportBHTN(){
+      const wrap = document.getElementById('cardScaleWrapBHTN');
+      if(!wrap) return;
+      const W = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW-bhtn')) || 900;
+      const H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH-bhtn')) || 560;
+      const modalBody = document.querySelector('#modalTheBHTN .modal-body');
+      const pad = 24;
+      const vw = Math.max(320, modalBody.clientWidth  - pad);
+      const vh = Math.max(260, modalBody.clientHeight - pad);
+      const s = Math.min(vw / W, vh / H);
+      wrap.style.transform = `scale(${s})`;
+    }
+    document.getElementById('modalTheBHTN')?.addEventListener('shown.bs.modal', ()=>{
+      setTimeout(scaleCardToViewportBHTN, 10);
+      window.addEventListener('resize', scaleCardToViewportBHTN);
+    });
+    document.getElementById('modalTheBHTN')?.addEventListener('hidden.bs.modal', ()=>{
+      window.removeEventListener('resize', scaleCardToViewportBHTN);
+    });
+
+    /* ====== Phiếu thu (giữ nguyên) ====== */
+    function onPrintReceiptIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onPrintReceipt(row), 50);}
+    function todayText(){const d=new Date();return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`}
     function onPrintReceipt(row){
       const after=()=>{new bootstrap.Modal(document.getElementById('modalPhieuThu')).show(); hideLoading();}
       getTenTruong(user.ma_truong).then(truong=>{
         const lop=row.lop_hoc||user.lop_hoc||"—";
         const months=parseInt(row.so_thang_dong||"12",10);
         const amount=parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
-        // Với BHTN: sheet đã chứa "hạn sử dụng BHTN mới" là NGÀY CUỐI
         const end=row.han_su_dung_bhtn_moi||"";
         const e=parseDate(end);
         let startText="—",endText="(không xác định)";
-        if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN2(s);endText=formatDateVN2(e)}
+        if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN(s);endText=formatDateVN(e)}
         document.getElementById('rec-school').innerText=truong;
         document.getElementById('rec-class').innerText=lop;
         document.getElementById('rec-date-today').innerText=todayText();
@@ -303,22 +455,11 @@
         const qrBox=document.getElementById('receipt-qr');qrBox.innerHTML="";
         const text=buildQRPayload(user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
         try{new QRCode(qrBox,{text,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-        catch(e2){
-          const fb=`MT=${String(user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
-          try{new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-          catch(_){qrBox.innerHTML='<small>QR quá dài</small>'}
-        }
+        catch(e2){qrBox.innerHTML='<small>QR</small>'}
         after();
       }).catch(()=>hideLoading());
     }
-
-    /* ==== QR & tải ảnh phiếu ==== */
-    function stripVN(s){return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')}
-    function initials(str){return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase()}
-    function buildQRPayload(mt,school,cls,name,months,endDate){const _mt=String(mt||"").slice(0,24),s=stripVN(school).slice(0,60),c=String(cls||"").slice(0,12),n=stripVN(name).slice(0,60),m=String(months||""),e=String(endDate||"").slice(0,10);return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`}
-    async function downloadReceiptImage(){ showLoading(); const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhtn.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
-
-    // In CHỈ phần phiếu: clone node, convert QR -> IMG, chờ ảnh load rồi print (giống trang BHYT)
+    async function downloadReceiptImage(){ const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhtn.png';a.href=canvas.toDataURL('image/png');a.click();}
     function getReceiptPrintCSS(){return `
       <style>
         @page{size:A5 portrait;margin:10mm}
@@ -337,21 +478,20 @@
       if(live){
         try{
           const dataURL=(live.tagName.toLowerCase()==='canvas')?live.toDataURL('image/png'):live.src;
-          const target=clone.querySelector('#receipt-qr'); target.innerHTML='';
-          const img=document.createElement('img'); img.src=dataURL; img.width=90; img.height=90; target.appendChild(img);
-        }catch(e){}
+          const holder=clone.querySelector('#receipt-qr'); holder.innerHTML='';
+          const img=document.createElement('img'); img.src=dataURL; img.style.width='90px'; img.style.height='90px'; holder.appendChild(img);
+        }catch(_){}
       }
-      const w=window.open('','_blank','width=900,height=650'); if(!w){ alert('Trình duyệt đang chặn popup in. Hãy cho phép rồi thử lại.'); return; }
-      w.document.open();
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>In phiếu thu</title>${getReceiptPrintCSS()}</head><body>${clone.outerHTML}</body></html>`);
-      w.document.close();
-      const triggerPrint=()=>{ try{ w.focus(); w.print(); setTimeout(()=>{try{w.close()}catch(_){}},500); }catch(e){} };
-      w.onload=()=>{ try{ const imgs=w.document.images; if(!imgs||imgs.length===0){ setTimeout(triggerPrint,200); return; } let loaded=0; const done=()=>{ if(++loaded>=imgs.length) triggerPrint(); }; for(const img of imgs){ if(img.complete) done(); else { img.onload=done; img.onerror=done; } } setTimeout(triggerPrint,1500); }catch(e){ triggerPrint(); } };
+      const holder=document.createElement('div');
+      holder.id='print-holder';
+      holder.style.position='fixed'; holder.style.inset='0'; holder.style.zIndex='-1'; holder.style.background='#fff';
+      holder.innerHTML=getReceiptPrintCSS()+clone.outerHTML;
+      document.body.appendChild(holder);
+      setTimeout(()=>{window.print(); document.body.removeChild(holder);}, 100);
     }
 
-    function escapeHtml(s){return (s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-
-    (async function(){ await fetchDaThuBHTN(); })();
+    /* ====== Boot ====== */
+    window.onload = fetchDaThuBHTN;
   </script>
 </body>
 </html>
