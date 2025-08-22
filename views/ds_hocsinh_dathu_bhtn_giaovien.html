@@ -405,13 +405,13 @@
         const src = document.getElementById('cardAreaBHTN');
         if (!src) return;
 
-        // Lấy kích thước gốc của thẻ
+        // Kích thước gốc của thẻ
         const W = parseFloat(getComputedStyle(document.documentElement)
                   .getPropertyValue('--cardW-bhtn')) || 900;
         const H = parseFloat(getComputedStyle(document.documentElement)
                   .getPropertyValue('--cardH-bhtn')) || 560;
 
-        // Tạo "sân khấu" off-screen
+        // Sân khấu off-screen
         const stage = document.createElement('div');
         stage.style.position = 'fixed';
         stage.style.left = '-10000px';
@@ -419,38 +419,48 @@
         stage.style.width = W + 'px';
         stage.style.height = H + 'px';
         stage.style.background = '#fff';
-        stage.style.padding = '0';
-        stage.style.margin = '0';
         document.body.appendChild(stage);
 
-        // Clone nội dung thẻ (bao gồm cả QR canvas)
+        // Clone nội dung thẻ
         const clone = src.cloneNode(true);
-        // Đảm bảo clone không bị ảnh hưởng transform của wrapper
         clone.style.transform = 'none';
         clone.style.width = W + 'px';
         clone.style.height = H + 'px';
-        stage.appendChild(clone);
 
-        // Chờ font tải xong (tránh dồn chữ trên iOS/Android)
-        if (document.fonts && document.fonts.ready) {
-          try { await document.fonts.ready; } catch(_) {}
+        // 🔁 Copy mã QR từ bản thật sang clone (canvas -> img dataURL)
+        const liveQR = src.querySelector('#card-qr canvas, #card-qr img');
+        const cloneQRHolder = clone.querySelector('#card-qr');
+        if (cloneQRHolder && liveQR){
+          let dataURL = '';
+          if (liveQR.tagName.toLowerCase() === 'canvas') dataURL = liveQR.toDataURL('image/png');
+          else dataURL = liveQR.src;
+          const imgQR = document.createElement('img');
+          imgQR.src = dataURL;
+          imgQR.style.display = 'block';
+          imgQR.style.width  = getComputedStyle(cloneQRHolder).width  || '96px';
+          imgQR.style.height = getComputedStyle(cloneQRHolder).height || '96px';
+          cloneQRHolder.innerHTML = '';
+          cloneQRHolder.appendChild(imgQR);
         }
 
-        // Chụp ảnh clone
+        stage.appendChild(clone);
+
+        // Đợi font sẵn sàng để tránh dồn chữ
+        if (document.fonts && document.fonts.ready) { try{ await document.fonts.ready; }catch(_){} }
+        // Đợi 1 frame cho QR-img gắn vào DOM xong
+        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 50)));
+
+        // Chụp ảnh
         const canvas = await html2canvas(clone, {
-          scale: Math.max(2, (window.devicePixelRatio || 1)), // nét hơn trên mobile
+          scale: Math.max(2, (window.devicePixelRatio || 1)),
           backgroundColor: '#ffffff',
           useCORS: true,
           allowTaint: true,
-          width: W,
-          height: H,
-          windowWidth: W,
-          windowHeight: H
+          width: W, height: H, windowWidth: W, windowHeight: H
         });
 
-        // Dọn dẹp
+        // Dọn dẹp & lưu
         document.body.removeChild(stage);
-
         const dataURL = canvas.toDataURL('image/png');
         const canDownload = ('download' in document.createElement('a')) && !isIOS();
         if (canDownload){

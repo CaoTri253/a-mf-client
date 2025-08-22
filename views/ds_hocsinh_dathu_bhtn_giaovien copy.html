@@ -402,15 +402,69 @@
 
     async function downloadCardImage(){
       try{
-        const card=document.getElementById('cardAreaBHTN'); if(!card) return;
-        const canvas=await html2canvas(card,{scale:2,backgroundColor:'#ffffff',useCORS:true,allowTaint:true});
-        const dataURL=canvas.toDataURL('image/png');
-        if('download'in document.createElement('a')&&!isIOS()){
-          const a=document.createElement('a');a.href=dataURL;a.download='the-bhtn.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
-        }else{
-          const w=window.open(); if(w){w.document.write(`<img src="${dataURL}" style="max-width:100%;display:block;margin:0 auto">`);w.document.close();}else{location.href=dataURL;}
+        const src = document.getElementById('cardAreaBHTN');
+        if (!src) return;
+
+        // Lấy kích thước gốc của thẻ
+        const W = parseFloat(getComputedStyle(document.documentElement)
+                  .getPropertyValue('--cardW-bhtn')) || 900;
+        const H = parseFloat(getComputedStyle(document.documentElement)
+                  .getPropertyValue('--cardH-bhtn')) || 560;
+
+        // Tạo "sân khấu" off-screen
+        const stage = document.createElement('div');
+        stage.style.position = 'fixed';
+        stage.style.left = '-10000px';
+        stage.style.top = '0';
+        stage.style.width = W + 'px';
+        stage.style.height = H + 'px';
+        stage.style.background = '#fff';
+        stage.style.padding = '0';
+        stage.style.margin = '0';
+        document.body.appendChild(stage);
+
+        // Clone nội dung thẻ (bao gồm cả QR canvas)
+        const clone = src.cloneNode(true);
+        // Đảm bảo clone không bị ảnh hưởng transform của wrapper
+        clone.style.transform = 'none';
+        clone.style.width = W + 'px';
+        clone.style.height = H + 'px';
+        stage.appendChild(clone);
+
+        // Chờ font tải xong (tránh dồn chữ trên iOS/Android)
+        if (document.fonts && document.fonts.ready) {
+          try { await document.fonts.ready; } catch(_) {}
         }
-      }catch(e){alert('Không thể lưu ảnh: '+(e.message||e));}
+
+        // Chụp ảnh clone
+        const canvas = await html2canvas(clone, {
+          scale: Math.max(2, (window.devicePixelRatio || 1)), // nét hơn trên mobile
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          width: W,
+          height: H,
+          windowWidth: W,
+          windowHeight: H
+        });
+
+        // Dọn dẹp
+        document.body.removeChild(stage);
+
+        const dataURL = canvas.toDataURL('image/png');
+        const canDownload = ('download' in document.createElement('a')) && !isIOS();
+        if (canDownload){
+          const a = document.createElement('a');
+          a.href = dataURL; a.download = 'the-bhtn.png';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else {
+          const w = window.open();
+          if (w){ w.document.write(`<img src="${dataURL}" style="max-width:100%;display:block;margin:0 auto"/>`); w.document.close(); }
+          else { location.href = dataURL; }
+        }
+      }catch(e){
+        alert('Không thể lưu ảnh: ' + (e.message || e));
+      }
     }
 
     /* ====== Phiếu thu ====== */
