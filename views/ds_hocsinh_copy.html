@@ -559,7 +559,7 @@
           <td><input type="checkbox" class="chk-row" value="${hs.stt}" onchange="onSelectRow('${hs.stt}', this)"></td>
           <td>
             <div class="action-btns">
-              <button class="btn btn-sm btn-warning" onclick="showModalSuaHS('${hs.stt}')">Sửa</button>
+              <button class="btn btn-sm btn-warning" onclick="showModalSuaHSByIndex(${i})">Sửa</button>
               <button class="btn btn-sm btn-danger" onclick="showConfirmDelete('${hs.stt}')">Xóa</button>
             </div>
           </td>
@@ -686,7 +686,10 @@
     }
 
     // Hiện modal sửa
-    function fillSuaForm(hs) {
+    function showModalSuaHSByIndex(i) {
+      showLoading();
+      const hs = lastPageData[i];
+      if (!hs) return;
       document.getElementById('form-suahs').reset?.();
       document.getElementById('suahs-error').innerText = "";
 
@@ -694,14 +697,15 @@
       document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
       document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
 
-      const dNS   = displayNgay(hs.ngay_sinh) || "";
+      const dNS = displayNgay(hs.ngay_sinh) || "";
       const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
       const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
-
-      fpSua.ngaySinh?.clear(); fpSua.hanBHYT?.clear(); fpSua.hanBHTN?.clear();
-      if (parseDDMMYYYY(dNS))   fpSua.ngaySinh?.setDate(parseDDMMYYYY(dNS), true);   else document.getElementById('sua-ngay-sinh').value = dNS;
-      if (parseDDMMYYYY(dBHYT)) fpSua.hanBHYT?.setDate(parseDDMMYYYY(dBHYT), true); else document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT;
-      if (parseDDMMYYYY(dBHTN)) fpSua.hanBHTN?.setDate(parseDDMMYYYY(dBHTN), true); else document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN;
+      fpSua.ngaySinh?.setDate(parseDDMMYYYY(dNS) || null, true);
+      fpSua.hanBHYT?.setDate(parseDDMMYYYY(dBHYT) || null, true);
+      fpSua.hanBHTN?.setDate(parseDDMMYYYY(dBHTN) || null, true);
+      if (!parseDDMMYYYY(dNS)) document.getElementById('sua-ngay-sinh').value = dNS;
+      if (!parseDDMMYYYY(dBHYT)) document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT;
+      if (!parseDDMMYYYY(dBHTN)) document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN;
 
       if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
       else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
@@ -711,38 +715,13 @@
       document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
       document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
       document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
-      document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
-      document.getElementById('sua-doi-tuong-dong').value = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
-      document.getElementById('sua-ghi-chu').value = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
-    }
 
-    // ✅ Hàm mới: lấy theo STT, luôn hideLoading() trong finally
-    function showModalSuaHS(stt) {
-      showLoading();
-      try {
-        const hs = allData.find(h => String(h.stt) === String(stt))
-              || lastPageData.find(h => String(h.stt) === String(stt));
-        if (!hs) { showToast("Không tìm thấy dữ liệu học sinh.", "danger"); return; }
-        fillSuaForm(hs);
-        new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
-      } catch (e) {
-        console.error('[HS] showModalSuaHS error', e);
-        showToast("Không mở được form sửa.", "danger");
-      } finally {
-        hideLoading();
-      }
-    }
+      document.getElementById('sua-noi-kham-bhyt').value    = hs.noi_kham_bhyt || "";
+      document.getElementById('sua-doi-tuong-dong').value   = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
+      document.getElementById('sua-ghi-chu').value          = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
 
-    // ♻️ Giữ tương thích cho lời gọi cũ (nếu còn ở đâu đó)
-    function showModalSuaHSByIndex(i) {
-      showLoading();
-      try {
-        const hs = lastPageData?.[i];
-        if (!hs) { showToast("Không tìm thấy dữ liệu học sinh.", "danger"); return; }
-        showModalSuaHS(hs.stt);
-      } finally {
-        // ở đây không hideLoading vì showModalSuaHS đã xử lý
-      }
+      new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
+      hideLoading();
     }
 
     // Xử lý sửa
@@ -925,7 +904,6 @@
     function goBack() { showLoading(); window.location.href = "dashboard.html"; }
 
     // ==== KHỞI TẠO ====
-    window.showModalSuaHS = showModalSuaHS;
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = function() {
       initThemPickers();
