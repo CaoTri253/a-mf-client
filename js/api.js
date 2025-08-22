@@ -233,6 +233,18 @@ async function getGiaBHTN() {
   return await res.json();
 }
 
+
+// Helper bóc payload bảng giá BHTN thành object
+function normalizeGiaBHTNResponse(res){
+  if (!res) return {};
+  const d = (res.data !== undefined) ? res.data : res;
+  if (Array.isArray(d)) return d[0] || {};
+  return d || {};
+}
+
+
+
+
 /**
  * Nộp hồ sơ BHTN (tạo mới/ghi đè nếu đã tồn tại theo so_dinh_danh + lớp + trường)
  * Lưu ý:
