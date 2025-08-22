@@ -2,63 +2,80 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DS học sinh đã tham gia BHTN - Giáo viên</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
     body{background:#f8f9fa;min-height:100vh;padding:20px}
     .sticky-header-box{position:sticky;top:0;z-index:999;background:#f8f9fa;padding-bottom:2px}
     .header{font-size:22px;font-weight:700;margin-bottom:8px;padding-bottom:6px}
-    .search-row{display:flex;flex-wrap:wrap;align-items:center;margin-bottom:10px;gap:10px;position:sticky;top:52px;z-index:998;background:#f8f9fa;padding-bottom:4px}
+    .search-row{display:flex;flex-wrap:wrap;align-items:center;margin-top:-6px;gap:10px;position:sticky;top:52px;z-index:998;background:#f8f9fa;padding-bottom:4px}
     .search-input{flex:1;min-width:180px}
     .table-hs{background:#fff;border-radius:8px;box-shadow:0 1px 6px #0002}
     .table-responsive{overflow-x:auto}
     .total-count{font-size:1rem;font-weight:400;color:#444}
-    th.th-action{min-width:170px}
+    th.th-action{min-width:220px}
     th.sortable{cursor:pointer;user-select:none}
     th.sortable:hover{background:#f1f1f1}
-    .sort-icon{font-size:13px;margin-left:4px;vertical-align:middle}
-
-    .btn-back{position:fixed;bottom:26px;right:20px;z-index:1099;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 14px #0003;font-size:25px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #eee;color:#2563eb}
-    .btn-back:hover{box-shadow:0 4px 24px #2563eb33;color:#fff;background:#2563eb}
-
-    @media(max-width:600px){
-      .header{font-size:18px}
-      th.th-action{min-width:120px}
-      .search-row{flex-direction:column;align-items:stretch}
-      .action-btns{display:flex;flex-direction:column;gap:6px}
-      .action-btns .btn{width:100%}
+    .sort-icon{font-size:14px;vertical-align:middle;margin-left:4px}
+    .action-btns{display:flex;gap:6px;flex-wrap:wrap}
+    .btn-back{
+      position:fixed;bottom:26px;right:20px;z-index:1099;width:54px;height:54px;border-radius:50%;
+      background:#fff;border:2px solid #eee;color:#2563eb;font-size:25px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px #0003
     }
-    @media(min-width:601px){.action-btns{display:flex;flex-direction:row;gap:6px}}
-
-    /* trạng thái */
-    .status-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:600;font-size:12px}
-    .status-pending{color:#b91c1c;background:#fee2e2}
-    .status-paid-wait{color:#b91c1c;background:#ffe4e6}
+    .btn-back:hover{box-shadow:0 4px 24px #2563eb33;color:#fff;background:#2563eb}
+    .status-badge{display:inline-block;padding:.25rem .5rem;border-radius:.5rem;font-size:.8rem;font-weight:600}
     .status-active{color:#065f46;background:#d1fae5}
-    .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px}
+    .status-pending{color:#b91c1c;background:#fee2e2}
+    .hoso-text{margin-left:.5rem;color:#444}
 
-    /* Khung phiếu A5 */
-    .a5-paper{width:148mm;min-height:210mm;background:#fff;margin:0 auto;padding:10mm 12mm;color:#000;box-shadow:0 1px 10px #0002;font-size:13px;line-height:1.35}
-    .receipt-title{font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.4px}
-    .receipt-sub{font-style:italic}
-    .receipt-meta{font-size:13px}
-    .receipt-line{margin:2mm 0}
-    .qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}
-    .sign-col{text-align:center;margin-top:10mm;font-weight:500}
-    .sign-name{margin-top:20mm;text-align:center;font-weight:600}
+    /* ========= Thẻ BHTN (xem thẻ) ========= */
+    :root{ --cardW: 420px; --cardH: 280px; }
+    #cardScaleWrap{ width:var(--cardW); height:var(--cardH); transform-origin:top left; margin:0 auto; }
+    .bhtn-card{
+      width:var(--cardW); height:var(--cardH); background:#e9f3ff; border:4px solid #ff9f1c; border-radius:10px;
+      box-shadow:0 2px 10px #0002 inset; overflow:hidden;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    }
+    .bhtn-inner{padding:10px 14px;height:100%;display:flex;flex-direction:column}
+    .bhtn-top{display:flex;align-items:center;justify-content:space-between}
+    .bhtn-logo{display:flex;align-items:center;gap:8px}
+    .bhtn-logo img{height:28px}
+    .bhtn-logo .brand{font-weight:800;color:#1570ef;font-size:20px;letter-spacing:.5px}
+    .bhtn-logo .brand .sub{color:#ff9f1c;margin-left:4px}
+    .bhtn-obj{font-weight:700;color:#0f766e;background:#d1fae5;border:1px solid #99f6e4;border-radius:6px;padding:2px 8px}
+    .bhtn-title{margin-top:2px;font-weight:800;font-size:18px;color:#0f172a}
+    .bhtn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:8px}
+    .kv{display:flex;gap:6px}
+    .k{min-width:120px;color:#334155;font-weight:600}
+    .v{color:#0f172a}
+    .v-blue{color:#1d4ed8;font-weight:700}
+    .v-red{color:#b91c1c;font-weight:700}
+    .v-green{color:#047857;font-weight:700}
+    .big-class{position:absolute;right:12px;top:42px;font-size:38px;font-weight:800;color:#1f2937;opacity:.25}
+    .status-ok{margin-top:4px;color:#047857;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+    .card-footer-note{position:absolute;bottom:10px;right:16px;background:#ffecb5;border:1px solid #f0ad4e;border-radius:6px;padding:2px 8px;font-weight:700}
+    .so-the{color:#0c4a6e;font-weight:800}
+    .sep{height:2px;background:linear-gradient(90deg,#ff9f1c,#0ea5e9);margin:6px 0 8px;border-radius:2px}
 
-    @media print{ @page{size:A5 portrait;margin:10mm} .no-print{display:none!important} }
+    @media print{
+      @page{ size: A6 landscape; margin: 6mm; }
+      #cardScaleWrap{ width:148mm; height:105mm; transform:none!important; }
+      .bhtn-card{ width:148mm; height:105mm; }
+      .modal{ position:static!important; }
+      .no-print{ display:none!important; }
+    }
   </style>
 </head>
 <body>
   <div class="sticky-header-box">
     <div class="header">
-      DANH SÁCH HỌC SINH ĐÃ THAM GIA BHTN LỚP <span id="lop-hoc"></span>
+      DANH SÁCH HỌC SINH ĐÃ THAM GIA BHTN LỚP <span id="lop-hoc">—</span>
       <span class="total-count" id="total-hs"></span>
     </div>
-    <div class="search-row mb-2">
+    <div class="search-row">
       <input class="form-control search-input" id="search-box" placeholder="Tìm theo tên, ngày sinh, số định danh..." oninput="doSearch()">
+      <button class="btn btn-outline-secondary" onclick="goBack()">Quay lại</button>
     </div>
   </div>
 
@@ -71,287 +88,304 @@
     </svg>
   </button>
 
-  <!-- Loading overlay -->
-  <div id="loadingSpinner" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(255,255,255,0.6);backdrop-filter: blur(1px);align-items:center;justify-content:center;">
-    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading...</span></div>
+  <!-- Loading -->
+  <div id="loadingSpinner" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,0.5);align-items:center;justify-content:center;">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
   </div>
 
-  <!-- Modal xem trước & in Phiếu thu A5 (BHTN) -->
-  <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl"><div class="modal-content">
+  <!-- Modal XEM THẺ BHTN -->
+  <div class="modal fade" id="modalTheBHTN" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Xem trước phiếu thu (A5) – BHTN</h5>
-        <div class="no-print d-flex gap-2">
-          <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
-          <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
+        <h5 class="modal-title">Thẻ BHTN (ĐÃ KÍCH HOẠT)</h5>
+        <div class="d-flex gap-2 no-print">
+          <button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()">In</button>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" style="display:flex;justify-content:center;">
-        <div id="receiptA5" class="a5-paper">
-          <div class="row">
-            <div class="col"><div class="receipt-meta"><div><strong id="rec-school">Trường …</strong></div><div>Lớp: <strong id="rec-class">—</strong></div></div></div>
-            <div class="col text-center"><div class="receipt-meta"><div><strong>Mẫu số:</strong> C45-BB</div><div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div><div>ngày 10/10/2017 của Bộ Tài Chính</div></div></div>
-          </div>
-          <div class="row align-items-center mt-3">
-            <div class="col-4" style="max-width:36mm;"><div class="qr-box"><div id="receipt-qr"></div></div></div>
-            <div class="col text-center"><div class="receipt-title">BIÊN LAI THU TIỀN</div><div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div></div>
-          </div>
-          <div class="mt-3">
-            <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name">—</strong></div>
-            <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
-            <div class="receipt-line">Nội dung thu: <span id="rec-content">Thu tiền BHTN</span></div>
-            <div class="receipt-line">Số tháng đóng: <span id="rec-months">—</span> tháng (<span id="rec-range">từ ngày … đến ngày …</span>)</div>
-            <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
-            <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
-          </div>
-          <div class="row">
-            <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
-            <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small><div class="sign-name" id="rec-teacher-name">—</div></div>
+      <div class="modal-body">
+        <div id="cardScaleWrap">
+          <div class="bhtn-card position-relative" id="cardArea">
+            <div class="bhtn-inner">
+              <div class="bhtn-top">
+                <div class="bhtn-logo">
+                  <img id="c-logo" src="../assets/image/baoviet.png" alt="BAOVIET"/>
+                  <div class="brand">BAOVIET <span class="sub">Insurance</span></div>
+                </div>
+                <div class="bhtn-obj" id="c-doituong">Học sinh</div>
+              </div>
+              <div class="bhtn-title">BẢO HIỂM BẢO VIỆT</div>
+              <div class="sep"></div>
+
+              <div class="kv"><div class="k">HS</div><div class="v">Số thẻ: <span id="c-sothe" class="so-the">—</span></div></div>
+
+              <div class="bhtn-grid">
+                <div>
+                  <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
+                  <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
+                  <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
+                  <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
+                  <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
+                  <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
+                  <div class="kv"><div class="k">Tên Cha/Mẹ</div><div class="v" id="c-cha">—</div></div>
+                </div>
+                <div>
+                  <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
+                  <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
+                  <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
+                  <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
+                  <div class="status-ok" id="c-status">ĐÃ KÍCH HOẠT</div>
+                </div>
+              </div>
+
+              <div class="big-class" id="c-lop-big"></div>
+              <div class="card-footer-note" id="c-footer-code"></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer no-print">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
-        <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
       </div>
     </div></div>
   </div>
 
+  <!-- Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+    <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toast-message">Thành công!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="../js/api.js"></script>
 
   <script>
-    /* ====== INIT ====== */
-    const isMobile=()=>/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    let user=JSON.parse(localStorage.getItem("user")||"{}");
-    if(!user.sdt||user.phan_quyen!=="giao_vien") location.href="../index.html";
-    document.getElementById("lop-hoc").innerText=user.lop_hoc||"(chưa xác định)";
+    /* ========= State & guards ========= */
+    const logPrefix='[BHTN-DaThu]';
+    const user = JSON.parse(localStorage.getItem("user")||"{}");
+    if (!user.sdt || user.phan_quyen!=="giao_vien") window.location.href="../index.html";
+    document.getElementById('lop-hoc').innerText = user.lop_hoc||'(chưa xác định)';
 
-    let pageSize=20,currentPage=1,totalRecords=0,totalPages=1,sortField="ho_ten_hoc_sinh",sortDir=1,allData=[],lastFiltered=[];
-    window._viewData=[];
+    let pageSize=20,currentPage=1,totalRecords=0,totalPages=1,sortField='ho_ten_hoc_sinh',sortDir=1;
+    let allData=[],lastFiltered=[];
 
-    function showLoading(){document.getElementById('loadingSpinner').style.display='flex'}
-    function hideLoading(){document.getElementById('loadingSpinner').style.display='none'}
-    function goBack(){showLoading();location.href="bhtn_giaovien.html"}
-    function detectPageSize(){const w=innerWidth;if(w<=600)pageSize=5;else if(w<=999)pageSize=10;else pageSize=20}
-    addEventListener('resize',()=>{const old=pageSize;detectPageSize();if(old!==pageSize){currentPage=1;renderAllView()}});
+    function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
+    function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
+    function goBack(){ showLoading(); window.location.href='bhtn_giaovien.html'; }
+    const isMobile = ()=>/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    /* ====== API ====== */
-    // đã có trong ../js/api.js cho BHTN:
-    // getDanhSachBHTN(ma_truong, lop_hoc)
-    async function getTenTruong(ma_truong){try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;const r=await fetch(u);const j=await r.json();return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'}catch(e){return user.ten_truong||ma_truong||'—'}}
-
-    function displayDate(raw){
-      if(!raw) return "";
-      if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
-      if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw)){const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}
+    /* ========= Helpers ========= */
+    function displayNgaySinh(raw){
+      if (!raw) return "";
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}T/)) return new Date(raw).toLocaleDateString('vi-VN');
+      if (raw.match && raw.match(/^\d{2}\/\d{2}\/\d{4}$/)) return raw;
+      if (raw.match && raw.match(/^\d{4}-\d{2}-\d{2}$/)){ const [y,m,d]=raw.split('-'); return `${d}/${m}/${y}`; }
       return raw;
     }
-    function cleanVal(v){const s=String(v??"").trim();return (!s||s==='null'||s==='NULL'||s==='undefined'||s==='NaN'||s==='-')?"":s}
-    function getSoHoSo(row){return cleanVal(row.so_ho_so??row.sohoso??row.so_hs)}
+    function parseVNDate(str){
+      const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(!m) return null;
+      const d=new Date(+m[3],+m[2]-1,+m[1]);
+      return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1]) ? d : null;
+    }
+    function formatVNDate(d){ const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); return `${dd}/${mm}/${yy}`; }
+    function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function numberWithCommas(n){ n=Number(String(n||0).replace(/[^\d.-]/g,''))||0; return n.toLocaleString('vi-VN'); }
 
-    function sortIcon(field){ if(sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
-
-    async function fetchDaThuBHTN(){
+    async function getTenTruong(ma_truong){
       try{
-        detectPageSize();showLoading();
-        const bhtnRes=await getDanhSachBHTN(user.ma_truong,user.lop_hoc);
-        const rows=Array.isArray(bhtnRes?.data)?bhtnRes.data:[];
-        allData=rows.filter(r=>r&&r.so_dinh_danh).map(r=>({...r,trang_thai:r.trang_thai===undefined?undefined:Number(r.trang_thai)}));
-        currentPage=1;doSearch();
-      }catch(e){allData=[];doSearch()}finally{hideLoading()}
+        const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
+        const res = await fetch(url); const j=await res.json();
+        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
+      }catch(e){ return user.ten_truong || ma_truong || '—'; }
     }
 
-    /* ====== Table ====== */
+    function detectPageSize(){
+      const w=window.innerWidth;
+      if (w<=600) pageSize=5; else if (w<=999) pageSize=10; else pageSize=20;
+    }
+    window.addEventListener('resize',()=>{ const p=pageSize; detectPageSize(); if (p!==pageSize){ currentPage=1; renderAllView(); } });
+
+    /* ========= Fetch list: đã tham gia BHTN ========= */
+    async function fetchDanhSachDaThu(){
+      try{
+        detectPageSize(); showLoading();
+        const res = await getDanhSachBHTN(user.ma_truong, user.lop_hoc);
+        const arr = Array.isArray(res?.data) ? res.data : [];
+        allData = arr.filter(r => String(r.lop_hoc||'').trim() === String(user.lop_hoc||'').trim());
+        doSearch();
+      }catch(e){
+        console.error(logPrefix,'fetchDanhSachDaThu error',e);
+      }finally{ hideLoading(); }
+    }
+
+    /* ========= Search / Sort / Paging ========= */
+    function doSearch(){
+      const q = document.getElementById('search-box').value.trim().toLowerCase();
+      lastFiltered = !q ? allData : allData.filter(r =>
+        String(r.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
+        String(displayNgaySinh(r.ngay_sinh)||'').toLowerCase().includes(q) ||
+        String(r.so_dinh_danh||'').toLowerCase().includes(q) ||
+        String(r.ma_so_bhtn||'').toLowerCase().includes(q)
+      );
+      currentPage=1; renderAllView();
+    }
+
+    function sortIcon(field){ if (sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
+    function setSort(field){ if (sortField===field) sortDir=-sortDir; else { sortField=field; sortDir=1; } renderAllView(); }
+
+    function renderAllView(){
+      let dataToShow = lastFiltered||allData;
+      if (sortField){
+        dataToShow = [...dataToShow].sort((a,b)=>{
+          let av=(a[sortField]||'').toString().toLowerCase(), bv=(b[sortField]||'').toString().toLowerCase();
+          if (!isNaN(av) && !isNaN(bv)){ av=Number(av); bv=Number(bv); }
+          if (av<bv) return -sortDir; if (av>bv) return sortDir; return 0;
+        });
+      }
+      totalRecords=dataToShow.length;
+      totalPages=Math.max(1, Math.ceil(totalRecords/pageSize));
+      document.getElementById('total-hs').innerText = `(${totalRecords} hồ sơ)`;
+      const start=(currentPage-1)*pageSize;
+      renderTable(dataToShow.slice(start,start+pageSize));
+      renderPagination();
+    }
+
+    function renderPagination(){
+      const el=document.getElementById('pagination'); el.innerHTML='';
+      if (totalPages<=1) return;
+      el.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
+      let minP=Math.max(1,currentPage-2), maxP=Math.min(totalPages,currentPage+2);
+      if (minP>1) el.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
+      if (minP>2) el.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      for (let p=minP;p<=maxP;p++) el.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`;
+      if (maxP<totalPages-1) el.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      if (maxP<totalPages) el.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
+      el.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
+    }
+    function gotoPage(p){ if (p<1||p>totalPages||p===currentPage) return; currentPage=p; renderAllView(); }
+
+    /* ========= Table ========= */
     function statusCell(row){
-      const st=Number(row.trang_thai??-1), shs=getSoHoSo(row);
-      if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
-      if (st===1 && !shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
-      if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${escapeHtml(shs)}</span></div>`;
-      return `<span class="status-badge status-pending">Đang xử lý</span>`;
+      const st = Number(String(row.trang_thai||'').replace(/^'/,'').trim());
+      const shs = String(row.so_ho_so||'').replace(/^'/,'').trim();
+      if (st===1) return `<div><span class="status-badge status-active">Đã kích hoạt</span>${shs? `<span class="hoso-text">${shs}</span>` : ''}</div>`;
+      return '<span class="status-badge status-pending">Đang xử lý</span>';
     }
     function actionsCell(i,row){
-      // Với BHTN: chỉ cần in phiếu thu
-      return `<div class="action-btns"><button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button></div>`;
+      const st = Number(row.trang_thai??-1);
+      const hasCard = st===1;
+      const btnView = `<button class="btn btn-info btn-sm" onclick="onViewCardIdx(${i})" ${hasCard?'':'disabled'}>Xem thẻ</button>`;
+      return `<div class="action-btns">${btnView}</div>`;
     }
-
-    function buildTableHead(){
+    function buildHead(){
       return `
         <thead>
           <tr>
             <th class="th-action">Thao tác</th>
             <th>Trạng thái</th>
-            <th class="sortable" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
-            <th class="sortable" data-field="ngay_sinh">Ngày sinh ${sortIcon('ngay_sinh')}</th>
-            <th class="sortable" data-field="so_dinh_danh">Số định danh ${sortIcon('so_dinh_danh')}</th>
-            <th class="sortable" data-field="doi_tuong_dong">Đối tượng đóng ${sortIcon('doi_tuong_dong')}</th>
-            <th class="sortable" data-field="so_thang_dong">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
-            <th class="sortable" data-field="han_su_dung_bhtn_moi">Hạn BHTN mới ${sortIcon('han_su_dung_bhtn_moi')}</th>
+            <th class="sortable" onclick="setSort('ho_ten_hoc_sinh')">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
+            <th class="sortable" onclick="setSort('ngay_sinh')">Ngày sinh ${sortIcon('ngay_sinh')}</th>
+            <th class="sortable" onclick="setSort('so_dinh_danh')">Số định danh ${sortIcon('so_dinh_danh')}</th>
+            <th class="sortable" onclick="setSort('so_thang_dong')">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
+            <th class="sortable" onclick="setSort('han_su_dung_bhtn_moi')">Hạn mới ${sortIcon('han_su_dung_bhtn_moi')}</th>
           </tr>
         </thead>`;
     }
-
-    function attachSortHandlers(){
-      document.querySelectorAll('th.sortable').forEach(th=>{
-        th.addEventListener('click', ()=>{
-          const field = th.getAttribute('data-field');
-          if (!field) return;
-          if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
-          renderAllView();
-        }, {once:false});
+    function renderTable(rows){
+      if (!rows||rows.length===0){
+        document.getElementById('ds-container').innerHTML = "<div class='text-center text-secondary mt-4'>Không có hồ sơ trong lớp này.</div>";
+        return;
+      }
+      let html = `<table class="table table-bordered table-hs align-middle">${buildHead()}<tbody>`;
+      rows.forEach((r,i)=>{
+        html += `
+          <tr>
+            <td>${actionsCell(i,r)}</td>
+            <td>${statusCell(r)}</td>
+            <td>${r.ho_ten_hoc_sinh||''}</td>
+            <td>${displayNgaySinh(r.ngay_sinh)||''}</td>
+            <td>${r.so_dinh_danh||''}</td>
+            <td>${r.so_thang_dong||''}</td>
+            <td>${r.han_su_dung_bhtn_moi||''}</td>
+          </tr>`;
       });
+      html += "</tbody></table>";
+      document.getElementById('ds-container').innerHTML = html;
     }
 
-    function renderDanhSachHS(ds,startIdx){
-      if(!ds||ds.length===0){document.getElementById('ds-container').innerHTML=`<div class='text-center text-secondary mt-4'>Không có hồ sơ BHTN trong lớp này.</div>`;return}
-      const thead = buildTableHead();
-      const rows=ds.map((r,i)=>{
-        const iView=startIdx+i,hanMoi=displayDate(r.han_su_dung_bhtn_moi||"");
-        return `<tr>
-          <td>${actionsCell(iView,r)}</td>
-          <td>${statusCell(r)}</td>
-          <td>${escapeHtml(r.ho_ten_hoc_sinh||"")}</td>
-          <td>${escapeHtml(displayDate(r.ngay_sinh)||"")}</td>
-          <td>${escapeHtml(r.so_dinh_danh||"")}</td>
-          <td>${escapeHtml(r.doi_tuong_dong||"Học sinh")}</td>
-          <td class="text-center">${escapeHtml((r.so_thang_dong||"").toString())}</td>
-          <td>${escapeHtml(hanMoi)}</td>
-        </tr>`;
-      }).join('');
-      document.getElementById('ds-container').innerHTML=`<table class="table table-bordered table-hs align-middle">${thead}<tbody>${rows}</tbody></table>`;
-      attachSortHandlers();
+    /* ========= Xem thẻ ========= */
+    function calcRangeBHTN(oldEndStr){
+      const od=parseVNDate(oldEndStr);
+      if (!od) return {startText:'—', endText:'(không xác định)'};
+      const start=addDaysExact(od,1);
+      const end=new Date(start.getFullYear(), start.getMonth()+12, 0);
+      return {startText: formatVNDate(start), endText: formatVNDate(end)};
     }
 
-    function renderPagination(){
-      const el=document.getElementById('pagination');let html='';if(totalPages<=1){el.innerHTML='';return}
-      const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="gotoPage(${p})">${lab}</a></li>`;
-      html+=add(Math.max(1,currentPage-1),'&laquo;',false,currentPage===1);
-      for(let i=1;i<=totalPages;i++) html+=add(i,i,i===currentPage,false);
-      html+=add(Math.min(totalPages,currentPage+1),'&raquo;',false,currentPage===totalPages);
-      el.innerHTML=html;
-    }
-    function gotoPage(p){if(p<1||p>totalPages) return; currentPage=p; renderAllView()}
-    function doSearch(){
-      const q=document.getElementById('search-box').value.trim().toLowerCase();
-      lastFiltered=!q?allData:allData.filter(h=>
-        (h.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
-        (displayDate(h.ngay_sinh)||"").toLowerCase().includes(q) ||
-        (h.so_dinh_danh||"").toLowerCase().includes(q) ||
-        (h.doi_tuong_dong||"").toLowerCase().includes(q)
-      );
-      currentPage=1;renderAllView()
-    }
-    function renderAllView(){
-      let data=lastFiltered||allData;
-      if(sortField){
-        data=[...data].sort((a,b)=>{
-          let av=(a[sortField]??"").toString().toLowerCase(),bv=(b[sortField]??"").toString().toLowerCase();
-          if(!isNaN(+av)&&!isNaN(+bv)){av=+av;bv=+bv}
-          return av<bv?-sortDir:av>bv?sortDir:0
-        })
-      }
-      window._viewData=data;
-      totalRecords=data.length;totalPages=Math.max(1,Math.ceil(totalRecords/pageSize));
-      document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;
-      const start=(currentPage-1)*pageSize;
-      renderDanhSachHS(data.slice(start,start+pageSize),start);
-      renderPagination()
+    async function onViewCardIdx(idx){
+      const rows = lastFiltered||allData;
+      const r = rows[idx]; if (!r) return;
+
+      const schoolName = await getTenTruong(r.ma_truong || user.ma_truong);
+      const lop = r.lop_hoc || user.lop_hoc || '';
+
+      const range = calcRangeBHTN(r.ngay_het_han_bhtn_cu || r.ngay_het_han_bhtn || '');
+      const soTien = numberWithCommas(r.so_tien);
+
+      document.getElementById('c-doituong').innerText = r.doi_tuong_dong || 'Học sinh';
+      document.getElementById('c-sothe').innerText = r.ma_so_bhtn || '(chưa có)';
+      document.getElementById('c-hoten').innerText = r.ho_ten_hoc_sinh || '';
+      document.getElementById('c-ngaysinh').innerText = displayNgaySinh(r.ngay_sinh)||'';
+      document.getElementById('c-tu').innerText = range.startText;
+      document.getElementById('c-den').innerText = range.endText;
+      document.getElementById('c-diachi').innerText = r.dia_chi || '';
+      document.getElementById('c-sdt').innerText = r.sdt_lienhe || '';
+      document.getElementById('c-cha').innerText = r.ten_cha_me || '';
+      document.getElementById('c-gioitinh').innerText = r.gioi_tinh || '';
+      document.getElementById('c-lop').innerText = lop;
+      document.getElementById('c-sotien').innerText = soTien;
+      document.getElementById('c-truong').innerText = schoolName;
+      document.getElementById('c-lop-big').innerText = String(lop||'').trim();
+      document.getElementById('c-footer-code').innerText = (lop?lop:'') + (r.so_thang_dong?(' - '+r.so_thang_dong+'T'):'');
+      new bootstrap.Modal(document.getElementById('modalTheBHTN')).show();
     }
 
-    /* ====== Actions (In phiếu) ====== */
-    function onPrintReceiptIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onPrintReceipt(row), 50);}
-
-    function parseDate(s){
-      if(!s)return null;
-      if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)}
-      if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);
-      return null
-    }
-    function formatDateVN2(d){const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=d.getFullYear();return `${dd}/${mm}/${yy}`}
-    function toVND(n){return Number(n||0).toLocaleString('vi-VN')}
-    const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
-    function readTriple(n){let tr=Math.floor(n/100),ch=Math.floor((n%100)/10),dv=n%10,s="";if(tr>0){s+=VI_DIGITS[tr]+" trăm";if(ch==0&&dv>0)s+=" lẻ"}if(ch>1){s+=(s?" ":"")+VI_DIGITS[ch]+" mươi";if(dv==1)s+=" mốt";else if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==1){s+=(s?" ":"")+"mười";if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==0&&dv>0){s+=(s?" ":"")+VI_DIGITS[dv]}return s.trim()}
-    function numberToVietnamese(n){n=Math.round(Number(n)||0);if(n===0)return"Không đồng";const u=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];let i=0,str="";while(n>0&&i<u.length){const b=n%1000;if(b>0){const p=readTriple(b);str=p+u[i]+(str?" "+str:"")}n=Math.floor(n/1000);i++}return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim()}
-    function todayText(){const d=new Date();return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`}
-
-    function onPrintReceipt(row){
-      const after=()=>{new bootstrap.Modal(document.getElementById('modalPhieuThu')).show(); hideLoading();}
-      getTenTruong(user.ma_truong).then(truong=>{
-        const lop=row.lop_hoc||user.lop_hoc||"—";
-        const months=parseInt(row.so_thang_dong||"12",10);
-        const amount=parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
-        // Với BHTN: sheet đã chứa "hạn sử dụng BHTN mới" là NGÀY CUỐI
-        const end=row.han_su_dung_bhtn_moi||"";
-        const e=parseDate(end);
-        let startText="—",endText="(không xác định)";
-        if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN2(s);endText=formatDateVN2(e)}
-        document.getElementById('rec-school').innerText=truong;
-        document.getElementById('rec-class').innerText=lop;
-        document.getElementById('rec-date-today').innerText=todayText();
-        document.getElementById('rec-student-name').innerText=row.ho_ten_hoc_sinh||"";
-        document.getElementById('rec-address').innerText=row.dia_chi||"";
-        document.getElementById('rec-content').innerText=`Thu tiền BHTN - ${lop}`;
-        document.getElementById('rec-months').innerText=String(months);
-        document.getElementById('rec-range').innerText=`từ ngày ${startText} đến ngày ${endText}`;
-        document.getElementById('rec-amount').innerText=toVND(amount);
-        document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
-        document.getElementById('rec-teacher-name').innerText=user.ho_ten||"(Giáo viên)";
-        const qrBox=document.getElementById('receipt-qr');qrBox.innerHTML="";
-        const text=buildQRPayload(user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
-        try{new QRCode(qrBox,{text,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-        catch(e2){
-          const fb=`MT=${String(user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
-          try{new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-          catch(_){qrBox.innerHTML='<small>QR quá dài</small>'}
+    async function downloadCardImage(){
+      try{
+        const node=document.getElementById('cardArea');
+        const canvas=await html2canvas(node,{scale:2, backgroundColor:'#ffffff'});
+        const dataURL=canvas.toDataURL("image/png");
+        const canDownload='download' in document.createElement('a') && !isMobile();
+        if (canDownload){
+          const a=document.createElement('a'); a.href=dataURL; a.download='the-bhtn.png';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else {
+          const w=window.open();
+          if (w){
+            w.document.write(`<html><head><title>Lưu ảnh thẻ</title></head><body style="margin:0"><img src="${dataURL}" style="max-width:100%;display:block"/></body></html>`);
+            w.document.close();
+          } else {
+            alert('Trình duyệt chặn tải trực tiếp. Ảnh sẽ mở ở tab mới để bạn lưu thủ công.');
+            window.location.href=dataURL;
+          }
         }
-        after();
-      }).catch(()=>hideLoading());
+      }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
     }
 
-    /* ==== QR & tải ảnh phiếu ==== */
-    function stripVN(s){return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')}
-    function initials(str){return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase()}
-    function buildQRPayload(mt,school,cls,name,months,endDate){const _mt=String(mt||"").slice(0,24),s=stripVN(school).slice(0,60),c=String(cls||"").slice(0,12),n=stripVN(name).slice(0,60),m=String(months||""),e=String(endDate||"").slice(0,10);return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`}
-    async function downloadReceiptImage(){ showLoading(); const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhtn.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
-
-    // In CHỈ phần phiếu: clone node, convert QR -> IMG, chờ ảnh load rồi print (giống trang BHYT)
-    function getReceiptPrintCSS(){return `
-      <style>
-        @page{size:A5 portrait;margin:10mm}
-        html,body{background:#fff;margin:0;padding:0}
-        .a5-paper{width:148mm;min-height:210mm;background:#fff;color:#000;margin:0 auto;padding:10mm 12mm;line-height:1.35;font-size:13px}
-        .receipt-title{font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.4px}
-        .receipt-sub{font-style:italic}.receipt-meta{font-size:13px}.receipt-line{margin:2mm 0}
-        .qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}
-        .sign-col{text-align:center;margin-top:10mm;font-weight:500}.sign-name{margin-top:20mm;text-align:center;font-weight:600}
-        .row{display:flex;flex-wrap:nowrap;width:100%}.col{flex:1 1 0}.text-center{text-align:center}
-      </style>`}
-    function printReceiptOnly(){
-      const src=document.getElementById('receiptA5'); if(!src) return;
-      const clone=src.cloneNode(true);
-      const live=src.querySelector('#receipt-qr canvas, #receipt-qr img');
-      if(live){
-        try{
-          const dataURL=(live.tagName.toLowerCase()==='canvas')?live.toDataURL('image/png'):live.src;
-          const target=clone.querySelector('#receipt-qr'); target.innerHTML='';
-          const img=document.createElement('img'); img.src=dataURL; img.width=90; img.height=90; target.appendChild(img);
-        }catch(e){}
-      }
-      const w=window.open('','_blank','width=900,height=650'); if(!w){ alert('Trình duyệt đang chặn popup in. Hãy cho phép rồi thử lại.'); return; }
-      w.document.open();
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>In phiếu thu</title>${getReceiptPrintCSS()}</head><body>${clone.outerHTML}</body></html>`);
-      w.document.close();
-      const triggerPrint=()=>{ try{ w.focus(); w.print(); setTimeout(()=>{try{w.close()}catch(_){}},500); }catch(e){} };
-      w.onload=()=>{ try{ const imgs=w.document.images; if(!imgs||imgs.length===0){ setTimeout(triggerPrint,200); return; } let loaded=0; const done=()=>{ if(++loaded>=imgs.length) triggerPrint(); }; for(const img of imgs){ if(img.complete) done(); else { img.onload=done; img.onerror=done; } } setTimeout(triggerPrint,1500); }catch(e){ triggerPrint(); } };
+    /* ========= Toast ========= */
+    function showToast(msg){
+      document.getElementById('toast-message').innerText = msg;
+      bootstrap.Toast.getOrCreateInstance(document.getElementById('success-toast')).show();
     }
 
-    function escapeHtml(s){return (s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-
-    (async function(){ await fetchDaThuBHTN(); })();
+    /* ========= Boot ========= */
+    window.onload = fetchDanhSachDaThu;
   </script>
 </body>
 </html>
