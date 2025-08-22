@@ -1294,39 +1294,53 @@
         area.innerHTML = '';
         area.appendChild(clone);
 
+        let printed = false;
+        let cleaned = false;
+        let fallbackTimer = null;
+
+        const tryPrintOnce = () => {
+          if (printed) return;
+          printed = true;
+          // in trễ 1 nhịp để layout ổn định
+          setTimeout(() => window.print(), 50);
+          if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+        };
+
         const cleanup = () => {
+          if (cleaned) return;
+          cleaned = true;
           document.body.classList.remove('_printing');
           area.innerHTML = '';
           window.removeEventListener('afterprint', cleanup);
+          if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
         };
-        window.addEventListener('afterprint', cleanup);
 
-        // Bật chế độ in tại chỗ + đợi ảnh load rồi gọi print
-        const startPrint = () => {
-          document.body.classList.add('_printing');
-          const imgs = area.getElementsByTagName('img');
-          let loaded = 0, need = imgs.length;
+        // Dọn khi kết thúc in (kể cả Cancel). once để không lặp.
+        window.addEventListener('afterprint', cleanup, { once: true });
 
-          const done = () => setTimeout(()=>window.print(), 50);
+        // Bật chế độ in tại chỗ + đợi ảnh (QR) load rồi in
+        document.body.classList.add('_printing');
+        const imgs = area.getElementsByTagName('img');
+        let loaded = 0, need = imgs.length;
 
-          if (!need) done();
-          else {
-            for (const im of imgs) {
-              if (im.complete) { if (++loaded >= need) done(); }
-              else {
-                im.onload  = () => { if (++loaded >= need) done(); };
-                im.onerror = () => { if (++loaded >= need) done(); };
-              }
+        if (!need) {
+          tryPrintOnce();
+        } else {
+          for (const im of imgs) {
+            if (im.complete) {
+              if (++loaded >= need) tryPrintOnce();
+            } else {
+              im.onload  = () => { if (++loaded >= need) tryPrintOnce(); };
+              im.onerror = () => { if (++loaded >= need) tryPrintOnce(); };
             }
-            // Fallback phòng sự cố onload trên iOS
-            setTimeout(done, 1200);
           }
-        };
+          // Fallback cho iOS khi onload không bắn
+          fallbackTimer = setTimeout(tryPrintOnce, 1500);
+        }
 
-        startPrint();
+        // iOS đôi khi không bắn afterprint -> dọn dẹp muộn
+        setTimeout(() => { if (!cleaned) cleanup(); }, 4000);
 
-        // iOS đôi khi không bắn afterprint -> dọn dẹp sau 4s
-        setTimeout(cleanup, 4000);
       } catch (e) {
         console.error('[Receipts] printReceiptOnly fatal', e);
         alert('Không thể in phiếu: ' + (e.message || e));
