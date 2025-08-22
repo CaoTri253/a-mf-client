@@ -38,61 +38,43 @@
     .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px}
 
     /* ==== THẺ BHTN ==== */
-    :root{
-      --cardW-bhtn: 900px;
-      --cardH-bhtn: 560px;
-      --orange: #f59e0b;
-    }
-    #cardScaleWrapBHTN{
-      position:relative; width:var(--cardW-bhtn); height:var(--cardH-bhtn);
-      transform-origin: top left; margin:0 auto;
-    }
-    .bhtn-card{
-      width:var(--cardW-bhtn); height:var(--cardH-bhtn);
-      background:#fff; border:8px solid var(--orange); border-radius:14px; padding:8px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06); overflow:hidden; position:relative;
-    }
-    .bhtn-inner{height:100%; border:3px solid var(--orange); border-radius:12px; padding:16px 24px 24px; display:flex; flex-direction:column;}
-    .bhtn-top{display:flex; align-items:center; justify-content:center; margin-bottom:4px}
-    .bhtn-logo{height:60px; object-fit:contain}
-
-    .bhtn-grid{display:grid; grid-template-columns: 1.4fr 1fr; gap:22px; margin-top:6px}
-    .kv{display:flex; gap:12px; margin:8px 0; align-items:flex-start}
-    .kv .k{min-width:190px; color:#6b7280; font-weight:800}
-    .kv .v{color:#111827; font-weight:800}
+    :root{--cardW-bhtn:900px;--cardH-bhtn:560px;--orange:#f59e0b}
+    #cardScaleWrapBHTN{position:relative;width:var(--cardW-bhtn);height:var(--cardH-bhtn);transform-origin:top left;margin:0 auto}
+    .bhtn-card{width:var(--cardW-bhtn);height:var(--cardH-bhtn);background:#fff;border:8px solid var(--orange);border-radius:14px;padding:8px;box-shadow:0 2px 10px #0001;overflow:hidden;position:relative}
+    .bhtn-inner{height:100%;border:3px solid var(--orange);border-radius:12px;padding:16px 24px 24px;display:flex;flex-direction:column}
+    .bhtn-top{display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+    .bhtn-logo{height:60px;object-fit:contain}
+    .bhtn-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;margin-top:6px}
+    .kv{display:flex;gap:12px;margin:8px 0;align-items:flex-start}
+    .kv .k{min-width:190px;color:#6b7280;font-weight:800}
+    .kv .v{color:#111827;font-weight:800}
     .v-blue{color:#0b53ff!important}
     .v-red{color:#e11d48!important}
     .v-green{color:#0f9d58!important}
-    .bhtn-lop{ font-size:56px; font-weight:900; color:#9ca3af; text-align:right; }
-    .bhtn-stamp{ margin-top:8px; text-align:center; font-weight:900; color:#16a34a; font-size:30px}
-    .bhtn-badge{ margin-top:8px; display:flex; justify-content:center }
-    .bhtn-badge span{ background:#fff3b0; border:2px solid #facc15; padding:8px 16px; border-radius:6px; font-weight:900; color:#1d4ed8}
+    .bhtn-lop{font-size:56px;font-weight:900;color:#9ca3af;text-align:right}
+    .bhtn-stamp{margin-top:8px;text-align:center;font-weight:900;color:#16a34a;font-size:30px}
+    .bhtn-badge{margin-top:8px;display:flex;justify-content:center}
+    .bhtn-badge span{background:#fff3b0;border:2px solid #facc15;padding:8px 16px;border-radius:6px;font-weight:900;color:#1d4ed8}
+    .bhtn-qr{position:absolute;right:16px;bottom:16px;width:96px;height:96px;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:6px}
 
-    /* QR cố định góc phải dưới */
-    .bhtn-qr{
-      position:absolute; right:16px; bottom:16px;
-      width:96px; height:96px; border:2px solid #e5e7eb; display:flex; align-items:center; justify-content:center;
-      background:#fff; border-radius:6px;
-    }
-
-    /* ==== A5 preview cho phiếu thu (giống trang mẫu đã chạy) ==== */
-    .a5-paper{ width:148mm; min-height:210mm; background:#fff; margin:0 auto; padding:10mm 12mm; color:#000; box-shadow:0 1px 10px #0002; font-size:13px; line-height:1.35; }
-    .receipt-title{ font-weight:700; font-size:22px; text-transform:uppercase; letter-spacing:.4px; }
-    .receipt-sub{ font-style:italic; }
-    .receipt-meta{ font-size:13px; }
-    .receipt-line{ margin:2mm 0; }
-    .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
-    .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
-    .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+    /* ==== A5 preview ==== */
+    .a5-paper{width:148mm;min-height:210mm;background:#fff;margin:0 auto;padding:10mm 12mm;color:#000;box-shadow:0 1px 10px #0002;font-size:13px;line-height:1.35}
+    .receipt-title{font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.4px}
+    .receipt-sub{font-style:italic}
+    .receipt-meta{font-size:13px}
+    .receipt-line{margin:2mm 0}
+    .sign-col{text-align:center;margin-top:10mm;font-weight:500}
+    .sign-name{margin-top:20mm;text-align:center;font-weight:600}
+    .qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}
 
     @media print{
-      @page{ size:A5 portrait; margin:10mm; }
-      body{ background:#fff!important; }
-      .modal{ position:static!important; }
-      .modal-content{ box-shadow:none!important; border:none!important; }
-      .no-print{ display:none!important; }
-      .a5-paper{ box-shadow:none!important; margin:0!important; }
-      #cardScaleWrapBHTN{ transform:none !important }
+      @page{size:A5 portrait;margin:10mm}
+      body{background:#fff!important}
+      .modal{position:static!important}
+      .modal-content{box-shadow:none!important;border:none!important}
+      .no-print{display:none!important}
+      .a5-paper{box-shadow:none!important;margin:0!important}
+      #cardScaleWrapBHTN{transform:none!important}
     }
   </style>
 </head>
@@ -116,12 +98,12 @@
     </svg>
   </button>
 
-  <!-- Loading overlay -->
-  <div id="loadingSpinner" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(255,255,255,0.6);backdrop-filter: blur(1px);align-items:center;justify-content:center;">
-    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading...</span></div>
+  <!-- Loading -->
+  <div id="loadingSpinner" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.6);backdrop-filter:blur(1px);align-items:center;justify-content:center">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem"><span class="visually-hidden">Loading...</span></div>
   </div>
 
-  <!-- Modal XEM THẺ BHTN -->
+  <!-- Modal THẺ -->
   <div class="modal fade" id="modalTheBHTN" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
       <div class="modal-header">
@@ -133,12 +115,10 @@
         <div id="cardScaleWrapBHTN">
           <div id="cardAreaBHTN" class="bhtn-card">
             <div class="bhtn-inner">
-              <!-- Logo ở giữa -->
               <div class="bhtn-top">
-                <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'"/>
+                <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'">
               </div>
 
-              <!-- Lưới thông tin -->
               <div class="kv"><div class="k">Đối tượng đóng</div><div class="v" id="c-doituong">—</div></div>
               <div class="kv"><div class="k">Số thẻ</div><div class="v v-blue" id="c-so-the">—</div></div>
 
@@ -163,7 +143,6 @@
               <div class="bhtn-stamp">ĐÃ KÍCH HOẠT</div>
               <div class="bhtn-badge"><span id="c-badge">—</span></div>
 
-              <!-- QR dưới góc phải -->
               <div id="card-qr" class="bhtn-qr"></div>
             </div>
           </div>
@@ -176,7 +155,7 @@
     </div></div>
   </div>
 
-  <!-- Modal xem trước & in Phiếu thu A5 (BHTN) -->
+  <!-- Modal PHIẾU THU -->
   <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl"><div class="modal-content">
       <div class="modal-header">
@@ -226,9 +205,7 @@
 
   <script>
     /* ====== INIT ====== */
-    const isMobile=()=>/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
+    const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.userAgent.includes('Mac')&&'ontouchend'in document);
     let user=JSON.parse(localStorage.getItem("user")||"{}");
     if(!user.sdt||user.phan_quyen!=="giao_vien") location.href="../index.html";
     document.getElementById("lop-hoc").innerText=user.lop_hoc||"(chưa xác định)";
@@ -242,20 +219,19 @@
     function detectPageSize(){const w=innerWidth;if(w<=600)pageSize=5;else if(w<=999)pageSize=10;else pageSize=20}
     addEventListener('resize',()=>{const old=pageSize;detectPageSize();if(old!==pageSize){currentPage=1;renderAllView()}});
 
-    /* ====== API phụ ====== */
-    async function getTenTruong(ma_truong){try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;const r=await fetch(u);const j=await r.json();return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'}catch(e){return user.ten_truong||ma_truong||'—'}}
-
     /* ====== Helpers ====== */
+    const norm = v => String(v??"").replace(/^'/,'').trim();
+    const toNum = v => {const n=Number(norm(v));return isNaN(n)?0:n;}
+    const toTrangThai = v => {const n=Number(norm(v));return isNaN(n)?undefined:n;}
+    const cleanVal = v => {const s=norm(v);return (!s||s==='null'||s==='undefined'||s==='NaN')?"":s}
+
     function displayDate(raw){
-      if(!raw) return "";
+      if(!raw)return "";
       if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
       if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw)){const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}
       return raw;
     }
-    function cleanVal(v){const s=String(v??"").trim();return (!s||s==='null'||s==='NULL'||s==='undefined'||s==='NaN'||s==='-')?"":s}
     function getSoHoSo(row){return cleanVal(row.so_ho_so??row.sohoso??row.so_hs)}
-    function sortIcon(field){ if(sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
-    function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 
     /* ====== Fetch ====== */
     async function fetchDaThuBHTN(){
@@ -263,21 +239,27 @@
         detectPageSize();showLoading();
         const bhtnRes=await getDanhSachBHTN(user.ma_truong,user.lop_hoc);
         const rows=Array.isArray(bhtnRes?.data)?bhtnRes.data:[];
-        allData=rows.filter(r=>r&&r.so_dinh_danh).map(r=>({...r,trang_thai:r.trang_thai===undefined?undefined:Number(r.trang_thai)}));
+        allData=rows.filter(r=>r&&r.so_dinh_danh).map(r=>({
+          ...r,
+          trang_thai: toTrangThai(r.trang_thai),
+          so_ho_so: getSoHoSo(r),
+          ma_so_bhtn: cleanVal(r.ma_so_bhtn)
+        }));
         currentPage=1;doSearch();
       }catch(e){allData=[];doSearch()}finally{hideLoading()}
     }
 
-    /* ====== Table ====== */
+    /* ====== Table & sort ====== */
+    function sortIcon(field){ if(sortField!==field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
     function statusCell(row){
-      const st=Number(row.trang_thai??-1), shs=getSoHoSo(row);
+      const st=toTrangThai(row.trang_thai), shs=getSoHoSo(row);
       if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
       if (st===1 && !shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
-      if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${escapeHtml(shs)}</span></div>`;
+      if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${shs}</span></div>`;
       return `<span class="status-badge status-pending">Đang xử lý</span>`;
     }
     function actionsCell(i,row){
-      const st=Number(row.trang_thai??-1),shs=getSoHoSo(row);
+      const st=toTrangThai(row.trang_thai),shs=getSoHoSo(row);
       if (st===1 && shs){
         return `<div class="action-btns">
                   <button class="btn btn-sm btn-info" onclick="onViewCardIdx(${i})">Xem thẻ</button>
@@ -289,46 +271,35 @@
               </div>`;
     }
     function buildTableHead(){
-      return `
-        <thead>
-          <tr>
-            <th class="th-action">Thao tác</th>
-            <th>Trạng thái</th>
-            <th class="sortable" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
-            <th class="sortable" data-field="ngay_sinh">Ngày sinh ${sortIcon('ngay_sinh')}</th>
-            <th class="sortable" data-field="so_dinh_danh">Số định danh ${sortIcon('so_dinh_danh')}</th>
-            <th class="sortable" data-field="doi_tuong_dong">Đối tượng đóng ${sortIcon('doi_tuong_dong')}</th>
-            <th class="sortable" data-field="so_thang_dong">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
-            <th class="sortable" data-field="han_su_dung_bhtn_moi">Hạn BHTN mới ${sortIcon('han_su_dung_bhtn_moi')}</th>
-          </tr>
-        </thead>`;
+      return `<thead><tr>
+        <th class="th-action">Thao tác</th>
+        <th>Trạng thái</th>
+        <th class="sortable" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
+        <th class="sortable" data-field="ngay_sinh">Ngày sinh ${sortIcon('ngay_sinh')}</th>
+        <th class="sortable" data-field="so_dinh_danh">Số định danh ${sortIcon('so_dinh_danh')}</th>
+        <th class="sortable" data-field="doi_tuong_dong">Đối tượng đóng ${sortIcon('doi_tuong_dong')}</th>
+        <th class="sortable" data-field="so_thang_dong">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
+        <th class="sortable" data-field="han_su_dung_bhtn_moi">Hạn BHTN mới ${sortIcon('han_su_dung_bhtn_moi')}</th>
+      </tr></thead>`;
     }
     function attachSortHandlers(){
       document.querySelectorAll('th.sortable').forEach(th=>{
-        th.addEventListener('click', ()=>{
-          const field = th.getAttribute('data-field');
-          if (!field) return;
-          if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
-          renderAllView();
-        });
+        th.onclick=()=>{const field=th.getAttribute('data-field');if(!field)return; if(sortField===field)sortDir=-sortDir;else{sortField=field;sortDir=1;} renderAllView();}
       });
     }
     function renderDanhSachHS(ds,startIdx){
       if(!ds||ds.length===0){document.getElementById('ds-container').innerHTML=`<div class='text-center text-secondary mt-4'>Không có hồ sơ BHTN trong lớp này.</div>`;return}
-      const thead = buildTableHead();
-      const rows=ds.map((r,i)=>{
-        const iView=startIdx+i,hanMoi=displayDate(r.han_su_dung_bhtn_moi||"");
-        return `<tr>
-          <td>${actionsCell(iView,r)}</td>
-          <td>${statusCell(r)}</td>
-          <td>${escapeHtml(r.ho_ten_hoc_sinh||"")}</td>
-          <td>${escapeHtml(displayDate(r.ngay_sinh)||"")}</td>
-          <td>${escapeHtml(r.so_dinh_danh||"")}</td>
-          <td>${escapeHtml(r.doi_tuong_dong||"Học sinh")}</td>
-          <td class="text-center">${escapeHtml((r.so_thang_dong||"").toString())}</td>
-          <td>${escapeHtml(hanMoi)}</td>
-        </tr>`;
-      }).join('');
+      const thead=buildTableHead();
+      const rows=ds.map((r,i)=>`<tr>
+        <td>${actionsCell(startIdx+i,r)}</td>
+        <td>${statusCell(r)}</td>
+        <td>${(r.ho_ten_hoc_sinh||"")}</td>
+        <td>${displayDate(r.ngay_sinh)||""}</td>
+        <td>${(r.so_dinh_danh||"")}</td>
+        <td>${(r.doi_tuong_dong||"Học sinh")}</td>
+        <td class="text-center">${(r.so_thang_dong||"")}</td>
+        <td>${displayDate(r.han_su_dung_bhtn_moi||"")}</td>
+      </tr>`).join('');
       document.getElementById('ds-container').innerHTML=`<table class="table table-bordered table-hs align-middle">${thead}<tbody>${rows}</tbody></table>`;
       attachSortHandlers();
     }
@@ -340,16 +311,16 @@
       html+=add(Math.min(totalPages,currentPage+1),'&raquo;',false,currentPage===totalPages);
       el.innerHTML=html;
     }
-    function gotoPage(p){if(p<1||p>totalPages) return; currentPage=p; renderAllView()}
+    function gotoPage(p){if(p<1||p>totalPages)return;currentPage=p;renderAllView()}
     function doSearch(){
       const q=document.getElementById('search-box').value.trim().toLowerCase();
       lastFiltered=!q?allData:allData.filter(h=>
-        (h.ho_ten_hoc_sinh||"").toLowerCase().includes(q) ||
-        (displayDate(h.ngay_sinh)||"").toLowerCase().includes(q) ||
-        (h.so_dinh_danh||"").toLowerCase().includes(q) ||
+        (h.ho_ten_hoc_sinh||"").toLowerCase().includes(q)||
+        (displayDate(h.ngay_sinh)||"").toLowerCase().includes(q)||
+        (h.so_dinh_danh||"").toLowerCase().includes(q)||
         (h.doi_tuong_dong||"").toLowerCase().includes(q)
       );
-      currentPage=1;renderAllView()
+      currentPage=1;renderAllView();
     }
     function renderAllView(){
       let data=lastFiltered||allData;
@@ -358,34 +329,28 @@
           let av=(a[sortField]??"").toString().toLowerCase(),bv=(b[sortField]??"").toString().toLowerCase();
           if(!isNaN(+av)&&!isNaN(+bv)){av=+av;bv=+bv}
           return av<bv?-sortDir:av>bv?sortDir:0
-        })
+        });
       }
       window._viewData=data;
       totalRecords=data.length;totalPages=Math.max(1,Math.ceil(totalRecords/pageSize));
       document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;
       const start=(currentPage-1)*pageSize;
       renderDanhSachHS(data.slice(start,start+pageSize),start);
-      renderPagination()
+      renderPagination();
     }
 
     /* ====== Actions ====== */
-    function onViewCardIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onViewCard(row), 50);}
-    function onPrintReceiptIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onPrintReceipt(row), 50);}
+    function onViewCardIdx(i){const row=window._viewData[i];if(!row)return;showLoading();setTimeout(()=>onViewCard(row),50)}
+    function onPrintReceiptIdx(i){const row=window._viewData[i];if(!row)return;showLoading();setTimeout(()=>onPrintReceipt(row),50)}
 
-    function parseDate(s){
-      if(!s) return null;
-      if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)}
-      if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
-      return null;
-    }
-    function formatDateVN(d){const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=d.getFullYear();return `${dd}/${mm}/${yy}`}
+    function parseDate(s){if(!s)return null;if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)} if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);return null}
+    function formatDateVN(d){return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`}
     function makeRangeBHTN(row){const end=row.han_su_dung_bhtn_moi||"";const months=Number(row.so_thang_dong||0);const e=parseDate(end);if(!e||!months)return{tu:"",den:""};const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);return {tu:formatDateVN(s),den:formatDateVN(e)}}
-    function toVND(n){return Number(n||0).toLocaleString('vi-VN')}
+    const toVND=n=>Number(n||0).toLocaleString('vi-VN');
     const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
     function readTriple(n){let tr=Math.floor(n/100),ch=Math.floor((n%100)/10),dv=n%10,s="";if(tr>0){s+=VI_DIGITS[tr]+" trăm";if(ch==0&&dv>0)s+=" lẻ"}if(ch>1){s+=(s?" ":"")+VI_DIGITS[ch]+" mươi";if(dv==1)s+=" mốt";else if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==1){s+=(s?" ":"")+"mười";if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==0&&dv>0){s+=(s?" ":"")+VI_DIGITS[dv]}return s.trim()}
     function numberToVietnamese(n){n=Math.round(Number(n)||0);if(n===0)return"Không đồng";const u=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];let i=0,str="";while(n>0&&i<u.length){const b=n%1000;if(b>0){const p=readTriple(b);str=p+u[i]+(str?" "+str:"")}n=Math.floor(n/1000);i++}return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim()}
     function todayText(){const d=new Date();return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`}
-
     function buildQRPayload(mt,school,cls,name,months,endDate){const _mt=String(mt||"").slice(0,24),s=(school||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').slice(0,60),c=String(cls||"").slice(0,12),n=(name||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').slice(0,60),m=String(months||""),e=String(endDate||"").slice(0,10);return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`}
 
     /* === Xem thẻ === */
@@ -394,83 +359,69 @@
       const sohoso=getSoHoSo(row)||"—";
       const lop=row.lop_hoc||user.lop_hoc||"—";
 
-      document.getElementById('c-doituong').innerText = row.doi_tuong_dong || 'Học sinh';
-      document.getElementById('c-so-the').innerText  = cleanVal(row.ma_so_bhtn) || '—';  // ✅ SỐ THẺ = ma_so_bhtn
-      document.getElementById('c-hoten').innerText   = row.ho_ten_hoc_sinh || '—';
-      document.getElementById('c-ngaysinh').innerText= displayDate(row.ngay_sinh)||'—';
-      document.getElementById('c-tu').innerText      = tu || '—';
-      document.getElementById('c-den').innerText     = den || '—';
-      document.getElementById('c-diachi').innerText  = cleanVal(row.dia_chi)||'—';
-      document.getElementById('c-sdt').innerText     = cleanVal(row.sdt_lienhe||row.sdt)||'—';
-      document.getElementById('c-tencha').innerText  = cleanVal(row.ten_cha_me)||'—';
-      document.getElementById('c-gioitinh').innerText= cleanVal(row.gioi_tinh)||'—';
-      document.getElementById('c-lop').innerText     = lop;
-      document.getElementById('c-lop-big').innerText = lop;
-      document.getElementById('c-sotien').innerText  = toVND(row.so_tien||0);
-      document.getElementById('c-badge').innerText   = sohoso; // ✅ ô vàng = số hồ sơ
+      document.getElementById('c-doituong').innerText=row.doi_tuong_dong||'Học sinh';
+      document.getElementById('c-so-the').innerText=cleanVal(row.ma_so_bhtn)||'—';
+      document.getElementById('c-hoten').innerText=row.ho_ten_hoc_sinh||'—';
+      document.getElementById('c-ngaysinh').innerText=displayDate(row.ngay_sinh)||'—';
+      document.getElementById('c-tu').innerText=tu||'—';
+      document.getElementById('c-den').innerText=den||'—';
+      document.getElementById('c-diachi').innerText=cleanVal(row.dia_chi)||'—';
+      document.getElementById('c-sdt').innerText=cleanVal(row.sdt_lienhe||row.sdt)||'—';
+      document.getElementById('c-tencha').innerText=cleanVal(row.ten_cha_me)||'—';
+      document.getElementById('c-gioitinh').innerText=cleanVal(row.gioi_tinh)||'—';
+      document.getElementById('c-lop').innerText=lop;
+      document.getElementById('c-lop-big').innerText=lop;
+      document.getElementById('c-sotien').innerText=toVND(row.so_tien||0);
+      document.getElementById('c-badge').innerText=sohoso;
 
-      // QR góc phải dưới
       const qrBox=document.getElementById('card-qr'); qrBox.innerHTML='';
       const months=parseInt(row.so_thang_dong||"12",10);
-      const schoolName = user.ten_truong || '';
-      const qrText=buildQRPayload(user.ma_truong,schoolName,lop,row.ho_ten_hoc_sinh||"",months,den);
+      const qrText=buildQRPayload(user.ma_truong,(user.ten_truong||''),lop,(row.ho_ten_hoc_sinh||""),months,den);
       try{new QRCode(qrBox,{text:qrText,width:92,height:92,correctLevel:QRCode.CorrectLevel.L})}catch(_){qrBox.innerHTML='<small>QR</small>'}
 
-      const m=new bootstrap.Modal(document.getElementById('modalTheBHTN'));
-      m.show(); hideLoading();
-      setTimeout(scaleCardToViewportBHTN, 10);
+      const modalEl=document.getElementById('modalTheBHTN');
+      new bootstrap.Modal(modalEl).show(); hideLoading();
+      setTimeout(scaleCardToViewportBHTN,10);
     }
 
     function scaleCardToViewportBHTN(){
-      const wrap = document.getElementById('cardScaleWrapBHTN');
-      if(!wrap) return;
-      const W = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW-bhtn')) || 900;
-      const H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH-bhtn')) || 560;
-      const modalBody = document.querySelector('#modalTheBHTN .modal-body');
-      const pad = 24;
-      const vw = Math.max(320, modalBody.clientWidth  - pad);
-      const vh = Math.max(260, modalBody.clientHeight - pad);
-      const s = Math.min(vw / W, vh / H);
-      wrap.style.transform = `scale(${s})`;
+      const wrap=document.getElementById('cardScaleWrapBHTN'); if(!wrap) return;
+      const W=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW-bhtn'))||900;
+      const H=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH-bhtn'))||560;
+      const modalBody=document.querySelector('#modalTheBHTN .modal-body');
+      const pad=24; const vw=Math.max(320,modalBody.clientWidth-pad); const vh=Math.max(260,modalBody.clientHeight-pad);
+      wrap.style.transform=`scale(${Math.min(vw/W,vh/H)})`;
     }
-    document.getElementById('modalTheBHTN')?.addEventListener('shown.bs.modal', ()=>{
-      setTimeout(scaleCardToViewportBHTN, 10);
-      window.addEventListener('resize', scaleCardToViewportBHTN);
-    });
-    document.getElementById('modalTheBHTN')?.addEventListener('hidden.bs.modal', ()=>{
-      window.removeEventListener('resize', scaleCardToViewportBHTN);
-    });
+    // gắn sự kiện (không dùng ?. để tránh crash)
+    (function(){
+      const el=document.getElementById('modalTheBHTN');
+      if(!el) return;
+      el.addEventListener('shown.bs.modal',()=>{setTimeout(scaleCardToViewportBHTN,10);window.addEventListener('resize',scaleCardToViewportBHTN);});
+      el.addEventListener('hidden.bs.modal',()=>{window.removeEventListener('resize',scaleCardToViewportBHTN);});
+    })();
 
-    // ✅ LƯU ẢNH THẺ
     async function downloadCardImage(){
       try{
-        const card = document.getElementById('cardAreaBHTN');
-        if (!card) return;
-        card.classList.add('exporting');
-        const canvas = await html2canvas(card,{scale:2,backgroundColor:'#ffffff'});
-        card.classList.remove('exporting');
-        const dataURL = canvas.toDataURL('image/png');
-
-        // iOS safari fallback mở tab mới
-        if ('download' in document.createElement('a') && !isIOS()){
-          const a=document.createElement('a'); a.href=dataURL; a.download='the-bhtn.png';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        } else {
-          const w=window.open(); if (w){ w.document.write(`<img src="${dataURL}" style="max-width:100%;display:block;margin:0 auto"/>`); w.document.close(); }
-          else { alert('Trình duyệt chặn tải trực tiếp. Ảnh sẽ mở ở tab mới.'); location.href=dataURL; }
+        const card=document.getElementById('cardAreaBHTN'); if(!card) return;
+        const canvas=await html2canvas(card,{scale:2,backgroundColor:'#ffffff',useCORS:true,allowTaint:true});
+        const dataURL=canvas.toDataURL('image/png');
+        if('download'in document.createElement('a')&&!isIOS()){
+          const a=document.createElement('a');a.href=dataURL;a.download='the-bhtn.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+        }else{
+          const w=window.open(); if(w){w.document.write(`<img src="${dataURL}" style="max-width:100%;display:block;margin:0 auto">`);w.document.close();}else{location.href=dataURL;}
         }
-      }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
+      }catch(e){alert('Không thể lưu ảnh: '+(e.message||e));}
     }
 
-    /* ====== Phiếu thu (giống trang mẫu) ====== */
+    /* ====== Phiếu thu ====== */
+    async function getTenTruong(ma_truong){try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;const r=await fetch(u);const j=await r.json();return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—'}catch(e){return user.ten_truong||ma_truong||'—'}}
+
     function onPrintReceipt(row){
-      const after=()=>{new bootstrap.Modal(document.getElementById('modalPhieuThu')).show(); hideLoading();}
       getTenTruong(user.ma_truong).then(truong=>{
         const lop=row.lop_hoc||user.lop_hoc||"—";
         const months=parseInt(row.so_thang_dong||"12",10);
         const amount=parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
-        const end=row.han_su_dung_bhtn_moi||"";
-        const e=parseDate(end);
+        const end=row.han_su_dung_bhtn_moi||""; const e=parseDate(end);
         let startText="—",endText="(không xác định)";
         if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN(s);endText=formatDateVN(e)}
         document.getElementById('rec-school').innerText=truong;
@@ -485,50 +436,47 @@
         document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
         document.getElementById('rec-teacher-name').innerText=user.ho_ten||"(Giáo viên)";
         const qrBox=document.getElementById('receipt-qr');qrBox.innerHTML="";
-        const text=buildQRPayload(user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
-        try{new QRCode(qrBox,{text,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}
-        catch(e2){qrBox.innerHTML='<small>QR</small>'}
-        after();
+        const payload=buildQRPayload(user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
+        try{new QRCode(qrBox,{text:payload,width:90,height:90,correctLevel:QRCode.CorrectLevel.L})}catch(_){qrBox.innerHTML='<small>QR</small>'}
+        new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+        hideLoading();
       }).catch(()=>hideLoading());
     }
 
     async function downloadReceiptImage(){
       try{
         const node=document.getElementById('receiptA5');
-        const canvas=await html2canvas(node,{scale:2, backgroundColor:'#ffffff'});
+        const canvas=await html2canvas(node,{scale:2,backgroundColor:'#ffffff',useCORS:true,allowTaint:true});
         const dataURL=canvas.toDataURL("image/png");
-        if ('download' in document.createElement('a') && !isIOS()){
-          const a=document.createElement('a'); a.href=dataURL; a.download='phieu-thu-bhtn.png';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        } else {
-          const win=window.open(); if (win){ win.document.write(`<html><head><title>Lưu ảnh phiếu thu</title></head><body style="margin:0"><img src="${dataURL}" style="max-width:100%;display:block"/></body></html>`); win.document.close(); }
-          else { alert('Trình duyệt chặn tải trực tiếp. Ảnh sẽ mở ở tab mới để bạn lưu thủ công.'); window.location.href=dataURL; }
+        if('download'in document.createElement('a')&&!isIOS()){
+          const a=document.createElement('a');a.href=dataURL;a.download='phieu-thu-bhtn.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+        }else{
+          const w=window.open(); if(w){w.document.write(`<html><body style="margin:0"><img src="${dataURL}" style="max-width:100%"></body></html>`);w.document.close();}else{location.href=dataURL;}
         }
-      }catch(e){ alert('Không thể lưu ảnh: '+(e.message||e)); }
+      }catch(e){alert('Không thể lưu ảnh: '+(e.message||e));}
     }
 
-    function getReceiptPrintCSS(){ return `
+    function getReceiptPrintCSS(){return `
       <style>
-        @page { size: A5 portrait; margin: 10mm; }
-        html,body{ background:#fff; margin:0; padding:0; }
-        .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000; margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px; }
-        .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
-        .receipt-sub{ font-style:italic; }
-        .receipt-meta{ font-size:13px; }
-        .receipt-line{ margin: 2mm 0; }
-        .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
-        .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
-        .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
-        .row{ display:flex; flex-wrap:nowrap; width:100%; }
-        .col{ flex:1 1 0; }
-        .text-center{ text-align:center; }
-      </style>`; }
+        @page{size:A5 portrait;margin:10mm}
+        html,body{background:#fff;margin:0;padding:0}
+        .a5-paper{width:148mm;min-height:210mm;background:#fff;color:#000;margin:0 auto;padding:10mm 12mm;line-height:1.35;font-size:13px}
+        .receipt-title{font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.4px}
+        .receipt-sub{font-style:italic}
+        .receipt-meta{font-size:13px}
+        .receipt-line{margin:2mm 0}
+        .qr-box{width:26mm;height:26mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;margin:0 auto}
+        .sign-col{text-align:center;margin-top:10mm;font-weight:500}
+        .sign-name{margin-top:20mm;text-align:center;font-weight:600}
+        .row{display:flex;flex-wrap:nowrap;width:100%}
+        .col{flex:1 1 0}
+        .text-center{text-align:center}
+      </style>`}
 
     function printReceiptOnly(){
-      const src=document.getElementById('receiptA5'); if (!src) return;
+      const src=document.getElementById('receiptA5'); if(!src) return;
       const clone=src.cloneNode(true);
-
-      // nhúng QR hiện có vào bản in
+      // nhúng QR (canvas/img) sang bản in
       const live=src.querySelector('#receipt-qr canvas, #receipt-qr img');
       if(live){
         try{
@@ -537,17 +485,21 @@
           const img=document.createElement('img'); img.src=dataURL; img.style.width='90px'; img.style.height='90px'; holder.appendChild(img);
         }catch(_){}
       }
-
-      const holder=document.createElement('div');
-      holder.id='print-holder';
-      holder.style.position='fixed'; holder.style.inset='0'; holder.style.zIndex='-1'; holder.style.background='#fff';
-      holder.innerHTML=getReceiptPrintCSS()+clone.outerHTML;
-      document.body.appendChild(holder);
-      setTimeout(()=>{window.print(); document.body.removeChild(holder);}, 100);
+      const html=`<!doctype html><html><head><meta charset="utf-8">${getReceiptPrintCSS()}</head><body>${clone.outerHTML}</body></html>`;
+      // in qua iframe ẩn để chỉ in đúng nội dung
+      const ifr=document.createElement('iframe');
+      ifr.style.position='fixed';ifr.style.right='0';ifr.style.bottom='0';ifr.style.width='0';ifr.style.height='0';ifr.style.border='0';
+      document.body.appendChild(ifr);
+      const doc=ifr.contentWindow.document;
+      doc.open();doc.write(html);doc.close();
+      const done=()=>{ifr.contentWindow.focus();ifr.contentWindow.print();setTimeout(()=>document.body.removeChild(ifr),400);}
+      const imgs=ifr.contentDocument.images; if(imgs.length===0){done();}else{
+        let loaded=0; for(const im of imgs){im.onload=im.onerror=()=>{loaded++; if(loaded>=imgs.length) done();};}
+      }
     }
 
     /* ====== Boot ====== */
-    window.onload = fetchDaThuBHTN;
+    window.onload=fetchDaThuBHTN;
   </script>
 </body>
 </html>
