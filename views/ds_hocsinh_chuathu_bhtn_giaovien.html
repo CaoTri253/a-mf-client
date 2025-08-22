@@ -37,7 +37,7 @@
       .action-btns{ display:flex; flex-direction:row; gap:4px; }
     }
 
-    /* A5 preview (biên lai) */
+    /* A5 preview (biên lai) — giữ nguyên style cốt lõi, chỉ đổi text sang BHTN */
     .a5-paper{ width:148mm; min-height:210mm; background:#fff; margin:0 auto; padding:10mm 12mm; color:#000; box-shadow:0 1px 10px #0002; font-size:13px; line-height:1.35; }
     .receipt-title{ font-weight:700; font-size:22px; text-transform:uppercase; letter-spacing:.4px; }
     .receipt-sub{ font-style:italic; }
@@ -95,25 +95,12 @@
         <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="nhs-hoten" readonly></div>
         <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="nhs-ngaysinh" readonly></div>
 
-        <!-- Đối tượng đóng -->
-        <div class="mb-2">
-          <div class="fw-semibold mb-1">Đối tượng đóng:</div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="nhs-doituong" id="nhs-obj-hs" value="Học sinh" checked>
-            <label class="form-check-label" for="nhs-obj-hs">Học sinh</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="nhs-doituong" id="nhs-obj-cn" value="Cận nghèo">
-            <label class="form-check-label" for="nhs-obj-cn">Cận nghèo</label>
-          </div>
-        </div>
-
+        <!-- BHTN: số tháng cố định 12 -->
         <div class="mt-2 small">
           <div><strong>Số tháng đóng:</strong> 12 tháng</div>
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
           <div id="nhs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng (12T):</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
-          <div><strong>Hoa hồng dự kiến:</strong> <span id="nhs-commission-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
         <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
@@ -135,25 +122,12 @@
         <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="shs-hoten" readonly></div>
         <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="shs-ngaysinh" readonly></div>
 
-        <!-- Đối tượng đóng (áp dụng chung khi sửa lại số tiền/hoa hồng) -->
-        <div class="mb-2">
-          <div class="fw-semibold mb-1">Đối tượng đóng:</div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="shs-doituong" id="shs-obj-hs" value="Học sinh" checked>
-            <label class="form-check-label" for="shs-obj-hs">Học sinh</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="shs-doituong" id="shs-obj-cn" value="Cận nghèo">
-            <label class="form-check-label" for="shs-obj-cn">Cận nghèo</label>
-          </div>
-        </div>
-
+        <!-- BHTN: số tháng cố định 12 -->
         <div class="mt-2 small">
           <div><strong>Số tháng đóng:</strong> 12 tháng</div>
           <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
           <div id="shs-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong>Số tiền cần đóng (12T):</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
-          <div><strong>Hoa hồng dự kiến:</strong> <span id="shs-commission-preview" class="fw-bold text-danger">—</span></div>
         </div>
 
         <div id="shs-error" class="text-danger" style="min-height:18px"></div>
@@ -174,25 +148,11 @@
       </div>
       <div class="modal-body">
         <div class="mb-2"><div><b>Đã chọn:</b> <span id="bulk-count-label">0</span> học sinh</div></div>
-
-        <div class="mb-2">
-          <div class="fw-semibold mb-1">Đối tượng đóng (áp dụng cho tất cả):</div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="bulk-doituong" id="bulk-obj-hs" value="Học sinh" checked>
-            <label class="form-check-label" for="bulk-obj-hs">Học sinh</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="bulk-doituong" id="bulk-obj-cn" value="Cận nghèo">
-            <label class="form-check-label" for="bulk-obj-cn">Cận nghèo</label>
-          </div>
-        </div>
-
         <div class="mt-2 small">
           <div><strong class="text-danger">Số tháng đóng:</strong> 12 tháng</div>
           <div><strong class="text-danger">Hạn sử dụng dự kiến (mẫu 1 HS):</strong> <span id="bulk-exp-preview" class="fw-bold text-danger">—</span></div>
           <div id="bulk-exp-note" class="text-muted" style="min-height:18px"></div>
           <div><strong class="text-danger">Số tiền cần đóng (mỗi HS, 12T):</strong> <span id="bulk-amount-preview" class="fw-bold text-danger">—</span></div>
-          <div><strong class="text-danger">Hoa hồng dự kiến (mỗi HS):</strong> <span id="bulk-commission-preview" class="fw-bold text-danger">—</span></div>
         </div>
         <div id="bulk-error" class="text-danger" style="min-height:18px"></div>
       </div>
@@ -320,35 +280,14 @@
       if (pageSize !== prev) { currentPage = 1; window.renderAllView(); }
     });
 
-    /* ====== Parse giá/hoa hồng (đúng dấu phẩy thập phân) ====== */
-    function parseMoneyLike(v){
-      // nhận cả "275000", "275.000", "275,000"
-      return Number(String(v).replace(/[^\d]/g,'')) || 0;
-    }
-    function parseRate(v){
-      // nhận "0,075" hoặc "0.075" → 0.075
-      if (typeof v === 'number') return v;
-      const s = String(v).trim().replace(/\s+/g,'').replace('.', '').replace(',', '.'); // ưu tiên dấu phẩy
-      // nếu là "0.075" hoặc "0,075" sẽ thành "0.075"
-      // nếu là "075" (do nhập sai) → 75 => tự bảo vệ: nếu >1 coi là phần trăm → /100
-      let r = parseFloat(s);
-      if (!isFinite(r)) return 0;
-      if (r > 1) r = r / 100; // người nhập "7.5" (%)
-      return r;
-    }
-
-    /* ====== API (BHTN) ====== */
-    // Chuẩn hoá getGiaBHTN thành {base, can, rate}
-    let _cachedGiaBHTN = null;
-    async function ensureGiaBHTN(){
-      if (_cachedGiaBHTN) return _cachedGiaBHTN;
-      const res = await getGiaBHTN();
-      const row = (res?.data && Array.isArray(res.data)) ? res.data[0] : (res?.data || res);
-      const base = parseMoneyLike(row?.gia_tien);
-      const canN = parseMoneyLike(row?.gia_tien_can_ngheo);
-      const rate = parseRate(row?.hoa_hong_12_thang);
-      _cachedGiaBHTN = { base, can: canN, rate };
-      return _cachedGiaBHTN;
+    /* ====== API phụ: lấy tên trường (tuỳ chọn) ====== */
+    async function getTenTruong(ma_truong) {
+      try {
+        const url = `${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`;
+        const res = await fetch(url);
+        const j = await res.json();
+        return j?.ten_truong || j?.data?.ten_truong || user.ten_truong || ma_truong || '—';
+      } catch(e){ return user.ten_truong || ma_truong || '—'; }
     }
 
     /* ====== Fetch dữ liệu: HS chưa tham gia BHTN ====== */
@@ -365,11 +304,11 @@
         const bhtnMap = {};
         dsBHTN.forEach(row => {
           const key = String(row.so_dinh_danh).replace(/^'/,'').trim();
-          const st  = Number(String(row.trang_thai).replace(/^'/,'').trim());
+          const st = Number(String(row.trang_thai).replace(/^'/,'').trim());
           bhtnMap[key] = isNaN(st) ? undefined : st;
         });
 
-        // 3) HS chưa đóng (trang_thai != 1)
+        // 3) Merge & filter ra HS chưa đóng (trang_thai != 1)
         allData = hsList.map(hs => {
           const trangThai = bhtnMap[hs.so_dinh_danh];
           return { ...hs, _bhtn_trangthai: (trangThai === undefined ? undefined : Number(trangThai)), trang_thai: trangThai };
@@ -443,7 +382,7 @@
         </tr>
       </thead><tbody>`;
       ds.forEach(hs => {
-        if (hs._bhtn_trangthai === 1) return;
+        if (hs._bhtn_trangthai === 1) return; // đã tham gia
         const hasOld = !!parseVNDate(hs.ngay_het_han_bhtn);
         const nopDisabled = (hs._bhtn_trangthai===0) || !hasOld;
         const nopLabel = (hs._bhtn_trangthai===0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
@@ -490,7 +429,22 @@
 
     function setExpNote(elId, note){ document.getElementById(elId).innerText = note || ''; }
 
-    // Hạn mới: từ ngày sau hạn cũ + 12 tháng (ngày cuối cùng)
+    /* ====== Giá & hạn dùng (BHTN 12T) ====== */
+    let _cachedGiaBHTN = null;
+    function unwrapGiaBHTN(res){
+      if (!res) return {};
+      const d = (res.data !== undefined) ? res.data : res;
+      if (Array.isArray(d)) return d[0] || {};
+      return d || {};
+    }
+    async function ensureGiaBHTN(){
+      if (_cachedGiaBHTN) return _cachedGiaBHTN;
+      const res = await getGiaBHTN();
+      _cachedGiaBHTN = unwrapGiaBHTN(res);
+      return _cachedGiaBHTN;
+    }
+
+    // Hạn mới: từ ngày sau hạn cũ + 12 tháng, lấy ngày cuối cùng
     function computeExp12M(oldEndStr){
       const oldEnd = parseVNDate(oldEndStr);
       if (!oldEnd) return { exp:'(không xác định)', note:'Chưa nhập Ngày hết hạn BHTN cũ trong DanhSach_Hocsinh.' };
@@ -502,15 +456,6 @@
     /* ====== NỘP/SỬA ĐƠN LẺ (BHTN) ====== */
     let _currentHS = null, _currentHS_Sua = null;
 
-    function recalcAmountPreview(prefix, gia){
-      const isCN = document.getElementById(`${prefix}-obj-cn`).checked;
-      const money = isCN ? gia.can : gia.base;
-      const commission = Math.round(money * gia.rate);
-      document.getElementById(`${prefix}-amount-preview`).innerText = money.toLocaleString('vi-VN');
-      document.getElementById(`${prefix}-commission-preview`).innerText = commission.toLocaleString('vi-VN');
-      return { money, commission, doiTuong: isCN ? "Cận nghèo" : "Học sinh" };
-    }
-
     function showNopHoSoModal(stt){
       showLoading();
       const hs = (lastFiltered || allData).find(h => String(h.stt)===String(stt));
@@ -519,18 +464,13 @@
       document.getElementById('nhs-hoten').value = hs.ho_ten_hoc_sinh || "";
       document.getElementById('nhs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
       document.getElementById('nhs-error').innerText = "";
-      // default: Học sinh
-      document.getElementById('nhs-obj-hs').checked = true;
 
       ensureGiaBHTN().then(gia=>{
+        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const { exp, note } = computeExp12M(_currentHS.ngay_het_han_bhtn);
         document.getElementById('nhs-exp-preview').innerText = exp;
+        document.getElementById('nhs-amount-preview').innerText = (price).toLocaleString('vi-VN');
         setExpNote('nhs-exp-note', note);
-
-        const apply = ()=> recalcAmountPreview('nhs', gia);
-        apply();
-        document.getElementById('nhs-obj-hs').onchange = apply;
-        document.getElementById('nhs-obj-cn').onchange = apply;
 
         const btn = document.getElementById('btnNopHoSo');
         const hasOld = !!parseVNDate(_currentHS.ngay_het_han_bhtn);
@@ -547,9 +487,11 @@
       showLoading();
       try{
         const gia = await ensureGiaBHTN();
-        const calc = recalcAmountPreview('nhs', gia);
+        const so_tien = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
+        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
 
         const payload = {
+          // BHTN không yêu cầu ma_so_bhtn lúc đầu
           ho_ten_hoc_sinh: _currentHS.ho_ten_hoc_sinh || "null",
           ngay_sinh: displayNgaySinh(_currentHS.ngay_sinh) || "null",
           gioi_tinh: _currentHS.gioi_tinh || "null",
@@ -560,10 +502,9 @@
           sdt_lienhe: _currentHS.sdt_lienhe || "null",
           so_dinh_danh: _currentHS.so_dinh_danh || "null",
           ten_cha_me: _currentHS.ten_cha_me || "null",
-          doi_tuong_dong: calc.doiTuong,
+          doi_tuong_dong: "Học sinh",
           ghi_chu: "null",
-          so_tien: calc.money,
-          hoa_hong: calc.commission,
+          so_tien, hoa_hong,
           trang_thai: 0,
           so_ho_so: "null",
           ma_truong: user.ma_truong || "null"
@@ -590,22 +531,17 @@
       document.getElementById('shs-hoten').value = hs.ho_ten_hoc_sinh || "";
       document.getElementById('shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
       document.getElementById('shs-error').innerText = "";
-      document.getElementById('shs-obj-hs').checked = true;
 
       try{
+        // lấy hồ sơ hiện tại (nếu có)
+        const hsRes = await getHosoBHTNByHS(hs.so_dinh_danh, user.ma_truong, hs.lop_hoc);
+        // hiển thị preview hạn/giá 12T
         const gia = await ensureGiaBHTN();
+        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const { exp, note } = computeExp12M(hs.ngay_het_han_bhtn);
         document.getElementById('shs-exp-preview').innerText = exp;
-        document.getElementById('shs-amount-preview').innerText = (gia.base).toLocaleString('vi-VN');
-        document.getElementById('shs-commission-preview').innerText = Math.round(gia.base*gia.rate).toLocaleString('vi-VN');
+        document.getElementById('shs-amount-preview').innerText = price.toLocaleString('vi-VN');
         setExpNote('shs-exp-note', note);
-
-        const apply = ()=> {
-          const calc = recalcAmountPreview('shs', gia);
-          return calc;
-        };
-        document.getElementById('shs-obj-hs').onchange = apply;
-        document.getElementById('shs-obj-cn').onchange = apply;
       }catch(e){ console.error(logPrefix, 'suaHoSo prepare error', e); }
       finally{ hideLoading(); new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN')).show(); }
     }
@@ -615,14 +551,14 @@
       showLoading();
       try{
         const gia = await ensureGiaBHTN();
-        const calc = recalcAmountPreview('shs', gia);
+        const so_tien = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
+        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
 
         const payload = {
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: user.ma_truong,
           lop_hoc: _currentHS_Sua.lop_hoc,
-          so_tien: calc.money,
-          hoa_hong: calc.commission,
+          so_tien, hoa_hong,
           trang_thai: 0 // vẫn chờ duyệt
         };
         const res = await suaHoSoBHTN(payload);
@@ -650,23 +586,11 @@
       else { if (bulkBtn) bulkBtn.disabled = false; }
 
       ensureGiaBHTN().then(gia=>{
+        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
         const { exp, note } = computeExp12M(selected[0]?.ngay_het_han_bhtn || "");
         document.getElementById('bulk-exp-preview').innerText = exp;
-        // mặc định Học sinh
-        document.getElementById('bulk-amount-preview').innerText = gia.base.toLocaleString('vi-VN');
-        document.getElementById('bulk-commission-preview').innerText = Math.round(gia.base*gia.rate).toLocaleString('vi-VN');
+        document.getElementById('bulk-amount-preview').innerText = price.toLocaleString('vi-VN');
         setExpNote('bulk-exp-note', note);
-
-        const apply = ()=>{
-          const isCN = document.getElementById('bulk-obj-cn').checked;
-          const money = isCN ? gia.can : gia.base;
-          const commission = Math.round(money * gia.rate);
-          document.getElementById('bulk-amount-preview').innerText = money.toLocaleString('vi-VN');
-          document.getElementById('bulk-commission-preview').innerText = commission.toLocaleString('vi-VN');
-          return {money, commission, doiTuong: isCN ? "Cận nghèo" : "Học sinh"};
-        };
-        document.getElementById('bulk-obj-hs').onchange = apply;
-        document.getElementById('bulk-obj-cn').onchange = apply;
       });
 
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
@@ -682,10 +606,8 @@
       const btn = document.getElementById('btnBulkNop'); btn.disabled=true; showLoading();
       try{
         const gia = await ensureGiaBHTN();
-        const isCN = document.getElementById('bulk-obj-cn').checked;
-        const money = isCN ? gia.can : gia.base;
-        const commission = Math.round(money * gia.rate);
-        const doiTuong = isCN ? "Cận nghèo" : "Học sinh";
+        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
+        const hoa_hong = Number(String((gia?.hoa_hong_12_thang)||0).replace(/[^\d.-]/g,'')) || 0;
 
         let ok=0, fail=0, failNames=[];
         for (const hs of selected){
@@ -700,9 +622,9 @@
             sdt_lienhe: hs.sdt_lienhe || "null",
             so_dinh_danh: hs.so_dinh_danh || "null",
             ten_cha_me: hs.ten_cha_me || "null",
-            doi_tuong_dong: doiTuong,
+            doi_tuong_dong: "Học sinh",
             ghi_chu: "null",
-            so_tien: money, hoa_hong: commission,
+            so_tien: price, hoa_hong,
             trang_thai: 0,
             so_ho_so: "null",
             ma_truong: user.ma_truong || "null"
