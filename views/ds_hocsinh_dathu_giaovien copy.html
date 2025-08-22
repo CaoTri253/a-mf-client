@@ -63,7 +63,7 @@
   .bhyt-inner{
     border:3px solid #2d66d5;             /* viền trong mảnh hơn */
     border-radius:12px;
-    padding:18px 22px;
+    padding: 18px 22px 34px;  /* tăng padding-bottom để footer không chạm viền */
   }
 
   .bhyt-top{
@@ -99,9 +99,9 @@
   .bhyt-col .kv{display:flex;gap:12px;margin:6px 0;align-items:flex-start}
   .kv .k{min-width:160px;color:#6b7280;font-weight:800}
   .kv .v{color:#111827;font-weight:800}
-  .v-blue{color:#0b53ff}   /* Sử dụng từ */
-  .v-red{color:#e11d48}    /* Ngày hết hạn */
-  .v-green{color:#0f9d58}  /* Số tiền đóng */
+  .kv .v.v-blue  { color:#0b53ff !important; }  /* Sử dụng từ: xanh dương */
+  .kv .v.v-red   { color:#e11d48 !important; }  /* Ngày hết hạn: đỏ */
+  .kv .v.v-green { color:#0f9d58 !important; }  /* Số tiền đóng: xanh lá */
 
   /* ô lớp to bên phải như “3B” */
   .bhyt-lop-big{
@@ -111,6 +111,62 @@
   .bhyt-footer{display:flex;justify-content:center;gap:16px;margin-top:8px}
   .bhyt-stamp{font-weight:900;color:#16a34a;font-size:28px}
   .bhyt-sohoso{padding:6px 14px;border-radius:6px;background:#fff3b0;border:2px solid #facc15;font-weight:900;color:#1d4ed8;display:inline-block}
+  
+  
+  /* ===== KÍCH THƯỚC THẺ NGANG + SCALE ===== */
+
+  /* Kích thước “gốc” của thẻ (khổ ngang chuẩn). 
+    Có thể tinh chỉnh nếu muốn: */
+  :root{
+    --cardW: 920px;     /* chiều rộng thẻ ở desktop */
+    --cardH: 580px;     /* chiều cao thẻ ở desktop  */
+  }
+
+  /* Bọc ngoài để scale: */
+  #cardScaleWrap{
+    position: relative;
+    width: var(--cardW);
+    height: var(--cardH);
+    transform-origin: top left;
+    margin: 0 auto;
+  }
+
+  /* Ấn định thẻ theo khổ ngang (không bị kéo dãn):
+    phần .bhyt-card hiện có ta chỉ thêm width/height */
+  .bhyt-card{
+    width: var(--cardW);
+    height: var(--cardH);
+    overflow: hidden; /* đề phòng tràn chữ */
+  }
+
+  /* Giữ padding bên trong hợp lý khi thu nhỏ */
+  .bhyt-inner{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Khi in riêng phần thẻ: ép khổ ngang */
+  @media print{
+    @page{ size: A6 landscape; margin: 6mm; }
+    #cardScaleWrap{ width: 148mm; height: 105mm; transform: none !important; }
+    .bhyt-card{ width: 148mm; height: 105mm; }
+  }
+
+  
+
+  /* Khi xuất ảnh: bỏ hạn chế chiều cao & nới đáy cho an toàn */
+  .bhyt-card.exporting { height:auto !important; overflow:visible !important; }
+  .bhyt-card.exporting .bhyt-inner{ padding-bottom:48px !important; }
+
+  /* Giữ font ổn định & spacing khi render ảnh */
+  .bhyt-card.exporting, .bhyt-card.exporting *{
+    font-family: Arial, "Helvetica Neue", Helvetica, Roboto, system-ui, sans-serif;
+    letter-spacing: .2px;
+  }
+
+
+  
   </style>
 </head>
 <body>
@@ -142,64 +198,69 @@
   <div class="modal fade" id="modalTheBHYT" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Thẻ bảo hiểm y tế</h5>
+        <h5 class="modal-title">Thẻ bảo hiểm y tế  </h5>
         <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div id="cardArea" class="bhyt-card">
-          <div class="bhyt-inner">
-            <div class="bhyt-top">
-              <!-- logo + đối tượng đóng (HS, Cận nghèo, ...) -->
-              <div class="bhyt-logo-wrap">
-                <div class="bhyt-logo">
-                  <!-- đổi đường dẫn logo nếu bạn để file ở nơi khác -->
-                  <img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN">
+        <div id="cardScaleWrap">
+          <div id="cardArea" class="bhyt-card">
+            <div class="bhyt-inner">
+              <div class="bhyt-top">
+                <!-- logo + đối tượng đóng (HS, Cận nghèo, ...) -->
+                <div class="bhyt-logo-wrap">
+                  <div class="bhyt-logo">
+                    <!-- đổi đường dẫn logo nếu bạn để file ở nơi khác -->
+                    <img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN">
+                  </div>
+                  <div class="bhyt-obj" id="c-doituong">Học sinh</div>
                 </div>
-                <div class="bhyt-obj" id="c-doituong">Học sinh</div>
+
+                <!-- tiêu đề -->
+                <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
+
+                <!-- hiển thị lớp to (kiểu 3B) -->
+                <div class="bhyt-lop-big" id="c-lop-big"> </div>
               </div>
 
-              <!-- tiêu đề -->
-              <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
+              <!-- Mã số + Số định danh -->
+              <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
+              <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
 
-              <!-- hiển thị lớp to (kiểu 3B) -->
-              <div class="bhyt-lop-big" id="c-lop-big"> </div>
-            </div>
+              <!-- Lưới thông tin -->
+              <div class="bhyt-grid">
+                <div class="bhyt-col">
+                  <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
+                  <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
+                  <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
+                  <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
+                  <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
+                  <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
+                  <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
+                  <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                </div>
 
-            <!-- Mã số + Số định danh -->
-            <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
-            <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
-
-            <!-- Lưới thông tin -->
-            <div class="bhyt-grid">
-              <div class="bhyt-col">
-                <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
-                <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
-                <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
-                <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
-                <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
-                <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
-                <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
-                <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                <div class="bhyt-col">
+                  <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
+                  <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
+                  <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
+                  <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
+                  <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
+                  <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+                </div>
               </div>
 
-              <div class="bhyt-col">
-                <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
-                <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
-                <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
-                <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
-                <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
-                <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+              <div class="bhyt-footer">
+                <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
+                <div class="bhyt-sohoso" id="c-sohoso">—</div>
               </div>
-            </div>
-
-            <div class="bhyt-footer">
-              <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
-              <div class="bhyt-sohoso" id="c-sohoso">—</div>
             </div>
           </div>
         </div>
-
+      </div>
+      <div class="modal-footer">
+        <div class="d-flex gap-2 no-print"><button class="btn btn-secondary btn-sm" onclick="downloadCardImage()">Lưu ảnh thẻ</button></div>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
       </div>
     </div></div>
   </div>
@@ -411,6 +472,41 @@
       }).catch(()=>hideLoading());
     }
 
+    /* Tính scale để thẻ luôn vừa khung hiển thị (desktop/mobile) */
+    function scaleCardToViewport(){
+      const wrap = document.getElementById('cardScaleWrap');
+      if(!wrap) return;
+
+      const W = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardW')) || 920;
+      const H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cardH')) || 560;
+
+      const modalBody = document.querySelector('#modalTheBHYT .modal-body');
+      const pad = 24;
+      const vw = Math.max(320, modalBody.clientWidth  - pad);
+      const vh = Math.max(240, modalBody.clientHeight - pad);
+
+      const s = Math.min(vw / W, vh / H);
+      wrap.style.transform = `scale(${s})`;
+      wrap.style.marginBottom = '0px';        // <-- thay vì (H*(s-1)) gây âm
+    }
+
+
+    /* Khi modal show: scale 1 lần, sau đó lắng nghe resize để scale lại */
+    document.getElementById('modalTheBHYT')?.addEventListener('shown.bs.modal', () => {
+      setTimeout(scaleCardToViewport, 10);
+      window.addEventListener('resize', scaleCardToViewport);
+    });
+
+    /* Khi đóng modal: bỏ listener */
+    document.getElementById('modalTheBHYT')?.addEventListener('hidden.bs.modal', () => {
+      window.removeEventListener('resize', scaleCardToViewport);
+    });
+
+
+
+
+
+
     /* ====== QR & In phiếu thu (giữ nguyên cơ chế đã chạy tốt) ====== */
     function stripVN(s){return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')}
     function initials(str){return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase()}
@@ -450,7 +546,50 @@
       }).catch(()=>hideLoading());
     }
 
-    async function downloadCardImage(){ showLoading(); const node=document.getElementById('cardArea');const canvas=await html2canvas(node,{scale:devicePixelRatio||2});const a=document.createElement('a');a.download='the-bhyt.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
+    async function downloadCardImage(){
+      try{
+        showLoading();
+
+        // Lấy kích thước gốc theo cấu hình (chỉ để set chiều rộng)
+        const W = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue('--cardW')) || 920;
+
+        // Clone #cardArea sang offscreen, KHÔNG transform & KHÔNG khóa chiều cao
+        const src   = document.getElementById('cardArea');
+        const clone = src.cloneNode(true);
+        clone.id = 'cardExport';
+        clone.classList.add('exporting'); // áp CSS exporting ở trên
+        Object.assign(clone.style, {
+          position:'fixed',
+          left:'-10000px', top:'0',
+          width: W + 'px',
+          height: 'auto',            // ← không cố định chiều cao
+          transform:'none',
+          overflow:'visible',        // ← không cắt nội dung đáy
+          background:'#ffffff',
+          zIndex:'-1'
+        });
+        document.body.appendChild(clone);
+
+        // Chờ layout ổn định rồi chụp, tăng scale cho nét
+        await new Promise(r=>setTimeout(r, 20));
+        const canvas = await html2canvas(clone, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          useCORS: true
+        });
+
+        document.body.removeChild(clone);
+
+        const a = document.createElement('a');
+        a.download = 'the-bhyt.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      } finally {
+        hideLoading();
+      }
+    }
+
     async function downloadReceiptImage(){ showLoading(); const node=document.getElementById('receiptA5');const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download='phieu-thu-bhyt.png';a.href=canvas.toDataURL('image/png');a.click(); hideLoading();}
 
     // CSS nhúng cho cửa sổ in riêng
