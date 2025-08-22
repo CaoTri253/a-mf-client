@@ -81,18 +81,7 @@
       .no-print { display: none !important; }
       .a5-paper { box-shadow: none !important; margin: 0 !important; }
     }
-    
-    /* === In tại chỗ để không mất QR trên mobile === */
-    #_printArea{ display:none; }
-    body._printing > *:not(#_printArea){ display:none !important; }
-    body._printing #_printArea{ display:block !important; }
-
-    @media print{
-      @page { size:A5 portrait; margin:10mm; }
-      body._printing > *:not(#_printArea){ display:none !important; }
-      body._printing #_printArea{ display:block !important; }
-    }
-
+    /* === END CSS === */
     
   </style>
 </head>
@@ -345,11 +334,6 @@
       </div>
     </div>
   </div>
-
-
-
-  <div id="_printArea"></div>
-
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Thư viện QR & html2canvas -->
@@ -1264,71 +1248,91 @@
 
     function printReceiptOnly() {
       const src = document.getElementById('receiptA5');
-      if (!src) { console.error('[Receipts] printReceiptOnly: #receiptA5 not found'); return; }
+      if (!src) { console.error(logPrefix, 'printReceiptOnly: #receiptA5 not found'); return; }
 
       try {
-        // Clone nội dung phiếu
-        const clone = src.cloneNode(true);
+        console.log(logPrefix, 'printReceiptOnly start', { ua: navigator.userAgent, isMobile: isMobile(), isIOS: isIOS() });
 
-        // Chuyển QR (canvas hoặc img) sang <img> để đảm bảo in ra đầy đủ
+        // Clone và chuyển QR sang IMG để đảm bảo in ra đầy đủ
+        const clone = src.cloneNode(true);
+        const cloneQR = clone.querySelector('#receipt-qr');
+
+        // Lấy cả canvas hoặc img tùy qrcodejs render
         const origCanvas = document.querySelector('#receipt-qr canvas');
-        const origImg    = document.querySelector('#receipt-qr img');
-        const cloneQR    = clone.querySelector('#receipt-qr');
+        const origImg = document.querySelector('#receipt-qr img');
 
         if (cloneQR && (origCanvas || origImg)) {
           try {
-            const dataURL = origImg?.src || origCanvas.toDataURL('image/png');
+            const dataURL = origImg ? origImg.src : origCanvas.toDataURL('image/png');
             cloneQR.innerHTML = '';
             const img = document.createElement('img');
             img.src = dataURL;
             img.style.width = '90px';
             img.style.height = '90px';
             cloneQR.appendChild(img);
+            console.log(logPrefix, 'QR converted to IMG for print');
           } catch (e) {
-            console.warn('[Receipts] QR convert -> IMG failed, print as-is', e);
+            console.warn(logPrefix, 'convert QR to IMG failed, printing as-is', e);
           }
+        } else {
+          console.warn(logPrefix, 'QR not found or not rendered, proceed anyway');
         }
 
-        // Đưa clone vào vùng in tại chỗ
-        const area = document.getElementById('_printArea');
-        area.innerHTML = '';
-        area.appendChild(clone);
+        const html = `
+          <html>
+            <head><title>In phiếu thu</title>${getReceiptPrintCSS()}</head>
+            <body>${clone.outerHTML}</body>
+          </html>
+        `;
 
-        const cleanup = () => {
-          document.body.classList.remove('_printing');
-          area.innerHTML = '';
-          window.removeEventListener('afterprint', cleanup);
-        };
-        window.addEventListener('afterprint', cleanup);
+        const w = window.open('', '_blank', 'width=900,height=650');
+        if (!w) {
+          console.error(logPrefix, 'print window blocked by browser');
+          alert('Trình duyệt chặn cửa sổ in. Hãy cho phép pop-up rồi thử lại.');
+          return;
+        }
+        w.document.open(); w.document.write(html); w.document.close();
 
-        // Bật chế độ in tại chỗ + đợi ảnh load rồi gọi print
-        const startPrint = () => {
-          document.body.classList.add('_printing');
-          const imgs = area.getElementsByTagName('img');
-          let loaded = 0, need = imgs.length;
-
-          const done = () => setTimeout(()=>window.print(), 50);
-
-          if (!need) done();
-          else {
-            for (const im of imgs) {
-              if (im.complete) { if (++loaded >= need) done(); }
-              else {
-                im.onload  = () => { if (++loaded >= need) done(); };
-                im.onerror = () => { if (++loaded >= need) done(); };
-              }
+        const triggerPrint = () => {
+          try {
+            console.log(logPrefix, 'triggering print');
+            w.focus(); w.print();
+            if (!isMobile()) {
+              setTimeout(()=>{ try { w.close(); } catch(_){} }, 500);
+            } else {
+              console.log(logPrefix, 'mobile detected: keep window open after print');
             }
-            // Fallback phòng sự cố onload trên iOS
-            setTimeout(done, 1200);
+          } catch (e) {
+            console.error(logPrefix, 'print() failed', e);
           }
         };
 
-        startPrint();
-
-        // iOS đôi khi không bắn afterprint -> dọn dẹp sau 4s
-        setTimeout(cleanup, 4000);
+        w.onload = () => {
+          try {
+            const imgs = w.document.images;
+            if (!imgs || imgs.length === 0) {
+              console.log(logPrefix, 'no images found, print immediately');
+              setTimeout(triggerPrint, 200);
+              return;
+            }
+            let loaded = 0;
+            const done = () => { if (++loaded >= imgs.length) triggerPrint(); };
+            for (const img of imgs) {
+              if (img.complete) done();
+              else {
+                img.onload = done;
+                img.onerror = (e)=>{ console.warn(logPrefix, 'image load error', e); done(); };
+              }
+            }
+            // Fallback đề phòng onload không chạy
+            setTimeout(triggerPrint, 1500);
+          } catch (e) {
+            console.error(logPrefix, 'onload handler error', e);
+            triggerPrint();
+          }
+        };
       } catch (e) {
-        console.error('[Receipts] printReceiptOnly fatal', e);
+        console.error(logPrefix, 'printReceiptOnly fatal', e);
         alert('Không thể in phiếu: ' + (e.message || e));
       }
     }
