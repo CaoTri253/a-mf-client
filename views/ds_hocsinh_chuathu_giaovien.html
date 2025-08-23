@@ -82,16 +82,8 @@
       .a5-paper { box-shadow: none !important; margin: 0 !important; }
     }
     
-    /* === In tại chỗ để không mất QR trên mobile === */
-    #_printArea{ display:none; }
-    body._printing > *:not(#_printArea){ display:none !important; }
-    body._printing #_printArea{ display:block !important; }
 
-    @media print{
-      @page { size:A5 portrait; margin:10mm; }
-      body._printing > *:not(#_printArea){ display:none !important; }
-      body._printing #_printArea{ display:block !important; }
-    }
+    @media print { html, body { height: auto !important; } }
 
     
   </style>
@@ -1262,88 +1254,85 @@
       `;
     }
 
-    function printReceiptOnly() {
+    function printReceiptOnly(){
       const src = document.getElementById('receiptA5');
-      if (!src) { console.error('[Receipts] printReceiptOnly: #receiptA5 not found'); return; }
+      if (!src) return;
 
-      try {
-        // Clone nội dung phiếu
-        const clone = src.cloneNode(true);
+      // Clone nội dung phiếu
+      const clone = src.cloneNode(true);
 
-        // Chuyển QR (canvas hoặc img) sang <img> để đảm bảo in ra đầy đủ
-        const origCanvas = document.querySelector('#receipt-qr canvas');
-        const origImg    = document.querySelector('#receipt-qr img');
-        const cloneQR    = clone.querySelector('#receipt-qr');
-
-        if (cloneQR && (origCanvas || origImg)) {
-          try {
-            const dataURL = origImg?.src || origCanvas.toDataURL('image/png');
-            cloneQR.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = dataURL;
-            img.style.width = '90px';
-            img.style.height = '90px';
-            cloneQR.appendChild(img);
-          } catch (e) {
-            console.warn('[Receipts] QR convert -> IMG failed, print as-is', e);
-          }
+      // Đổi QR (canvas/img) -> <img> để chắc chắn in ra
+      try{
+        const liveQR = src.querySelector('#receipt-qr canvas, #receipt-qr img');
+        const cloneQR = clone.querySelector('#receipt-qr');
+        if (liveQR && cloneQR){
+          const dataURL = (liveQR.tagName.toLowerCase()==='canvas') ? liveQR.toDataURL('image/png') : liveQR.src;
+          cloneQR.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = dataURL;
+          img.style.display = 'block';
+          img.style.width = '90px';
+          img.style.height = '90px';
+          cloneQR.appendChild(img);
         }
+      }catch(_) {}
 
-        // Đưa clone vào vùng in tại chỗ
-        const area = document.getElementById('_printArea');
-        area.innerHTML = '';
-        area.appendChild(clone);
+      // Tạo iframe ẩn để in (ổn định trên Android/iOS)
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
 
-        let printed = false;
-        let cleaned = false;
-        let fallbackTimer = null;
+      const css = `
+        <style>
+          @page { size: A5 portrait; margin: 10mm; }
+          html,body{ background:#fff; margin:0; padding:0; height:auto !important; }
+          .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000;
+                    margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px;
+                    page-break-inside: avoid; }
+          .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
+          .receipt-sub{ font-style:italic; }
+          .receipt-meta{ font-size:13px; }
+          .receipt-line{ margin:2mm 0; }
+          .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+          .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
+          .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
+          .row{ display:flex; flex-wrap:nowrap; width:100%; }
+          .col{ flex:1 1 0; }
+          .text-center{ text-align:center; }
+        </style>
+      `;
 
-        const tryPrintOnce = () => {
-          if (printed) return;
-          printed = true;
-          // in trễ 1 nhịp để layout ổn định
-          setTimeout(() => window.print(), 50);
-          if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-        };
+      // Ghi tài liệu in vào iframe
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`<!doctype html><html><head><meta charset="utf-8"/>${css}</head><body></body></html>`);
+      doc.close();
 
-        const cleanup = () => {
-          if (cleaned) return;
-          cleaned = true;
-          document.body.classList.remove('_printing');
-          area.innerHTML = '';
-          window.removeEventListener('afterprint', cleanup);
-          if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-        };
+      // Chèn nội dung phiếu
+      doc.body.appendChild(clone);
 
-        // Dọn khi kết thúc in (kể cả Cancel). once để không lặp.
-        window.addEventListener('afterprint', cleanup, { once: true });
+      // In khi (ảnh QR) đã sẵn sàng
+      const doPrint = () => {
+        try { iframe.contentWindow.focus(); } catch(_) {}
+        iframe.contentWindow.print();
 
-        // Bật chế độ in tại chỗ + đợi ảnh (QR) load rồi in
-        document.body.classList.add('_printing');
-        const imgs = area.getElementsByTagName('img');
-        let loaded = 0, need = imgs.length;
+        // Dọn dẹp sau in (kể cả khi hủy)
+        const cleanup = () => { try { document.body.removeChild(iframe); } catch(_) {} };
+        iframe.contentWindow.addEventListener('afterprint', cleanup, { once:true });
+        setTimeout(cleanup, 3000); // fallback trên iOS
+      };
 
-        if (!need) {
-          tryPrintOnce();
-        } else {
-          for (const im of imgs) {
-            if (im.complete) {
-              if (++loaded >= need) tryPrintOnce();
-            } else {
-              im.onload  = () => { if (++loaded >= need) tryPrintOnce(); };
-              im.onerror = () => { if (++loaded >= need) tryPrintOnce(); };
-            }
-          }
-          // Fallback cho iOS khi onload không bắn
-          fallbackTimer = setTimeout(tryPrintOnce, 1500);
-        }
-
-        // iOS đôi khi không bắn afterprint -> dọn dẹp muộn
-        setTimeout(() => { if (!cleaned) cleanup(); }, 4000);
-
-      } catch (e) {
-        console.error('[Receipts] printReceiptOnly fatal', e);
-        alert('Không thể in phiếu: ' + (e.message || e));
+      const qrImg = doc.querySelector('#receipt-qr img');
+      if (qrImg && !qrImg.complete){
+        qrImg.onload = () => setTimeout(doPrint, 80);
+        qrImg.onerror = () => setTimeout(doPrint, 80);
+      } else {
+        setTimeout(doPrint, 50);
       }
     }
   </script>
