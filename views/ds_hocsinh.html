@@ -93,6 +93,8 @@
 
   <!-- Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <!-- Vietnamese locale for Flatpickr -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
 </head>
 <body>
   <div class="sticky-header-box">
@@ -595,17 +597,36 @@
     }
     function showError(id, msg) { document.getElementById(id).innerText = msg; }
 
-    // Khởi tạo Flatpickr (3 ô độc lập mỗi modal)
-    let fpThem = {}, fpSua = {};
-    function initThemPickers() {
-      fpThem.ngaySinh = flatpickr('#inp-ngay-sinh', { dateFormat: 'd/m/Y', allowInput: true });
-      fpThem.hanBHYT  = flatpickr('#inp-ngay-het-han-bhyt', { dateFormat: 'd/m/Y', allowInput: true });
-      fpThem.hanBHTN  = flatpickr('#inp-ngay-het-han-bhtn', { dateFormat: 'd/m/Y', allowInput: true });
+
+
+    // Đồng bộ cấu hình mặc định cho TOÀN TRANG
+    if (window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.vn) {
+      // Cách 1: localize toàn cục
+      flatpickr.localize(flatpickr.l10ns.vn);
+
+      // Cách 2: đặt default (an toàn khi bạn tạo picker mới ở nơi khác)
+      flatpickr.setDefaults({
+        dateFormat: 'd/m/Y',         // dd/mm/yyyy
+        allowInput: true,            // cho phép nhập tay
+        locale: flatpickr.l10ns.vn,  // tiếng Việt
+        disableMobile: true          // ép dùng Flatpickr thay vì native picker (để giữ ngôn ngữ)
+      });
     }
+
+
+    // Khởi tạo Flatpickr (3 ô độc lập mỗi modal) — dùng default đã set ở trên
+    let fpThem = {}, fpSua = {};
+
+    function initThemPickers() {
+      fpThem.ngaySinh = flatpickr('#inp-ngay-sinh', {});
+      fpThem.hanBHYT  = flatpickr('#inp-ngay-het-han-bhyt', {});
+      fpThem.hanBHTN  = flatpickr('#inp-ngay-het-han-bhtn', {});
+    }
+
     function initSuaPickers() {
-      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', { dateFormat: 'd/m/Y', allowInput: true });
-      fpSua.hanBHYT  = flatpickr('#sua-ngay-het-han-bhyt', { dateFormat: 'd/m/Y', allowInput: true });
-      fpSua.hanBHTN  = flatpickr('#sua-ngay-het-han-bhtn', { dateFormat: 'd/m/Y', allowInput: true });
+      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', {});
+      fpSua.hanBHYT  = flatpickr('#sua-ngay-het-han-bhyt', {});
+      fpSua.hanBHTN  = flatpickr('#sua-ngay-het-han-bhtn', {});
     }
 
     // Hiện modal thêm
