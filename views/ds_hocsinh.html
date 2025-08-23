@@ -686,42 +686,83 @@
     }
 
     // Hiện modal sửa
+    // Helper an toàn cho flatpickr trên mobile
+    function setPickerValue(fp, selector, dateStr) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      // Chuẩn hóa chuỗi dd/mm/yyyy
+      const m = String(dateStr||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (fp && m) {
+        // Có ngày hợp lệ -> dùng setDate
+        fp.setDate(`${m[1]}/${m[2]}/${m[3]}`, true);
+      } else if (fp) {
+        // Không hợp lệ -> clear và gán raw vào input (để người dùng tự sửa)
+        fp.clear();
+        el.value = dateStr || "";
+      } else {
+        // Chưa có flatpickr -> gán thẳng, lát nữa initSuaPickers() sẽ không phá giá trị
+        el.value = dateStr || "";
+      }
+    }
+
+    // THAY THẾ HÀM CŨ
     function showModalSuaHSByIndex(i) {
       showLoading();
-      const hs = lastPageData[i];
-      if (!hs) return;
-      document.getElementById('form-suahs').reset?.();
-      document.getElementById('suahs-error').innerText = "";
+      try {
+        const hs = lastPageData[i];
+        if (!hs) throw new Error("Không tìm thấy học sinh");
 
-      document.getElementById('sua-stt').value = hs.stt;
-      document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
-      document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
+        // Đảm bảo picker đã có (một số thiết bị mobile chạy onload muộn)
+        if (!fpSua || !fpSua.ngaySinh || !fpSua.hanBHYT || !fpSua.hanBHTN) {
+          try { initSuaPickers(); } catch(_) {}
+        }
 
-      const dNS = displayNgay(hs.ngay_sinh) || "";
-      const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
-      const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
-      fpSua.ngaySinh?.setDate(parseDDMMYYYY(dNS) || null, true);
-      fpSua.hanBHYT?.setDate(parseDDMMYYYY(dBHYT) || null, true);
-      fpSua.hanBHTN?.setDate(parseDDMMYYYY(dBHTN) || null, true);
-      if (!parseDDMMYYYY(dNS)) document.getElementById('sua-ngay-sinh').value = dNS;
-      if (!parseDDMMYYYY(dBHYT)) document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT;
-      if (!parseDDMMYYYY(dBHTN)) document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN;
+        // Reset & clear lỗi
+        const form = document.getElementById('form-suahs');
+        if (form && form.reset) form.reset();
+        document.getElementById('suahs-error').innerText = "";
 
-      if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
-      else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
+        // Gán field text trước
+        document.getElementById('sua-stt').value = hs.stt;
+        document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
+        document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
+        document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
+        document.getElementById('sua-lop').value = hs.lop_hoc || "";
+        document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
+        document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
+        document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
+        document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
+        document.getElementById('sua-doi-tuong-dong').value = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
+        document.getElementById('sua-ghi-chu').value = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
 
-      document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
-      document.getElementById('sua-lop').value = hs.lop_hoc || "";
-      document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
-      document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
-      document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
+        // Giới tính
+        if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
+        else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
 
-      document.getElementById('sua-noi-kham-bhyt').value    = hs.noi_kham_bhyt || "";
-      document.getElementById('sua-doi-tuong-dong').value   = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
-      document.getElementById('sua-ghi-chu').value          = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
+        // Hiển thị modal trước, rồi mới set giá trị date (tránh jank trên iOS/Android)
+        const modalEl = document.getElementById('modalSuaHS');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
 
-      new bootstrap.Modal(document.getElementById('modalSuaHS')).show();
-      hideLoading();
+        // Điền giá trị ngày an toàn (sau một tick)
+        const dNS  = displayNgay(hs.ngay_sinh) || "";
+        const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
+        const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
+
+        requestAnimationFrame(() => {
+          try {
+            setPickerValue(fpSua?.ngaySinh, '#sua-ngay-sinh', dNS);
+            setPickerValue(fpSua?.hanBHYT,  '#sua-ngay-het-han-bhyt', dBHYT);
+            setPickerValue(fpSua?.hanBHTN,  '#sua-ngay-het-han-bhtn', dBHTN);
+          } catch(_) {}
+        });
+      } catch (err) {
+        console.error('[mobile-fix] showModalSuaHSByIndex error:', err);
+        showToast(err?.message || "Không mở được form sửa!", "danger");
+      } finally {
+        // Luôn tắt loading, kể cả khi có lỗi
+        setTimeout(hideLoading, 0);
+      }
     }
 
     // Xử lý sửa
@@ -968,6 +1009,12 @@
       arr.forEach(row => { if (row[field]) set.add(String(row[field]).trim()); });
       return set;
     }
+
+
+
+    // ==== XỬ LÝ CẦU CHÌ CHO LOADING ====
+    window.addEventListener('error', () => { try { hideLoading(); } catch(_) {} });
+    window.addEventListener('unhandledrejection', () => { try { hideLoading(); } catch(_) {} });
   </script>
 </body>
 </html>
