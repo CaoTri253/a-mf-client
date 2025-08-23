@@ -89,6 +89,9 @@
       background: #fff; border: 2px solid #eee; color: #2563eb; transition: box-shadow 0.12s;
     }
     .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
+
+
+    .flatpickr-calendar { z-index: 2000 !important; } /* cao hơn modal (1055) */
   </style>
 
   <!-- Flatpickr -->
@@ -706,23 +709,17 @@
     }
 
     // THAY THẾ HÀM CŨ
-    function showModalSuaHSByIndex(i) {
+    function showModalSuaHSByIndex(i){
       showLoading();
-      try {
+      try{
         const hs = lastPageData[i];
         if (!hs) throw new Error("Không tìm thấy học sinh");
 
-        // Đảm bảo picker đã có (một số thiết bị mobile chạy onload muộn)
-        if (!fpSua || !fpSua.ngaySinh || !fpSua.hanBHYT || !fpSua.hanBHTN) {
-          try { initSuaPickers(); } catch(_) {}
-        }
-
-        // Reset & clear lỗi
-        const form = document.getElementById('form-suahs');
-        if (form && form.reset) form.reset();
+        // Reset form & lỗi
+        document.getElementById('form-suahs').reset?.();
         document.getElementById('suahs-error').innerText = "";
 
-        // Gán field text trước
+        // Điền các field text trước
         document.getElementById('sua-stt').value = hs.stt;
         document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
         document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
@@ -733,35 +730,41 @@
         document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
         document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
         document.getElementById('sua-doi-tuong-dong').value = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
-        document.getElementById('sua-ghi-chu').value = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
+        document.getElementById('sua-ghi_chu')?.value; // nếu bạn có id khác giữ nguyên
 
-        // Giới tính
         if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
         else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
 
-        // Hiển thị modal trước, rồi mới set giá trị date (tránh jank trên iOS/Android)
         const modalEl = document.getElementById('modalSuaHS');
         const modal = new bootstrap.Modal(modalEl);
+        // Mỗi lần mở: phá instance cũ để tránh rối trên mobile
+        destroySuaPickers();
+
+        // Chờ modal render xong rồi mới init + setDate
+        modalEl.addEventListener('shown.bs.modal', function onShown(){
+          modalEl.removeEventListener('shown.bs.modal', onShown);
+          // Init flatpickr bên trong modal
+          initSuaPickersIn(modalEl);
+
+          // Tính chuỗi dd/mm/yyyy để set
+          const dNS   = displayNgay(hs.ngay_sinh) || "";
+          const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
+          const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
+
+          // Đặt giá trị sau 1 frame để chắc chắn input sẵn sàng
+          requestAnimationFrame(() => {
+            safeSetDate(fpSua.ngaySinh, '#sua-ngay-sinh', dNS);
+            safeSetDate(fpSua.hanBHYT,  '#sua-ngay-het-han-bhyt', dBHYT);
+            safeSetDate(fpSua.hanBHTN,  '#sua-ngay-het-han-bhtn', dBHTN);
+          });
+        }, { once: true });
+
         modal.show();
-
-        // Điền giá trị ngày an toàn (sau một tick)
-        const dNS  = displayNgay(hs.ngay_sinh) || "";
-        const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
-        const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
-
-        requestAnimationFrame(() => {
-          try {
-            setPickerValue(fpSua?.ngaySinh, '#sua-ngay-sinh', dNS);
-            setPickerValue(fpSua?.hanBHYT,  '#sua-ngay-het-han-bhyt', dBHYT);
-            setPickerValue(fpSua?.hanBHTN,  '#sua-ngay-het-han-bhtn', dBHTN);
-          } catch(_) {}
-        });
-      } catch (err) {
-        console.error('[mobile-fix] showModalSuaHSByIndex error:', err);
+      } catch(err){
+        console.error('[fix-mobile] showModalSuaHSByIndex:', err);
         showToast(err?.message || "Không mở được form sửa!", "danger");
       } finally {
-        // Luôn tắt loading, kể cả khi có lỗi
-        setTimeout(hideLoading, 0);
+        hideLoading();
       }
     }
 
@@ -948,7 +951,6 @@
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = function() {
       initThemPickers();
-      initSuaPickers();
       fetchAllHocsinhOnce();
     };
   </script>
@@ -1015,6 +1017,48 @@
     // ==== XỬ LÝ CẦU CHÌ CHO LOADING ====
     window.addEventListener('error', () => { try { hideLoading(); } catch(_) {} });
     window.addEventListener('unhandledrejection', () => { try { hideLoading(); } catch(_) {} });
+
+
+
+
+
+
+    // ==== XỬ LÝ FLATPICKR TRÊN MOBILE ====
+    // (Để tránh lỗi destroy() trên iOS/Android)
+    function destroySuaPickers(){
+      try { fpSua.ngaySinh?.destroy(); } catch(_) {}
+      try { fpSua.hanBHYT?.destroy(); } catch(_) {}
+      try { fpSua.hanBHTN?.destroy(); } catch(_) {}
+      fpSua = {};
+    }
+    function initSuaPickersIn(modalEl){
+      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
+      fpSua.hanBHYT = flatpickr('#sua-ngay-het-han-bhyt', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
+      fpSua.hanBHTN = flatpickr('#sua-ngay-het-han-bhtn', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
+    }
+    function safeSetDate(fp, inputSelector, dateStr){
+      const el = document.querySelector(inputSelector);
+      if (!el) return;
+      const ok = /^\d{2}\/\d{2}\/\d{4}$/.test(String(dateStr||''));
+      if (fp && ok) fp.setDate(dateStr, true);
+      else if (fp) { fp.clear(); el.value = dateStr || ""; }
+      else { el.value = dateStr || ""; }
+    }
   </script>
 </body>
 </html>
