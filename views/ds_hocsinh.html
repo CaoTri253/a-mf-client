@@ -689,91 +689,90 @@
     function showModalSuaHSByIndex(i) {
       showLoading();
       try {
-        // 1) Tìm bản ghi học sinh một cách "chống trượt"
+        // Tìm bản ghi ổn định, chống “trượt” index khi mobile re-render
         let hs = (Array.isArray(lastPageData) && lastPageData[i]) ? lastPageData[i] : null;
 
-        // Fallback: lấy stt từ hàng đang bấm (inline onclick có sẵn 'event')
         if (!hs && typeof event !== 'undefined') {
           const tr = event.target?.closest('tr');
           const stt = tr?.querySelector('.chk-row')?.value;
-          if (stt) {
-            hs = allData.find(x => String(x.stt) === String(stt)) || null;
-          }
+          if (stt) hs = allData.find(x => String(x.stt) === String(stt)) || null;
         }
-
-        // Fallback2: nếu vẫn chưa có, lấy theo danh sách hiện đang lọc/sort + trang hiện tại
         if (!hs) {
           const filtered = getFilteredSortedData();
           const start = (currentPage - 1) * pageSize;
-          const safe = filtered.slice(start, start + pageSize);
-          hs = safe[i] || null;
+          hs = filtered.slice(start, start + pageSize)[i] || null;
         }
-
         if (!hs) {
-          throw new Error("Không xác định được bản ghi học sinh để sửa.");
+          hideLoading();
+          showToast("Không mở được form sửa (không tìm thấy bản ghi).", "danger");
+          return;
         }
 
-        // 2) Bảo đảm flatpickr đã có
+        // Bảo đảm flatpickr đã khởi tạo
         if (!fpSua || !fpSua.ngaySinh || !fpSua.hanBHYT || !fpSua.hanBHTN) {
           initSuaPickers();
         }
 
-        // Reset form & lỗi
-        document.getElementById('form-suahs').reset?.();
+        // KHÔNG reset form để tránh xóa state của flatpickr
         document.getElementById('suahs-error').innerText = "";
 
-        // Lấy instance modal theo cách an toàn
         const modalEl = document.getElementById('modalSuaHS');
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
 
-        // 3) Điền dữ liệu SAU KHI modal hiển thị để tránh xung đột reflow mobile
-        requestAnimationFrame(() => {
-          try {
-            // Cơ bản
-            document.getElementById('sua-stt').value = hs.stt;
-            document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
-            document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
+        // Hàm điền dữ liệu – dùng setDate với STRING + FORMAT để an toàn
+        const fill = () => {
+          // Cơ bản
+          document.getElementById('sua-stt').value = hs.stt;
+          document.getElementById('sua-ma-so-bhxh').value = hs.ma_so_bhxh || "";
+          document.getElementById('sua-ho-ten-hs').value = hs.ho_ten_hoc_sinh || "";
 
-            // Ngày: chuẩn hóa + set vào flatpickr nếu hợp lệ
-            const dNS   = displayNgay(hs.ngay_sinh) || "";
-            const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
-            const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
+          // Ngày chuẩn hóa về d/m/Y
+          const dNS   = displayNgay(hs.ngay_sinh) || "";
+          const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
+          const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
 
-            const dtNS   = parseDDMMYYYY(dNS);
-            const dtBHYT = parseDDMMYYYY(dBHYT);
-            const dtBHTN = parseDDMMYYYY(dBHTN);
+          // Clear trước rồi set bằng CHUỖI để tránh Invalid Date
+          if (fpSua?.ngaySinh) { fpSua.ngaySinh.clear(); if (dNS) fpSua.ngaySinh.setDate(dNS, false, "d/m/Y"); }
+          document.getElementById('sua-ngay-sinh').value = dNS;
 
-            if (fpSua?.ngaySinh) { dtNS ? fpSua.ngaySinh.setDate(dtNS, true) : (document.getElementById('sua-ngay-sinh').value = dNS); }
-            if (fpSua?.hanBHYT)  { dtBHYT ? fpSua.hanBHYT.setDate(dtBHYT, true) : (document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT); }
-            if (fpSua?.hanBHTN)  { dtBHTN ? fpSua.hanBHTN.setDate(dtBHTN, true) : (document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN); }
+          if (fpSua?.hanBHYT)  { fpSua.hanBHYT.clear();  if (dBHYT) fpSua.hanBHYT.setDate(dBHYT, false, "d/m/Y"); }
+          document.getElementById('sua-ngay-het-han-bhyt').value = dBHYT;
 
-            // Radio giới tính
-            if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
-            else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
+          if (fpSua?.hanBHTN)  { fpSua.hanBHTN.clear();  if (dBHTN) fpSua.hanBHTN.setDate(dBHTN, false, "d/m/Y"); }
+          document.getElementById('sua-ngay-het-han-bhtn').value = dBHTN;
 
-            // Trường còn lại
-            document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
-            document.getElementById('sua-lop').value = hs.lop_hoc || "";
-            document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
-            document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
-            document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
-            document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
-            document.getElementById('sua-doi-tuong-dong').value =
-              (hs.doi_tuong_dong && hs.doi_tuong_dong !== "null") ? hs.doi_tuong_dong : "";
-            document.getElementById('sua-ghi-chu').value =
-              (hs.ghi_chu && hs.ghi_chu !== "null") ? hs.ghi_chu : "";
-          } catch (innerErr) {
-            console.error("[showModalSuaHSByIndex -> fill] error:", innerErr);
-            showToast("Không mở được form sửa. Vui lòng thử lại!", "danger");
-          } finally {
+          // Giới tính
+          document.getElementById('sua-gt-nam').checked = (hs.gioi_tinh === "Nam");
+          document.getElementById('sua-gt-nu').checked  = (hs.gioi_tinh === "Nữ");
+
+          // Trường khác
+          document.getElementById('sua-dia-chi').value = hs.dia_chi || "";
+          document.getElementById('sua-lop').value = hs.lop_hoc || "";
+          document.getElementById('sua-sdt-lienhe').value = hs.sdt_lienhe || "";
+          document.getElementById('sua-so-dinh-danh').value = hs.so_dinh_danh || "";
+          document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
+          document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
+          document.getElementById('sua-doi-tuong-dong').value =
+            (hs.doi_tuong_dong && hs.doi_tuong_dong !== "null") ? hs.doi_tuong_dong : "";
+          document.getElementById('sua-ghi-chu').value =
+            (hs.ghi_chu && hs.ghi_chu !== "null") ? hs.ghi_chu : "";
+        };
+
+        // Điền dữ liệu SAU khi modal đã hiển thị hoàn tất để tránh race trên mobile
+        const onShown = () => {
+          try { fill(); } finally {
+            modalEl.removeEventListener('shown.bs.modal', onShown);
             hideLoading();
           }
-        });
-      } catch (err) {
-        console.error("[showModalSuaHSByIndex] error:", err);
-        showToast("Không mở được form sửa. Vui lòng thử lại!", "danger");
+        };
+        modalEl.addEventListener('shown.bs.modal', onShown);
+
+        // Mở modal (onShown sẽ fill và tắt loading)
+        modal.show();
+      } catch (e) {
+        console.error(e);
         hideLoading();
+        showToast("Không mở được form sửa. Vui lòng thử lại!", "danger");
       }
     }
 
