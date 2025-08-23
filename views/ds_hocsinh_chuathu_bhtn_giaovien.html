@@ -82,13 +82,6 @@
       .text-center{ text-align:center; }
     }
 
-    /* Ngăn page break kỳ lạ trên mobile */
-    @media print{
-      html, body { height: auto !important; }
-      .a5-paper { page-break-inside: avoid; }
-    }
-
-
   </style>
 </head>
 <body>
@@ -905,10 +898,19 @@
       const src = document.getElementById('receiptA5');
       if (!src) return;
 
-      // Clone nội dung A5 hiện có
+      // Tạo/clear vùng in
+      let printRoot = document.getElementById('printArea');
+      if (!printRoot){
+        printRoot = document.createElement('div');
+        printRoot.id = 'printArea';
+        document.body.appendChild(printRoot);
+      }
+      printRoot.innerHTML = '';
+
+      // Clone nội dung A5
       const clone = src.cloneNode(true);
 
-      // Thay QR (canvas/img) trong clone thành <img> để in ổn định
+      // ✅ Chốt QR: canvas -> <img dataURL>, đảm bảo in được trên mobile
       try{
         const liveQR = src.querySelector('#receipt-qr canvas, #receipt-qr img');
         const cloneQRHolder = clone.querySelector('#receipt-qr');
@@ -924,64 +926,32 @@
           cloneQRHolder.innerHTML = '';
           cloneQRHolder.appendChild(img);
         }
-      }catch(_){}
+      }catch(e){ /* bỏ qua nếu trình duyệt không hỗ trợ */ }
 
-      // Tạo iframe ẩn để in (ổn định trên Android/iOS)
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
+      printRoot.appendChild(clone);
 
-      // Nội dung HTML tối giản cho trang in
-      const css = `
-        <style>
-          @page { size: A5 portrait; margin: 10mm; }
-          html,body{ background:#fff; margin:0; padding:0; height:auto !important; }
-          .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000;
-                    margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px;
-                    page-break-inside: avoid; }
-          .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
-          .receipt-sub{ font-style:italic; }
-          .receipt-meta{ font-size:13px; }
-          .receipt-line{ margin: 2mm 0; }
-          .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
-          .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
-          .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
-          .row{ display:flex; flex-wrap:nowrap; width:100%; }
-          .col{ flex:1 1 0; }
-          .text-center{ text-align:center; }
-        </style>
-      `;
+      // Kích hoạt chế độ in-tại-chỗ
+      document.body.classList.add('print-active');
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(`<!doctype html><html><head><meta charset="utf-8"/>${css}</head><body></body></html>`);
-      doc.close();
-
-      // Chèn clone vào iframe
-      doc.body.appendChild(clone);
-
-      // Chờ ảnh QR (nếu có) rồi in
-      const qrImg = doc.querySelector('#receipt-qr img');
-      const doPrint = () => {
-        try { iframe.contentWindow.focus(); } catch(_){}
-        iframe.contentWindow.print();
-
-        // Dọn dẹp sau in (fallback nếu thiết bị không bắn afterprint)
-        const cleanup = () => { try{ document.body.removeChild(iframe); }catch(_){ } };
-        iframe.contentWindow.addEventListener('afterprint', cleanup, { once:true });
-        setTimeout(cleanup, 3000); // fallback
+      // In và dọn dẹp (kèm fallback cho mobile không bắn afterprint)
+      const cleanup = () => {
+        document.body.classList.remove('print-active');
+        window.removeEventListener('afterprint', cleanup);
       };
+      window.addEventListener('afterprint', cleanup);
 
+      const doPrint = () => window.print();
+
+      // Đợi QR-img nạp xong rồi in (tránh trắng ảnh trên iOS/Android)
+      const qrImg = clone.querySelector('#receipt-qr img');
       if (qrImg && !qrImg.complete){
-        qrImg.onload = () => setTimeout(doPrint, 100);
-        qrImg.onerror = () => setTimeout(doPrint, 100);
+        qrImg.onload = () => setTimeout(doPrint, 50);
+        qrImg.onerror = () => setTimeout(doPrint, 50);
+        // fallback dọn dẹp nếu mobile không bắn afterprint
+        setTimeout(cleanup, 2500);
       } else {
         setTimeout(doPrint, 50);
+        setTimeout(cleanup, 2500);
       }
     }
 
