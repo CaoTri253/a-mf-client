@@ -90,6 +90,7 @@
     }
     .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
 
+
     .flatpickr-calendar { z-index: 2000 !important; } /* cao hơn modal (1055) */
   </style>
 
@@ -386,8 +387,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <!-- locale tiếng Việt cho Flatpickr -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
   <script src="../js/api.js"></script>
 
   <script>
@@ -599,57 +598,28 @@
     }
     function showError(id, msg) { document.getElementById(id).innerText = msg; }
 
-    // Helper phát hiện thiết bị & tạo options cho Flatpickr
-    const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    function pickerOptions(modalEl){
-      return {
-        dateFormat: 'd/m/Y',
-        allowInput: true,
-        locale: flatpickr.l10ns.vn,           // tiếng Việt
-        disableMobile: !isMobile(),           // Desktop dùng Flatpickr, Mobile dùng native
-        appendTo: (modalEl?.querySelector('.modal-body') || modalEl || document.body)
-      };
-    }
-
-    // Khởi tạo Flatpickr (để nguyên nhưng sẽ dùng cách KHỞI TẠO KHI MỞ MODAL)
+    // Khởi tạo Flatpickr (3 ô độc lập mỗi modal)
     let fpThem = {}, fpSua = {};
     function initThemPickers() {
-      // Giữ lại để tương thích, nhưng việc khởi tạo thực hiện khi modal mở
-      fpThem.ngaySinh = flatpickr('#inp-ngay-sinh', pickerOptions(document.getElementById('modalThemHS')));
-      fpThem.hanBHYT  = flatpickr('#inp-ngay-het-han-bhyt', pickerOptions(document.getElementById('modalThemHS')));
-      fpThem.hanBHTN  = flatpickr('#inp-ngay-het-han-bhtn', pickerOptions(document.getElementById('modalThemHS')));
+      fpThem.ngaySinh = flatpickr('#inp-ngay-sinh', { dateFormat: 'd/m/Y', allowInput: true });
+      fpThem.hanBHYT  = flatpickr('#inp-ngay-het-han-bhyt', { dateFormat: 'd/m/Y', allowInput: true });
+      fpThem.hanBHTN  = flatpickr('#inp-ngay-het-han-bhtn', { dateFormat: 'd/m/Y', allowInput: true });
     }
     function initSuaPickers() {
-      // không dùng trực tiếp; dùng initSuaPickersIn(modalEl)
-      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', pickerOptions(document.getElementById('modalSuaHS')));
-      fpSua.hanBHYT  = flatpickr('#sua-ngay-het-han-bhyt', pickerOptions(document.getElementById('modalSuaHS')));
-      fpSua.hanBHTN  = flatpickr('#sua-ngay-het-han-bhtn', pickerOptions(document.getElementById('modalSuaHS')));
+      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', { dateFormat: 'd/m/Y', allowInput: true });
+      fpSua.hanBHYT  = flatpickr('#sua-ngay-het-han-bhyt', { dateFormat: 'd/m/Y', allowInput: true });
+      fpSua.hanBHTN  = flatpickr('#sua-ngay-het-han-bhtn', { dateFormat: 'd/m/Y', allowInput: true });
     }
 
-    // Hiện modal thêm (khởi tạo picker khi modal hiển thị)
+    // Hiện modal thêm
     function showModalThemHS() {
       document.getElementById('form-themhs').reset?.();
       document.getElementById('themhs-error').innerText = "";
       document.getElementById('inp-lop').value = user.lop_hoc || "";
       document.getElementById('gt-nam').checked = true;
-
-      // phá instance cũ (nếu có)
-      try{ fpThem.ngaySinh?.destroy(); }catch(_){}
-      try{ fpThem.hanBHYT?.destroy(); }catch(_){}
-      try{ fpThem.hanBHTN?.destroy(); }catch(_){}
-      fpThem = {};
-
-      const modalEl = document.getElementById('modalThemHS');
-      modalEl.addEventListener('shown.bs.modal', function onShown(){
-        modalEl.removeEventListener('shown.bs.modal', onShown);
-        const opts = pickerOptions(modalEl);
-        fpThem.ngaySinh = flatpickr('#inp-ngay-sinh', opts);
-        fpThem.hanBHYT  = flatpickr('#inp-ngay-het-han-bhyt', opts);
-        fpThem.hanBHTN  = flatpickr('#inp-ngay-het-han-bhtn', opts);
-      }, { once:true });
-
+      fpThem.ngaySinh?.clear(); fpThem.hanBHYT?.clear(); fpThem.hanBHTN?.clear();
       showLoading();
-      new bootstrap.Modal(modalEl).show();
+      new bootstrap.Modal(document.getElementById('modalThemHS')).show();
       hideLoading();
     }
 
@@ -723,13 +693,17 @@
     function setPickerValue(fp, selector, dateStr) {
       const el = document.querySelector(selector);
       if (!el) return;
+      // Chuẩn hóa chuỗi dd/mm/yyyy
       const m = String(dateStr||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (fp && m) {
+        // Có ngày hợp lệ -> dùng setDate
         fp.setDate(`${m[1]}/${m[2]}/${m[3]}`, true);
       } else if (fp) {
+        // Không hợp lệ -> clear và gán raw vào input (để người dùng tự sửa)
         fp.clear();
         el.value = dateStr || "";
       } else {
+        // Chưa có flatpickr -> gán thẳng, lát nữa initSuaPickers() sẽ không phá giá trị
         el.value = dateStr || "";
       }
     }
@@ -756,7 +730,7 @@
         document.getElementById('sua-ten-cha-me').value = hs.ten_cha_me || "";
         document.getElementById('sua-noi-kham-bhyt').value = hs.noi_kham_bhyt || "";
         document.getElementById('sua-doi-tuong-dong').value = (hs.doi_tuong_dong && hs.doi_tuong_dong!=="null") ? hs.doi_tuong_dong : "";
-        document.getElementById('sua-ghi-chu').value = (hs.ghi_chu && hs.ghi_chu!=="null") ? hs.ghi_chu : "";
+        document.getElementById('sua-ghi_chu')?.value; // nếu bạn có id khác giữ nguyên
 
         if (hs.gioi_tinh === "Nam") document.getElementById('sua-gt-nam').checked = true;
         else if (hs.gioi_tinh === "Nữ") document.getElementById('sua-gt-nu').checked = true;
@@ -769,14 +743,15 @@
         // Chờ modal render xong rồi mới init + setDate
         modalEl.addEventListener('shown.bs.modal', function onShown(){
           modalEl.removeEventListener('shown.bs.modal', onShown);
-
-          // Init flatpickr bên trong modal với locale VN + mobile native
+          // Init flatpickr bên trong modal
           initSuaPickersIn(modalEl);
 
+          // Tính chuỗi dd/mm/yyyy để set
           const dNS   = displayNgay(hs.ngay_sinh) || "";
           const dBHYT = displayNgay(hs.ngay_het_han_bhyt) || "";
           const dBHTN = displayNgay(hs.ngay_het_han_bhtn) || "";
 
+          // Đặt giá trị sau 1 frame để chắc chắn input sẵn sàng
           requestAnimationFrame(() => {
             safeSetDate(fpSua.ngaySinh, '#sua-ngay-sinh', dNS);
             safeSetDate(fpSua.hanBHYT,  '#sua-ngay-het-han-bhyt', dBHYT);
@@ -975,7 +950,7 @@
     // ==== KHỞI TẠO ====
     window.showModalSuaHSByIndex = showModalSuaHSByIndex;
     window.onload = function() {
-      // KHÔNG init picker từ đầu để tránh lỗi hiển thị; khởi tạo khi mở modal
+      initThemPickers();
       fetchAllHocsinhOnce();
     };
   </script>
@@ -1037,11 +1012,19 @@
       return set;
     }
 
+
+
     // ==== XỬ LÝ CẦU CHÌ CHO LOADING ====
     window.addEventListener('error', () => { try { hideLoading(); } catch(_) {} });
     window.addEventListener('unhandledrejection', () => { try { hideLoading(); } catch(_) {} });
 
-    // ==== XỬ LÝ FLATPICKR TRONG MODAL SỬA ====
+
+
+
+
+
+    // ==== XỬ LÝ FLATPICKR TRÊN MOBILE ====
+    // (Để tránh lỗi destroy() trên iOS/Android)
     function destroySuaPickers(){
       try { fpSua.ngaySinh?.destroy(); } catch(_) {}
       try { fpSua.hanBHYT?.destroy(); } catch(_) {}
@@ -1049,10 +1032,24 @@
       fpSua = {};
     }
     function initSuaPickersIn(modalEl){
-      const opts = pickerOptions(modalEl);
-      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', opts);
-      fpSua.hanBHYT  = flatpickr('#sua-ngay-het-han-bhyt', opts);
-      fpSua.hanBHTN  = flatpickr('#sua-ngay-het-han-bhtn', opts);
+      fpSua.ngaySinh = flatpickr('#sua-ngay-sinh', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
+      fpSua.hanBHYT = flatpickr('#sua-ngay-het-han-bhyt', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
+      fpSua.hanBHTN = flatpickr('#sua-ngay-het-han-bhtn', {
+        dateFormat: 'd/m/Y',
+        allowInput: true,
+        disableMobile: true,
+        appendTo: modalEl.querySelector('.modal-body') || modalEl
+      });
     }
     function safeSetDate(fp, inputSelector, dateStr){
       const el = document.querySelector(inputSelector);
