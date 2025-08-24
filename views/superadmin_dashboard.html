@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Super Admin Dashboard</title>
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <style>
+    :root{
+      --sidebar-w: 260px;
+      --brand: #0d47a1;
+      --brand-2: #2563eb;
+      --muted: #6b7280;
+      --card-radius: 14px;
+    }
+    body{ background:#f5f7fb; min-height:100vh; overflow-x:hidden; }
+
+    /* ===== Layout ===== */
+    .app{
+      display:flex; min-height:100vh; width:100%;
+    }
+    .sidebar{
+      width:var(--sidebar-w);
+      background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a);
+      color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center; padding:10px 10px 18px 6px;
+      border-bottom:1px solid rgba(255,255,255,.12); margin-bottom:8px;
+    }
+    .brand .logo{
+      width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.14);
+      display:flex; align-items:center; justify-content:center; font-size:22px;
+    }
+    .brand .name{ font-weight:800; letter-spacing:.3px; line-height:1.1 }
+    .nav-group{ margin-top:10px; }
+    .nav-item{
+      display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px;
+      color:#dbeafe; text-decoration:none; margin:4px 0;
+    }
+    .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; }
+    .nav-item.active{ background:rgba(59,130,246,.35); color:#fff; }
+    .nav-item .bi{ font-size:18px; width:22px; text-align:center; }
+
+    .content{
+      flex:1; padding:18px; max-width: 1600px; margin: 0 auto;
+    }
+    .page-title{ font-weight:800; letter-spacing:.3px; color:#0f172a; }
+    .sub-muted{ color:var(--muted); }
+
+    /* ===== Cards / KPI ===== */
+    .kpi-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
+    .kpi-card{
+      grid-column: span 12; display:flex; gap:14px; align-items:center; padding:16px;
+      background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .kpi-card .icon{
+      width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:26px; flex: 0 0 auto;
+    }
+    .kpi-card .val{ font-size:28px; font-weight:900; line-height:1; }
+    .kpi-card .lbl{ font-size:13px; color:#334155; margin-top:2px; }
+    .ic-blue{ background:#2563eb; }     /* Tổng số trường */
+    .ic-emerald{ background:#10b981; }  /* Tổng HS */
+    .ic-indigo{ background:#6366f1; }   /* BHYT đã thu */
+    .ic-orange{ background:#f59e0b; }   /* BHTN đã thu */
+
+    @media (min-width: 576px){ .kpi-card{ grid-column: span 6; } }
+    @media (min-width: 1200px){ .kpi-card{ grid-column: span 3; } }
+
+    /* ===== Right column: filter + list ===== */
+    .panel{
+      background:#fff; border-radius: var(--card-radius);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06); padding:16px;
+    }
+
+    /* ===== Tables ===== */
+    .table-box{ background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .table thead th{ background:#f1f5f9; font-weight:700; }
+    .rank-num{
+      display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
+      font-weight:800; border-radius:999px; color:#0f172a; background:#e2e8f0;
+    }
+    .rank-1{ background:#fde047; }
+    .rank-2{ background:#d1d5db; }
+    .rank-3{ background:#f59e0b; color:#fff; }
+
+    /* ===== User overview ===== */
+    .user-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
+    .user-card{
+      grid-column: span 12; display:flex; gap:14px; align-items:center; padding:16px;
+      background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .user-card .icon{ width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; }
+    .uc-all .icon{ background:#0ea5e9; }
+    .uc-super .icon{ background:#8b5cf6; }
+    .uc-admin .icon{ background:#f97316; }
+    .uc-teacher .icon{ background:#22c55e; }
+    .uc-parent .icon{ background:#06b6d4; }
+    .user-card .val{ font-weight:800; font-size:22px; }
+    .user-card .lbl{ color:#334155; font-size:13px; }
+
+    @media (min-width: 576px){ .user-card{ grid-column: span 6; } }
+    @media (min-width: 1200px){ .user-card{ grid-column: span 3; } }
+
+    /* ===== Top-row split (overview left + filter right) ===== */
+    .top-split{ display:grid; gap:14px; grid-template-columns: 1fr; }
+    @media (min-width: 1200px){ .top-split{ grid-template-columns: 2fr 1fr; } }
+
+    .school-pill{
+      display:inline-block; padding:6px 10px; background:#f1f5f9; border-radius:999px; font-size:12px; margin:4px 6px 0 0;
+    }
+
+    /* Loading overlay */
+    #loadingSpinner{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(255,255,255,.6); backdrop-filter: blur(1px);
+      align-items:center; justify-content:center;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><i class="bi bi-shield-check"></i></div>
+      <div>
+        <div class="name">ABT Medu</div>
+        <div class="small" style="opacity:.8">Super Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <a href="#" class="nav-item active" data-target="page-dashboard"><i class="bi bi-speedometer2"></i> Tổng quan</a>
+      <a href="#" class="nav-item" data-target="page-schools"><i class="bi bi-building-fill"></i> Trường Học</a>
+      <a href="#" class="nav-item" data-target="page-users"><i class="bi bi-people-fill"></i> Người dùng</a>
+      <a href="#" class="nav-item" data-target="page-controls"><i class="bi bi-sliders2"></i> Điều khiển</a>
+      <a href="#" class="nav-item" data-target="page-profile"><i class="bi bi-person-badge"></i> Cá nhân</a>
+      <a href="#" class="nav-item" data-target="page-settings"><i class="bi bi-gear-wide-connected"></i> Cài đặt</a>
+      <hr style="border-color:rgba(255,255,255,.15)">
+      <a href="#" class="nav-item" id="btn-logout"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+    </nav>
+  </aside>
+
+  <!-- ===== Content ===== -->
+  <main class="content">
+
+    <!-- ===== Header ===== -->
+    <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <div class="page-title h4 mb-1">Bảng điều khiển Super Admin</div>
+        <div class="sub-muted">Xin chào, <strong id="lbl-user">—</strong></div>
+      </div>
+      <div class="text-end sub-muted small">
+        <div>Trường: <strong>Tất cả</strong></div>
+        <div>Thời điểm: <span id="lbl-time">—</span></div>
+      </div>
+    </div>
+
+    <!-- ===== PAGES ===== -->
+
+    <!-- Page: DASHBOARD (mặc định) -->
+    <section id="page-dashboard">
+
+      <!-- Top split: Left KPIs + Right filter -->
+      <div class="top-split mb-3">
+
+        <!-- Left: KPIs -->
+        <div>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="icon ic-blue"><i class="bi bi-buildings"></i></div>
+              <div>
+                <div class="val" id="kpi-schools">0</div>
+                <div class="lbl">Tổng số trường</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="icon ic-emerald"><i class="bi bi-people"></i></div>
+              <div>
+                <div class="val" id="kpi-students">0</div>
+                <div class="lbl">Tổng số học sinh</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="icon ic-indigo"><i class="bi bi-hospital"></i></div>
+              <div>
+                <div class="val" id="kpi-bhyt">0</div>
+                <div class="lbl">Số BHYT đã thu</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="icon ic-orange"><i class="bi bi-heart-pulse"></i></div>
+              <div>
+                <div class="val" id="kpi-bhtn">0</div>
+                <div class="lbl">Số BHTN đã thu</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: School list + filter -->
+        <div class="panel">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold">Danh sách trường</div>
+            <small class="text-secondary">Chọn trường để lọc số liệu</small>
+          </div>
+          <div class="mb-2">
+            <select id="sel-school" class="form-select">
+              <option value="">— Tất cả trường —</option>
+            </select>
+          </div>
+
+          <div class="small text-secondary mb-2">Các trường đã tải:</div>
+          <div id="school-tags"></div>
+        </div>
+      </div>
+
+      <!-- Middle split: Rankings -->
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <div class="table-box p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-bold">Bảng xếp hạng tiến độ đóng <span class="text-primary">BHYT</span></div>
+              <small class="text-secondary">Top theo số hồ sơ đã thu</small>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:90px">Xếp hạng</th>
+                    <th>Tên trường</th>
+                    <th class="text-end">Số hồ sơ đã thu</th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-rank-bhyt">
+                  <tr><td colspan="3" class="text-center text-secondary">Đang tải…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+          <div class="table-box p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-bold">Bảng xếp hạng tiến độ đóng <span class="text-warning">BHTN</span></div>
+              <small class="text-secondary">Top theo số hồ sơ đã thu</small>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:90px">Xếp hạng</th>
+                    <th>Tên trường</th>
+                    <th class="text-end">Số hồ sơ đã thu</th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-rank-bhtn">
+                  <tr><td colspan="3" class="text-center text-secondary">Đang tải…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: User overview -->
+      <div class="mt-3">
+        <div class="fw-bold mb-2">Tổng quan người dùng</div>
+        <div class="user-grid">
+          <div class="user-card uc-all">
+            <div class="icon"><i class="bi bi-people-fill"></i></div>
+            <div>
+              <div class="val" id="u-all">0</div>
+              <div class="lbl">Tổng số user</div>
+            </div>
+          </div>
+          <div class="user-card uc-super">
+            <div class="icon"><i class="bi bi-stars"></i></div>
+            <div>
+              <div class="val" id="u-super">0</div>
+              <div class="lbl">Số Super Admin</div>
+            </div>
+          </div>
+          <div class="user-card uc-admin">
+            <div class="icon"><i class="bi bi-building-gear"></i></div>
+            <div>
+              <div class="val" id="u-admin">0</div>
+              <div class="lbl">Số Admin trường</div>
+            </div>
+          </div>
+          <div class="user-card uc-teacher">
+            <div class="icon"><i class="bi bi-mortarboard"></i></div>
+            <div>
+              <div class="val" id="u-teacher">0</div>
+              <div class="lbl">Số Giáo viên</div>
+            </div>
+          </div>
+          <div class="user-card uc-parent">
+            <div class="icon"><i class="bi bi-person-heart"></i></div>
+            <div>
+              <div class="val" id="u-parent">0</div>
+              <div class="lbl">Số Phụ huynh</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Các trang khác (placeholder để sau này phát triển) -->
+    <section id="page-schools" class="d-none">
+      <div class="panel">
+        <div class="fw-bold mb-2">Quản lý Trường học</div>
+        <div class="text-secondary">Trang này sẽ phát triển sau (danh sách, thêm/sửa, import…).</div>
+      </div>
+    </section>
+
+    <section id="page-users" class="d-none">
+      <div class="panel">
+        <div class="fw-bold mb-2">Quản lý Người dùng</div>
+        <div class="text-secondary">Trang này sẽ phát triển sau (danh sách, phân quyền…).</div>
+      </div>
+    </section>
+
+    <section id="page-controls" class="d-none">
+      <div class="panel">
+        <div class="fw-bold mb-2">Điều khiển hệ thống</div>
+        <div class="text-secondary">Trang này sẽ phát triển sau (cấu hình, tác vụ định kỳ…).</div>
+      </div>
+    </section>
+
+    <section id="page-profile" class="d-none">
+      <div class="panel">
+        <div class="fw-bold mb-2">Thông tin cá nhân</div>
+        <div class="text-secondary">Trang này sẽ phát triển sau.</div>
+      </div>
+    </section>
+
+    <section id="page-settings" class="d-none">
+      <div class="panel">
+        <div class="fw-bold mb-2">Cài đặt</div>
+        <div class="text-secondary">Trang này sẽ phát triển sau.</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Loading -->
+<div id="loadingSpinner">
+  <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+<!-- Libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+
+<script>
+  /* =========================
+     Auth + Navigation
+  ========================== */
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = String(user.phan_quyen || "").toLowerCase();
+  if (!user.sdt || !(role === "super_admin" || role === "superadmin")) {
+    // Không phải superadmin -> đá về index
+    location.href = "../index.html";
+  }
+  document.getElementById("lbl-user").innerText = user.ho_ten || user.sdt || "—";
+  document.getElementById("lbl-time").innerText = new Date().toLocaleString("vi-VN");
+
+  // Sidebar routing
+  const sections = ["page-dashboard","page-schools","page-users","page-controls","page-profile","page-settings"];
+  document.querySelectorAll(".nav-item[data-target]").forEach(a=>{
+    a.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const target = a.getAttribute("data-target");
+      document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+      a.classList.add("active");
+      sections.forEach(id=> document.getElementById(id).classList.toggle("d-none", id!==target));
+      // lazy refresh nếu cần: nếu quay lại page-dashboard thì có thể refresh filter
+    });
+  });
+
+  // Logout
+  document.getElementById("btn-logout").addEventListener("click", ()=>{
+    localStorage.removeItem("user");
+    location.href = "../index.html";
+  });
+
+  function showLoading(){ document.getElementById('loadingSpinner').style.display='flex'; }
+  function hideLoading(){ document.getElementById('loadingSpinner').style.display='none'; }
+
+  /* =========================
+     Helpers → API calls
+     (Bạn có thể đổi tên func theo backend)
+  ========================== */
+  async function listSchools(){
+    // Expect: { success:true, data:[{ma_truong, ten_truong, dia_chi, tinh, sdt_admin}, ...] }
+    const url = `${API_BASE}?func=GetAllTruongHoc`;
+    const res = await fetch(url);
+    return await res.json();
+  }
+  async function listUsers(){
+    // Expect: { success:true, data:[{sdt, ho_ten, phan_quyen, ma_truong, ...}, ...] }
+    const url = `${API_BASE}?func=ListUsers`;
+    const res = await fetch(url);
+    return await res.json();
+  }
+
+  // Đếm học sinh một trường: gọi DanhSach_Hocsinh theo trường (lop_hoc rỗng = tất cả lớp)
+  async function countStudentsBySchool(ma_truong){
+    const resp = await getAllDanhSachHocsinh(ma_truong || "", ""); // dùng api.js
+    const arr = Array.isArray(resp?.data) ? resp.data : [];
+    return arr.length;
+  }
+  // Đếm BHYT đã thu: số bản ghi trong DanhSach_BHYT của trường
+  async function countBHYTBySchool(ma_truong){
+    const resp = await getDanhSachBHYT(ma_truong || "", ""); // dùng api.js
+    const arr = Array.isArray(resp?.data) ? resp.data : [];
+    // Quy ước: hồ sơ được tính "đã thu" nếu so_tien > 0 hoặc trang_thai == "1"
+    let c = 0;
+    for (const r of arr){
+      const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+      const trang_thai = String(r.trang_thai ?? '');
+      if (so_tien > 0 || trang_thai === '1') c++;
+    }
+    return c;
+  }
+  // Đếm BHTN đã thu: số bản ghi trong DanhSach_BHTN của trường
+  async function countBHTNBySchool(ma_truong){
+    const url = `${API_BASE}?func=GetDanhSachBHTN&ma_truong=${encodeURIComponent(ma_truong||"")}&lop_hoc=`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const arr = Array.isArray(json?.data) ? json.data : [];
+    // Quy ước giống trên
+    let c = 0;
+    for (const r of arr){
+      const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+      const trang_thai = String(r.trang_thai ?? '');
+      if (so_tien > 0 || trang_thai === '1') c++;
+    }
+    return c;
+  }
+
+  /* =========================
+     State & Rendering
+  ========================== */
+  let SCHOOLS = []; // [{ma_truong, ten_truong, ...}]
+  let METRICS = {}; // by ma_truong: { students, bhyt, bhtn }
+
+  function renderSchoolSelect(){
+    const sel = document.getElementById("sel-school");
+    sel.innerHTML = `<option value="">— Tất cả trường —</option>` + 
+      SCHOOLS.map(s=>`<option value="${s.ma_truong}">${s.ten_truong} (${s.ma_truong})</option>`).join('');
+    sel.onchange = computeAndRender;
+  }
+
+  function renderSchoolTags(){
+    const box = document.getElementById("school-tags");
+    box.innerHTML = SCHOOLS.slice(0, 50).map(s=>`<span class="school-pill">${s.ten_truong}</span>`).join('') + 
+      (SCHOOLS.length>50 ? `<span class="text-secondary small ms-1">+${SCHOOLS.length-50} nữa…</span>` : '');
+  }
+
+  function aggregateTotals(filterSchool){
+    let schoolsCount = 0, studentsTotal = 0, bhytTotal = 0, bhtnTotal = 0;
+    for (const s of SCHOOLS){
+      const code = s.ma_truong;
+      if (filterSchool && code !== filterSchool) continue;
+      schoolsCount++;
+      const m = METRICS[code] || {students:0,bhyt:0,bhtn:0};
+      studentsTotal += m.students||0;
+      bhytTotal += m.bhyt||0;
+      bhtnTotal += m.bhtn||0;
+    }
+    return { schoolsCount, studentsTotal, bhytTotal, bhtnTotal };
+  }
+
+  function renderKPI(tot){
+    document.getElementById("kpi-schools").innerText = (tot.schoolsCount||0).toLocaleString('vi-VN');
+    document.getElementById("kpi-students").innerText = (tot.studentsTotal||0).toLocaleString('vi-VN');
+    document.getElementById("kpi-bhyt").innerText = (tot.bhytTotal||0).toLocaleString('vi-VN');
+    document.getElementById("kpi-bhtn").innerText = (tot.bhtnTotal||0).toLocaleString('vi-VN');
+  }
+
+  function renderRankTables(filterSchool){
+    // Build arrays [{ten_truong, value}]
+    const rowsBHYT = [];
+    const rowsBHTN = [];
+    for (const s of SCHOOLS){
+      const code = s.ma_truong;
+      if (filterSchool && code !== filterSchool) continue;
+      const m = METRICS[code] || {};
+      rowsBHYT.push({ name: s.ten_truong, value: m.bhyt||0 });
+      rowsBHTN.push({ name: s.ten_truong, value: m.bhtn||0 });
+    }
+    rowsBHYT.sort((a,b)=> b.value - a.value);
+    rowsBHTN.sort((a,b)=> b.value - a.value);
+
+    const rankIcon = (i)=>{
+      const n=i+1;
+      const cls = n===1?'rank-1':n===2?'rank-2':n===3?'rank-3':'';
+      return `<span class="rank-num ${cls}">${n}</span>`;
+    };
+
+    const tbodyBHYT = document.getElementById("tbl-rank-bhyt");
+    const tbodyBHTN = document.getElementById("tbl-rank-bhtn");
+    tbodyBHYT.innerHTML = rowsBHYT.length
+      ? rowsBHYT.map((r,i)=>`
+        <tr>
+          <td>${rankIcon(i)}</td>
+          <td>${r.name}</td>
+          <td class="text-end fw-bold">${r.value.toLocaleString('vi-VN')}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="3" class="text-center text-secondary">Không có dữ liệu</td></tr>`;
+
+    tbodyBHTN.innerHTML = rowsBHTN.length
+      ? rowsBHTN.map((r,i)=>`
+        <tr>
+          <td>${rankIcon(i)}</td>
+          <td>${r.name}</td>
+          <td class="text-end fw-bold">${r.value.toLocaleString('vi-VN')}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="3" class="text-center text-secondary">Không có dữ liệu</td></tr>`;
+  }
+
+  function renderUserOverview(users){
+    // phan_quyen có thể: super_admin, admin, giao_vien, user (phụ huynh)
+    const total = users.length;
+    const superCount = users.filter(u=> String(u.phan_quyen||"").toLowerCase()==="super_admin").length;
+    const adminCount = users.filter(u=> String(u.phan_quyen||"").toLowerCase()==="admin").length;
+    const teacherCount = users.filter(u=> String(u.phan_quyen||"").toLowerCase()==="giao_vien").length;
+    // coi phụ huynh là "user"
+    const parentCount = users.filter(u=> String(u.phan_quyen||"").toLowerCase()==="user").length;
+
+    document.getElementById("u-all").innerText = total.toLocaleString('vi-VN');
+    document.getElementById("u-super").innerText = superCount.toLocaleString('vi-VN');
+    document.getElementById("u-admin").innerText = adminCount.toLocaleString('vi-VN');
+    document.getElementById("u-teacher").innerText = teacherCount.toLocaleString('vi-VN');
+    document.getElementById("u-parent").innerText = parentCount.toLocaleString('vi-VN');
+  }
+
+  async function computeAndRender(){
+    try{
+      showLoading();
+      const filterSchool = document.getElementById("sel-school").value || "";
+      const tot = aggregateTotals(filterSchool);
+      renderKPI(tot);
+      renderRankTables(filterSchool);
+    } finally{
+      hideLoading();
+    }
+  }
+
+  /* =========================
+     Init load
+  ========================== */
+  (async function init(){
+    try{
+      showLoading();
+
+      // 1) Load trường
+      const rsSchools = await listSchools();
+      SCHOOLS = Array.isArray(rsSchools?.data) ? rsSchools.data : [];
+      renderSchoolSelect();
+      renderSchoolTags();
+
+      // 2) Tính metric từng trường (song song)
+      //    (để giảm thời gian: Promise.all, có thể throttle nếu cần)
+      const perSchoolJobs = SCHOOLS.map(async (s)=>{
+        const code = s.ma_truong;
+        const [students, bhyt, bhtn] = await Promise.all([
+          countStudentsBySchool(code),
+          countBHYTBySchool(code),
+          countBHTNBySchool(code)
+        ]);
+        METRICS[code] = { students, bhyt, bhtn };
+      });
+      await Promise.all(perSchoolJobs);
+
+      // 3) Render tổng quan (tất cả trường)
+      const tot = aggregateTotals("");
+      renderKPI(tot);
+      renderRankTables("");
+
+      // 4) Users
+      const rsUsers = await listUsers();
+      const USERS = Array.isArray(rsUsers?.data) ? rsUsers.data : [];
+      renderUserOverview(USERS);
+
+      // Sự kiện thay đổi trường đã gán trong renderSchoolSelect()
+    } catch(err){
+      console.error(err);
+      alert("Không tải được dữ liệu tổng quan. Vui lòng thử lại.");
+    } finally{
+      hideLoading();
+    }
+  })();
+</script>
+</body>
+</html>

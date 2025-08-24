@@ -92,19 +92,38 @@
         modal.show();
       }
       async function handleLogin() {
-        showLoading();   // <-- Thêm dòng này
+        showLoading();
         const sdt = document.getElementById("login-sdt").value.trim();
         const password = document.getElementById("login-password").value;
 
-        if (!sdt || !password) { showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); return; }
+        if (!sdt || !password) { 
+          showModal("Lỗi", "Vui lòng nhập số điện thoại và mật khẩu."); 
+          hideLoading(); 
+          return; 
+        }
+
         const res = await login(sdt, password);
         if (res.success) {
           showModal("Thành công", "Đăng nhập thành công!");
           localStorage.setItem("user", JSON.stringify(res.user));
-          hideLoading(); // <-- Thêm dòng này
-          setTimeout(() => { window.location.href = "views/dashboard.html"; }, 1200);
-        } else {showModal("Lỗi đăng nhập", res.message); hideLoading(); }
+          hideLoading();
+
+          // ✅ Điều hướng theo quyền
+          setTimeout(() => { 
+            const role = String(res.user.phan_quyen || "").toLowerCase();
+            if (role === "super_admin" || role === "superadmin") {
+              window.location.href = "views/superadmin_dashboard.html";
+            } else {
+              window.location.href = "views/dashboard.html";
+            }
+          }, 1200);
+
+        } else {
+          showModal("Lỗi đăng nhập", res.message); 
+          hideLoading();
+        }
       }
+      
       async function handleRegister() {
         const hoTen = document.getElementById("reg-ho-ten").value.trim();
         const sdt = document.getElementById("reg-sdt").value.trim();
