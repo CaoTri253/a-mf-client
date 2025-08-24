@@ -460,24 +460,15 @@
 
   function renderSchoolSelect(){
     const sel = document.getElementById("sel-school");
-
-    function labelSchool(s){
-      const name = s.ten_truong || s.ma_truong;
-      const same = s.ten_truong && s.ten_truong.toUpperCase() === s.ma_truong.toUpperCase();
-      return same ? name : `${name} (${s.ma_truong})`;
-    }
     sel.innerHTML = `<option value="">— Tất cả trường —</option>` + 
       SCHOOLS.map(s=>`<option value="${s.ma_truong}">${s.ten_truong} (${s.ma_truong})</option>`).join('');
-
     sel.onchange = computeAndRender;
   }
 
   function renderSchoolTags(){
     const box = document.getElementById("school-tags");
-    box.innerHTML = SCHOOLS.slice(0, 50)
-      .map(s=>`<span class="school-pill">${labelSchool(s)}</span>`)
-      .join('') + (SCHOOLS.length>50 ? `<span class="text-secondary small ms-1">+${SCHOOLS.length-50} nữa…</span>` : '');
-
+    box.innerHTML = SCHOOLS.slice(0, 50).map(s=>`<span class="school-pill">${s.ten_truong}</span>`).join('') + 
+      (SCHOOLS.length>50 ? `<span class="text-secondary small ms-1">+${SCHOOLS.length-50} nữa…</span>` : '');
   }
 
   function aggregateTotals(filterSchool){
@@ -509,8 +500,8 @@
       const code = s.ma_truong;
       if (filterSchool && code !== filterSchool) continue;
       const m = METRICS[code] || {};
-      rowsBHYT.push({ name: labelSchool(s), value: m.bhyt||0 });
-      rowsBHTN.push({ name: labelSchool(s), value: m.bhtn||0 });
+      rowsBHYT.push({ name: s.ten_truong, value: m.bhyt||0 });
+      rowsBHTN.push({ name: s.ten_truong, value: m.bhtn||0 });
     }
     rowsBHYT.sort((a,b)=> b.value - a.value);
     rowsBHTN.sort((a,b)=> b.value - a.value);
@@ -583,28 +574,13 @@
       const rsSchools = await listSchools();
       SCHOOLS = Array.isArray(rsSchools?.data) ? rsSchools.data : [];
 
-      // Chuẩn hoá & loại 'all' nếu có
-      SCHOOLS = SCHOOLS
-      .map(s => ({
-        ma_truong: String(s?.ma_truong || '').trim(),
-        ten_truong: String(s?.ten_truong || '').trim()
-      }))
-      .filter(s => s.ma_truong && !/^all$/i.test(s.ma_truong));
-
       // Nếu backend chưa có danh sách trường, lấy tạm từ users
       if (!SCHOOLS.length) {
         const rsUsers = await listUsers();
         const users = Array.isArray(rsUsers?.data || rsUsers?.users) ? (rsUsers.data || rsUsers.users) : [];
-        const uniqCodes = [...new Set(
-          users.map(u => String(u.ma_truong||'').trim())
-        )]
-        .filter(code => code && !/^all$/i.test(code));   // LOẠI 'all'
-
-        // fallback: tên = mã (chỉ dùng tạm khi BE chưa có Trường Học)
-        SCHOOLS = uniqCodes.map(code => ({ ma_truong: code, ten_truong: code }));
+        const uniq = [...new Set(users.map(u => String(u.ma_truong||"").trim()).filter(Boolean))];
+        SCHOOLS = uniq.map(ma => ({ ma_truong: ma, ten_truong: ma })); // nếu chưa có tên, cứ hiển thị mã
       }
-
-
       renderSchoolSelect();
       renderSchoolTags();
 
