@@ -575,12 +575,12 @@
       SCHOOLS = Array.isArray(rsSchools?.data) ? rsSchools.data : [];
 
       // Nếu backend chưa có danh sách trường, lấy tạm từ users
-      // if (!SCHOOLS.length) {
-      //   const rsUsers = await listUsers();
-      //   const users = Array.isArray(rsUsers?.data || rsUsers?.users) ? (rsUsers.data || rsUsers.users) : [];
-      //   const uniq = [...new Set(users.map(u => String(u.ma_truong||"").trim()).filter(Boolean))];
-      //   SCHOOLS = uniq.map(ma => ({ ma_truong: ma, ten_truong: ma })); // nếu chưa có tên, cứ hiển thị mã
-      // }
+      if (!SCHOOLS.length) {
+        const rsUsers = await listUsers();
+        const users = Array.isArray(rsUsers?.data || rsUsers?.users) ? (rsUsers.data || rsUsers.users) : [];
+        const uniq = [...new Set(users.map(u => String(u.ma_truong||"").trim()).filter(Boolean))];
+        SCHOOLS = uniq.map(ma => ({ ma_truong: ma, ten_truong: ma })); // nếu chưa có tên, cứ hiển thị mã
+      }
       renderSchoolSelect();
       renderSchoolTags();
 
