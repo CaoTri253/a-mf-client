@@ -596,7 +596,7 @@
 
       // 4) Users
       const rsUsers = await listUsers();
-      const USERS = Array.isArray(rsUsers?.data || rsUsers?.users) ? (rsUsers.data || rsUsers.users) : [];
+      const USERS = Array.isArray(rsUsers?.data) ? rsUsers.data : [];
       renderUserOverview(USERS);
 
       // Sự kiện thay đổi trường đã gán trong renderSchoolSelect()
