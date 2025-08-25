@@ -20,15 +20,10 @@
     .app{ display:flex; min-height:100vh; width:100%; }
 
     /* ===== Sidebar (match superadmin) ===== */
-    .sidebar{
-      width:var(--sidebar-w);
-      background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a);
-      color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh;
-    }
+    .sidebar{ width:var(--sidebar-w); background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a); color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh; }
     .brand{ display:flex; gap:10px; align-items:center; padding:10px 10px 18px 6px; border-bottom:1px solid rgba(255,255,255,.12); margin-bottom:8px; }
     .brand .logo{ width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; font-size:22px; }
     .brand .name{ font-weight:800; letter-spacing:.3px; line-height:1.1 }
-
     .nav-section{ margin-top:10px; }
     .nav-item{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#dbeafe; text-decoration:none; margin:4px 0; cursor:pointer; }
     .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; }
@@ -40,7 +35,7 @@
     .page-title{ font-weight:800; letter-spacing:.3px; color:#0f172a; }
     .sub-muted{ color:var(--muted); }
 
-    /* ===== Cards / KPI (match superadmin) ===== */
+    /* ===== Cards / KPI ===== */
     .kpi-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
     .kpi-card{ grid-column: span 12; display:flex; gap:14px; align-items:center; padding:16px; background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
     .kpi-card .icon{ width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; flex:0 0 auto; }
@@ -53,7 +48,7 @@
     @media (min-width: 576px){ .kpi-card{ grid-column: span 6; } }
     @media (min-width: 1200px){ .kpi-card{ grid-column: span 3; } }
 
-    /* ===== Panels & Tables (match superadmin) ===== */
+    /* ===== Panels & Tables ===== */
     .panel{ background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); padding:16px; }
     .table-box{ background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
     .table thead th{ background:#f1f5f9; font-weight:700; }
@@ -75,11 +70,11 @@
     @media (min-width: 576px){ .user-card{ grid-column: span 6; } }
     @media (min-width: 1200px){ .user-card{ grid-column: span 3; } }
 
-    /* ===== Split blocks ===== */
+    /* ===== Top split ===== */
     .top-split{ display:grid; gap:14px; grid-template-columns: 1fr; }
     @media (min-width: 1200px){ .top-split{ grid-template-columns: 2fr 1fr; } }
 
-    /* ===== Responsive sidebar toggle (mobile) ===== */
+    /* ===== Responsive sidebar ===== */
     .toggle-btn{ display:none; }
     @media (max-width: 991px){
       .sidebar{ position:fixed; left:-100%; z-index:1045; transition:left .25s ease; }
@@ -88,6 +83,9 @@
       .backdrop.show{ display:block; }
       .toggle-btn{ display:inline-flex; }
     }
+
+    /* Loading overlay */
+    #loadingSpinner{ display:none; position:fixed; inset:0; z-index:9999; background:rgba(255,255,255,.6); backdrop-filter: blur(1px); align-items:center; justify-content:center; }
   </style>
 </head>
 <body>
@@ -99,11 +97,6 @@
         <div>
           <div class="name">ABT Medu</div>
           <div class="small" style="opacity:.8">Admin trường</div>
-        </div>
-      </div>
-        <div>
-          <div>ABT Medu</div>
-          <small class="text-secondary">Admin trường</small>
         </div>
       </div>
 
@@ -119,36 +112,24 @@
         <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
         <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
       </div>
-        <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
-        <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
-        <div class="nav-item" data-page="bhyt"><i class="bi bi-heart-pulse"></i><span>Bảo hiểm y tế</span></div>
-        <div class="nav-item" data-page="bhtn"><i class="bi bi-activity"></i><span>Bảo Hiểm Tai Nạn</span></div>
-        <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
-        <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
-        <div class="nav-item" data-page="profile"><i class="bi bi-person-circle"></i><span>Cá nhân</span></div>
-        <div class="nav-item" data-page="settings"><i class="bi bi-gear"></i><span>Cài đặt</span></div>
-        <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
-      </div>
     </aside>
 
     <div class="backdrop" id="backdrop"></div>
 
     <!-- Content -->
     <main class="content w-100">
-      <div class="topbar">
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-light toggle-btn" id="btnToggleSidebar"><i class="bi bi-list"></i></button>
-          <h5 class="mb-0">Bảng điều khiển – <span id="schoolName">Trường ...</span></h5>
-        </div>
+      <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
         <div>
-          <small class="text-secondary">Người dùng: <b id="userName">...</b> • Quyền: <span id="userRole">admin</span></small>
+          <div class="page-title h4 mb-1">Bảng điều khiển – <span id="schoolName">Trường ...</span></div>
+          <div class="sub-muted">Người dùng: <strong id="userName">—</strong> • Quyền: <span id="userRole">admin</span></div>
         </div>
       </div>
 
       <!-- OVERVIEW PAGE (default) -->
       <section id="page-overview">
-        <!-- Top split: KPIs + Filter (match superadmin spacing) -->
+        <!-- Top split: KPIs + Filters -->
         <div class="top-split mb-3">
+          <!-- Left: KPIs (5 cards) -->
           <div>
             <div class="kpi-grid">
               <div class="kpi-card">
@@ -179,9 +160,17 @@
                   <div class="lbl">Tiến độ thu BHYT</div>
                 </div>
               </div>
+              <div class="kpi-card">
+                <div class="icon ic-blue"><i class="bi bi-speedometer"></i></div>
+                <div>
+                  <div class="val" id="progressBHTNTextCard">0%</div>
+                  <div class="lbl">Tiến độ thu BHTN</div>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- Right: Filters only -->
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="fw-bold">Bộ lọc dữ liệu</div>
@@ -193,16 +182,6 @@
                 <option value="class">Theo lớp</option>
               </select>
               <select class="form-select form-select-sm d-none" id="filterClass" style="width:auto"></select>
-            </div>
-
-            <div class="mt-3">
-              <div class="text-secondary small mb-1">Tiến độ thu BHTN</div>
-              <div class="d-flex align-items-center gap-2">
-                <div class="progress flex-1 w-100" role="progressbar" aria-label="BHTN progress" style="height:10px;border-radius:999px;">
-                  <div class="progress-bar" id="progressBHTN" style="width:0%"></div>
-                </div>
-                <div class="fw-semibold" id="progressBHTNText">0%</div>
-              </div>
             </div>
           </div>
         </div>
@@ -296,36 +275,35 @@
         </div>
       </section>
 
+      <!-- Placeholder other pages (hidden by default) -->
       <section id="page-students" class="d-none">
-        <div class="panel"><div class="panel-body">Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
-      </section> class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
+        <div class="panel"><div>Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
       </section>
       <section id="page-teachers" class="d-none">
-        <div class="card"><div class="card-body">Danh sách giáo viên (đang phát triển).</div></div>
+        <div class="panel"><div>Danh sách giáo viên (đang phát triển).</div></div>
       </section>
       <section id="page-bhyt" class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="bhyt_giaovien.html">BHYT</a> / <a href="bhyt.html">BHYT (menu chung)</a>.</div></div>
+        <div class="panel"><div>Đi tới <a href="bhyt_giaovien.html">BHYT</a> / <a href="bhyt.html">BHYT (menu chung)</a>.</div></div>
       </section>
       <section id="page-bhtn" class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="bhtn_giaovien.html">BHTN</a>.</div></div>
+        <div class="panel"><div>Đi tới <a href="bhtn_giaovien.html">BHTN</a>.</div></div>
       </section>
-      <section id="page-stats" class="d-none"><div class="card"><div class="card-body">Trang thống kê nâng cao (đang phát triển).</div></div></section>
-      <section id="page-rewards" class="d-none"><div class="card"><div class="card-body">Trang thù lao (đang phát triển).</div></div></section>
-      <section id="page-profile" class="d-none"><div class="card"><div class="card-body">Thông tin cá nhân (đang phát triển).</div></div></section>
-      <section id="page-settings" class="d-none"><div class="card"><div class="card-body">Cài đặt (đang phát triển).</div></div></section>
+      <section id="page-stats" class="d-none"><div class="panel"><div>Trang thống kê nâng cao (đang phát triển).</div></div></section>
+      <section id="page-rewards" class="d-none"><div class="panel"><div>Trang thù lao (đang phát triển).</div></div></section>
+      <section id="page-profile" class="d-none"><div class="panel"><div>Thông tin cá nhân (đang phát triển).</div></div></section>
+      <section id="page-settings" class="d-none"><div class="panel"><div> Cài đặt (đang phát triển).</div></div></section>
 
     </main>
-</div>
-
-<!-- Loading -->
-<div id="loadingSpinner" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(255,255,255,.6); backdrop-filter: blur(1px); align-items:center; justify-content:center;">
-  <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
-    <span class="visually-hidden">Loading...</span>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Loading -->
+  <div id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
   // --- Helpers -------------------------------------------------------------
@@ -346,9 +324,7 @@
   }
 
   function setActivePage(page){
-    // Sidebar state
-    $$('.nav-item').forEach(el=> el.classList.toggle('active', el.dataset.page === page));
-    // Pages
+    $$('#sidebarMenu .nav-item').forEach(el=> el.classList.toggle('active', el.dataset.page === page));
     $$('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
     $(`#page-${page}`)?.classList.remove('d-none');
   }
@@ -366,10 +342,11 @@
 
   // --- API helpers (reuse api.js like superadmin) --------------------------
   async function listUsers(){
-    // Optional endpoint; if not available, will fail silently
-    const url = `${API_BASE}?func=ListUsers`;
-    const res = await fetch(url);
-    return await res.json();
+    try{
+      const url = `${API_BASE}?func=ListUsers`;
+      const res = await fetch(url);
+      return await res.json();
+    }catch(e){ return { success:false, data:[] }; }
   }
 
   async function countStudentsBySchool(ma_truong){
@@ -382,10 +359,8 @@
     return Array.isArray(resp?.data) ? resp.data : [];
   }
   async function fetchBHTN(ma_truong){
-    try{
-      const resp = await getDanhSachBHTN(ma_truong||'', '');
-      return Array.isArray(resp?.data) ? resp.data : [];
-    }catch(e){ return []; }
+    try{ const resp = await getDanhSachBHTN(ma_truong||'', ''); return Array.isArray(resp?.data) ? resp.data : []; }
+    catch(e){ return []; }
   }
 
   function renderKPIs(studentsTotal, bhytPaidCount, bhtnPaidCount){
@@ -396,8 +371,7 @@
     const rateBHYT = studentsTotal ? Math.round(bhytPaidCount * 100 / studentsTotal) : 0;
     const rateBHTN = studentsTotal ? Math.round(bhtnPaidCount * 100 / studentsTotal) : 0;
     $('#progressBHYTText').textContent = rateBHYT + '%';
-    $('#progressBHTNText').textContent = rateBHTN + '%';
-    $('#progressBHTN').style.width = rateBHTN + '%';
+    $('#progressBHTNTextCard').textContent = rateBHTN + '%';
   }
 
   function renderRanking(tbodySel, items){
@@ -417,32 +391,19 @@
   }
 
   function buildClassRanking(students, paidRows){
-    const totalByClass = students.reduce((m, r)=>{
-      const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-    const paidByClass = paidRows.reduce((m, r)=>{
-      const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-    return Object.entries(totalByClass).map(([cls,total])=>{
-      const done = paidByClass[cls]||0; const pct = total? Math.round(done*100/total):0;
-      return { cls, done, total, pct };
-    }).sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
+    const totalByClass = students.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
+    const paidByClass = paidRows.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
+    return Object.entries(totalByClass).map(([cls,total])=>{ const done = paidByClass[cls]||0; const pct = total? Math.round(done*100/total):0; return { cls, done, total, pct }; })
+      .sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
   }
 
   function wireSidebar(){
-    // default page = overview
     setActivePage('overview');
     $$('#sidebarMenu .nav-item').forEach(item=>{
       item.addEventListener('click', ()=>{
         const page = item.dataset.page;
         if (!page) return;
-        if (page === 'overview') setActivePage('overview');
-        else if (page === 'students') setActivePage('students');
-        else if (page === 'teachers') setActivePage('teachers');
-        else if (page === 'bhyt') setActivePage('bhyt');
-        else if (page === 'bhtn') setActivePage('bhtn');
-        else if (page === 'stats') setActivePage('stats');
-        else if (page === 'rewards') setActivePage('rewards');
-        else if (page === 'profile') setActivePage('profile');
-        else if (page === 'settings') setActivePage('settings');
+        setActivePage(page);
       });
     });
 
@@ -451,9 +412,13 @@
       window.location.href = '../index.html';
     });
 
-    // Mobile toggle
-    $('#btnToggleSidebar').addEventListener('click', ()=> toggleSidebar(true));
-    $('#backdrop').addEventListener('click', ()=> toggleSidebar(false));
+    $('#btnToggleSidebar')?.addEventListener('click', ()=> toggleSidebar(true));
+    $('#backdrop')?.addEventListener('click', ()=> toggleSidebar(false));
+
+    $('#filterScope').addEventListener('change', (e)=>{
+      const v = e.target.value; const clsSel = $('#filterClass');
+      clsSel.classList.toggle('d-none', v !== 'class');
+    });
   }
 
   // --- Boot ---------------------------------------------------------------
@@ -464,33 +429,25 @@
     $('#schoolName').textContent = user.ten_truong || (user.ma_truong||'');
 
     wireSidebar();
-    setActivePage('overview'); // default landing page after login
+    setActivePage('overview');
 
     try{
       showLoading();
       const ma_truong = (user.ma_truong||'').trim();
-
-      // Load core datasets
+      // Load core datasets in parallel
       const [{ total:studentsTotal, rows:students }, bhytRows, bhtnRows] = await Promise.all([
         countStudentsBySchool(ma_truong),
         fetchBHYT(ma_truong),
         fetchBHTN(ma_truong)
       ]);
 
-      // Determine paid
-      const isPaid = r => {
-        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
-        const trang_thai = String(r.trang_thai ?? '');
-        const so_ho_so = String(r.so_ho_so||'');
-        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
-      };
+      const isPaid = r => { const so_tien = Number(String(r.so_tien||'').replaceAll(',','')); const trang_thai = String(r.trang_thai ?? ''); const so_ho_so = String(r.so_ho_so||''); return so_tien>0 || trang_thai==='1' || !!so_ho_so; };
       const bhytPaid = bhytRows.filter(isPaid);
       const bhtnPaid = bhtnRows.filter(isPaid);
 
-      // KPIs
       renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
 
-      // Fill classes to filter
+      // Fill classes
       const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
       const sel = $('#filterClass');
       sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -511,19 +468,12 @@
         $('#uParent').textContent = role('phu_huynh').toLocaleString('vi-VN');
         $('#uStudent').textContent = studentsTotal.toLocaleString('vi-VN');
       }catch(e){
-        // graceful fallback
         $('#uAll').textContent = '-';
         $('#uAdmin').textContent = '-';
         $('#uTeacher').textContent = '-';
         $('#uParent').textContent = '-';
         $('#uStudent').textContent = studentsTotal.toLocaleString('vi-VN');
       }
-
-      // Scope filter interactions
-      $('#filterScope').addEventListener('change', (e)=>{
-        const v = e.target.value; const clsSel = $('#filterClass');
-        clsSel.classList.toggle('d-none', v !== 'class');
-      });
 
     } catch(err){
       console.error(err);
