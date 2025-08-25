@@ -297,18 +297,18 @@
       </section>
 
       <section id="page-students" class="d-none">
-        <div class="panel"><div class="panel-body">Đi tới <a href="/views/ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
+        <div class="panel"><div class="panel-body">Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
       </section> class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="/views/ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
+        <div class="card"><div class="card-body">Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
       </section>
       <section id="page-teachers" class="d-none">
         <div class="card"><div class="card-body">Danh sách giáo viên (đang phát triển).</div></div>
       </section>
       <section id="page-bhyt" class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="/views/bhyt_giaovien.html">BHYT</a> / <a href="/views/bhyt.html">BHYT (menu chung)</a>.</div></div>
+        <div class="card"><div class="card-body">Đi tới <a href="bhyt_giaovien.html">BHYT</a> / <a href="bhyt.html">BHYT (menu chung)</a>.</div></div>
       </section>
       <section id="page-bhtn" class="d-none">
-        <div class="card"><div class="card-body">Đi tới <a href="/views/bhtn_giaovien.html">BHTN</a>.</div></div>
+        <div class="card"><div class="card-body">Đi tới <a href="bhtn_giaovien.html">BHTN</a>.</div></div>
       </section>
       <section id="page-stats" class="d-none"><div class="card"><div class="card-body">Trang thống kê nâng cao (đang phát triển).</div></div></section>
       <section id="page-rewards" class="d-none"><div class="card"><div class="card-body">Trang thù lao (đang phát triển).</div></div></section>
@@ -319,7 +319,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="../js/api.js"></script>
   <script>
   // --- Helpers -------------------------------------------------------------
   const $ = (s, root=document) => root.querySelector(s);
@@ -327,12 +327,12 @@
 
   function ensureLoggedInAsAdmin() {
     const raw = localStorage.getItem('user');
-    if (!raw) { window.location.href = '/index.html'; return null; }
+    if (!raw) { window.location.href = '../index.html'; return null; }
     let user; try { user = JSON.parse(raw); } catch(e){ localStorage.removeItem('user'); window.location.href='/index.html'; return null; }
     if (!user || (user.phan_quyen !== 'admin' && user.phan_quyen !== 'super_admin')) {
       // Chỉ admin trường (hoặc super_admin để test) được vào
       alert('Bạn không có quyền truy cập trang này.');
-      window.location.href = '/index.html';
+      window.location.href = '../index.html';
       return null;
     }
     return user;
@@ -359,13 +359,21 @@
   // Build API url fallback if window.API is not present
   const BASE_URL = (window.ABT_API_BASE || localStorage.getItem('ABT_API_BASE') || '').replace(/\/$/, '');
   async function apiGet(func, params={}){
-    // Prefer global API helpers if available
-    if (window.API && typeof window.API.get === 'function') {
-      return await window.API.get(func, params);
+    // Prefer concrete api.js functions if available
+    const map = {
+      'GetAllDanhSachHocsinh': (p)=> (typeof getAllDanhSachHocsinh==='function') ? getAllDanhSachHocsinh(p.ma_truong||'', p.lop_hoc||'') : null,
+      'GetDanhSachBHYT': (p)=> (typeof getDanhSachBHYT==='function') ? getDanhSachBHYT(p.ma_truong||'', p.lop_hoc||'') : null,
+      'GetDanhSachBHTN': (p)=> (typeof getDanhSachBHTN==='function') ? getDanhSachBHTN(p.ma_truong||'', p.lop_hoc||'') : null,
+    };
+    if (map[func]){
+      const res = await map[func](params);
+      if (res) return res;
     }
-    if (!BASE_URL) throw new Error('Chưa cấu hình ABT_API_BASE');
+    // Generic fallback via API_BASE
+    const base = (typeof API_BASE !== 'undefined') ? API_BASE : (window.ABT_API_BASE || localStorage.getItem('ABT_API_BASE') || '').replace(/\/$/, '');
+    if (!base) throw new Error('Chưa cấu hình API_BASE');
     const q = new URLSearchParams({ func, ...params }).toString();
-    const res = await fetch(`${BASE_URL}?${q}`);
+    const res = await fetch(`${base}?${q}`);
     if (!res.ok) throw new Error('Network error');
     return await res.json();
   }
@@ -484,7 +492,7 @@
 
     $('#btnLogout').addEventListener('click', ()=>{
       localStorage.removeItem('user');
-      window.location.href = '/index.html';
+      window.location.href = '../index.html';
     });
 
     // Mobile toggle
