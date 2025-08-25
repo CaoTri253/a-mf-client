@@ -305,8 +305,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../js/api.js"></script>
+
   <script>
-  // --- Helpers -------------------------------------------------------------
+  // === Utilities ===
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
 
@@ -340,7 +341,25 @@
   function showLoading(){ $('#loadingSpinner').style.display='flex'; }
   function hideLoading(){ $('#loadingSpinner').style.display='none'; }
 
-  // --- API helpers (reuse api.js like superadmin) --------------------------
+  // === State for filters ===
+  let STATE = { students: [], bhytPaid: [], bhtnPaid: [] };
+  function applyFilters(){
+    const scope = $('#filterScope')?.value || 'school';
+    const cls = ($('#filterClass')?.value || '').trim();
+    let students = STATE.students;
+    let bhyt = STATE.bhytPaid;
+    let bhtn = STATE.bhtnPaid;
+    if (scope === 'class' && cls){
+      const byCls = r => String(r.lop_hoc||'').trim() === cls;
+      students = students.filter(byCls);
+      bhyt = bhyt.filter(byCls);
+      bhtn = bhtn.filter(byCls);
+    }
+    renderRanking('#rankBHYT', buildClassRanking(students, bhyt));
+    renderRanking('#rankBHTN', buildClassRanking(students, bhtn));
+  }
+
+  // === API helpers (use functions from ../js/api.js) ===
   async function listUsers(){
     try{
       const url = `${API_BASE}?func=ListUsers`;
@@ -348,7 +367,6 @@
       return await res.json();
     }catch(e){ return { success:false, data:[] }; }
   }
-
   async function countStudentsBySchool(ma_truong){
     const resp = await getAllDanhSachHocsinh(ma_truong||'', '');
     const arr = Array.isArray(resp?.data) ? resp.data : [];
@@ -363,11 +381,11 @@
     catch(e){ return []; }
   }
 
+  // === Rendering ===
   function renderKPIs(studentsTotal, bhytPaidCount, bhtnPaidCount){
     $('#kpiStudents').textContent = studentsTotal.toLocaleString('vi-VN');
     $('#kpiBHYTCount').textContent = bhytPaidCount.toLocaleString('vi-VN');
     $('#kpiBHTNCount').textContent = bhtnPaidCount.toLocaleString('vi-VN');
-
     const rateBHYT = studentsTotal ? Math.round(bhytPaidCount * 100 / studentsTotal) : 0;
     const rateBHTN = studentsTotal ? Math.round(bhtnPaidCount * 100 / studentsTotal) : 0;
     $('#progressBHYTText').textContent = rateBHYT + '%';
@@ -401,27 +419,22 @@
     setActivePage('overview');
     $$('#sidebarMenu .nav-item').forEach(item=>{
       item.addEventListener('click', ()=>{
-        const page = item.dataset.page;
-        if (!page) return;
-        setActivePage(page);
+        const page = item.dataset.page; if (!page) return; setActivePage(page);
       });
     });
-
-    $('#btnLogout').addEventListener('click', ()=>{
-      localStorage.removeItem('user');
-      window.location.href = '../index.html';
-    });
-
+    $('#btnLogout').addEventListener('click', ()=>{ localStorage.removeItem('user'); window.location.href = '../index.html'; });
     $('#btnToggleSidebar')?.addEventListener('click', ()=> toggleSidebar(true));
     $('#backdrop')?.addEventListener('click', ()=> toggleSidebar(false));
-
     $('#filterScope').addEventListener('change', (e)=>{
       const v = e.target.value; const clsSel = $('#filterClass');
       clsSel.classList.toggle('d-none', v !== 'class');
+      if (v !== 'class') clsSel.value = '';
+      applyFilters();
     });
+    $('#filterClass').addEventListener('change', applyFilters);
   }
 
-  // --- Boot ---------------------------------------------------------------
+  // === Boot ===
   (async function init(){
     const user = ensureLoggedInAsAdmin(); if (!user) return;
     $('#userName').textContent = user.ho_ten||user.sdt||'Admin';
@@ -434,7 +447,7 @@
     try{
       showLoading();
       const ma_truong = (user.ma_truong||'').trim();
-      // Load core datasets in parallel
+
       const [{ total:studentsTotal, rows:students }, bhytRows, bhtnRows] = await Promise.all([
         countStudentsBySchool(ma_truong),
         fetchBHYT(ma_truong),
@@ -447,27 +460,29 @@
 
       renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
 
-      // Fill classes
       const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
       const sel = $('#filterClass');
       sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-      // Rankings
-      renderRanking('#rankBHYT', buildClassRanking(students, bhytPaid));
-      renderRanking('#rankBHTN', buildClassRanking(students, bhtnPaid));
+      STATE = { students, bhytPaid, bhtnPaid };
+      applyFilters();
 
-      // Users Overview
+      // Users overview
       try{
         const rs = await listUsers();
         const users = Array.isArray(rs?.data||rs?.users) ? (rs.data||rs.users) : [];
         const uSchool = users.filter(u => String(u.ma_truong||'').trim() === ma_truong);
-        const role = r => uSchool.filter(u => String(u.phan_quyen||'').trim() === r).length;
+        const roleEq = r => uSchool.filter(u => String(u.phan_quyen||'').trim().toLowerCase() === r).length;
+        const parentCount = uSchool.filter(u => {
+          const r = String(u.phan_quyen||'').trim().toLowerCase();
+          return r === 'phu_huynh' || r === 'user';
+        }).length;
         $('#uAll').textContent = uSchool.length.toLocaleString('vi-VN');
-        $('#uAdmin').textContent = role('admin').toLocaleString('vi-VN');
-        $('#uTeacher').textContent = role('giao_vien').toLocaleString('vi-VN');
-        $('#uParent').textContent = role('phu_huynh').toLocaleString('vi-VN');
+        $('#uAdmin').textContent = roleEq('admin').toLocaleString('vi-VN');
+        $('#uTeacher').textContent = roleEq('giao_vien').toLocaleString('vi-VN');
+        $('#uParent').textContent = parentCount.toLocaleString('vi-VN');
         $('#uStudent').textContent = studentsTotal.toLocaleString('vi-VN');
-      }catch(e){
+      } catch(e){
         $('#uAll').textContent = '-';
         $('#uAdmin').textContent = '-';
         $('#uTeacher').textContent = '-';
@@ -482,6 +497,6 @@
       hideLoading();
     }
   })();
-  </script>
+</script>
 </body>
 </html>
