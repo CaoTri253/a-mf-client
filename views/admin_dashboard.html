@@ -572,6 +572,53 @@
     $('#filterClass').addEventListener('change', applyFilters);
   }
 
+
+
+
+    // === Gestures: vuốt từ mép trái để mở, vuốt trái để đóng (mobile) ===
+    let touchStartX = null, touchStartY = null, edgeSwipe = false;
+
+    document.addEventListener('touchstart', (e)=>{
+    if (!isMobileSidebarMode() || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    // Vuốt từ sát mép trái (<20px) mới coi là intent mở
+    edgeSwipe = touchStartX <= 20;
+    }, {passive: true});
+
+    document.addEventListener('touchmove', (e)=>{
+    if (!isMobileSidebarMode() || touchStartX === null) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+
+    // Nếu người dùng đang kéo dọc nhiều thì bỏ qua để không chặn cuộn
+    if (Math.abs(dy) > 30) return;
+
+    // Vuốt từ mép trái sang phải để mở
+    if (edgeSwipe && dx > 60){
+        toggleSidebar(true);
+        touchStartX = null; // reset để tránh lặp
+        edgeSwipe = false;
+    }
+
+    // Khi sidebar đang mở, vuốt sang trái để đóng
+    if ($('#sidebar').classList.contains('show') && dx < -60){
+        toggleSidebar(false);
+        touchStartX = null;
+        edgeSwipe = false;
+    }
+    }, {passive: true});
+
+    document.addEventListener('touchend', ()=>{
+    touchStartX = null;
+    edgeSwipe = false;
+    }, {passive: true});
+
+
+
+
   // === Boot ===
   (async function init(){
     const user = ensureLoggedInAsAdmin(); if (!user) return;
