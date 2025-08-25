@@ -113,6 +113,8 @@
             const role = String(res.user.phan_quyen || "").toLowerCase();
             if (role === "super_admin" || role === "superadmin") {
               window.location.href = "views/superadmin_dashboard.html";
+            } else if (role === "admin") {
+              window.location.href = "views/admin_dashboard.html";
             } else {
               window.location.href = "views/dashboard.html";
             }
