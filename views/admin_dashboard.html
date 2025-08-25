@@ -8,33 +8,79 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
     :root{
-      --sidebar-w: 270px;
+      --sidebar-w: 260px;
+      --brand: #0d47a1;
+      --brand-2: #2563eb;
+      --muted: #6b7280;
+      --card-radius: 14px;
     }
-    body{ background:#f5f7fb; }
-    .app{ min-height:100vh; display:flex; }
-    /* Sidebar */
-    .sidebar{ width:var(--sidebar-w); background:#0d1b2a; color:#fff; position:sticky; top:0; height:100vh; padding:14px 12px; }
-    .brand{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px; }
-    .brand .logo{ width:36px; height:36px; border-radius:10px; background:#1b263b; display:flex; align-items:center; justify-content:center; }
-    .nav-section{ margin-top:16px; }
-    .nav-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#cbd5e1; cursor:pointer; }
-    .nav-item:hover{ background:#172036; color:#fff; }
-    .nav-item.active{ background:#415a77; color:#fff; }
-    .nav-item i{ font-size:18px; }
+    body{ background:#f5f7fb; min-height:100vh; overflow-x:hidden; }
 
-    /* Content */
-    .content{ flex:1; padding:16px; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    /* ===== Layout ===== */
+    .app{ display:flex; min-height:100vh; width:100%; }
+
+    /* ===== Sidebar (match superadmin) ===== */
+    .sidebar{
+      width:var(--sidebar-w);
+      background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a);
+      color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh;
+    }
+    .brand{ display:flex; gap:10px; align-items:center; padding:10px 10px 18px 6px; border-bottom:1px solid rgba(255,255,255,.12); margin-bottom:8px; }
+    .brand .logo{ width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; font-size:22px; }
+    .brand .name{ font-weight:800; letter-spacing:.3px; line-height:1.1 }
+
+    .nav-section{ margin-top:10px; }
+    .nav-item{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#dbeafe; text-decoration:none; margin:4px 0; cursor:pointer; }
+    .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; }
+    .nav-item.active{ background:rgba(59,130,246,.35); color:#fff; }
+    .nav-item .bi{ font-size:18px; width:22px; text-align:center; }
+
+    /* ===== Content ===== */
+    .content{ flex:1; padding:18px; max-width:1600px; margin:0 auto; }
+    .page-title{ font-weight:800; letter-spacing:.3px; color:#0f172a; }
+    .sub-muted{ color:var(--muted); }
+
+    /* ===== Cards / KPI (match superadmin) ===== */
+    .kpi-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
+    .kpi-card{ grid-column: span 12; display:flex; gap:14px; align-items:center; padding:16px; background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .kpi-card .icon{ width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; flex:0 0 auto; }
+    .kpi-card .val{ font-size:28px; font-weight:900; line-height:1; }
+    .kpi-card .lbl{ font-size:13px; color:#334155; margin-top:2px; }
+    .ic-emerald{ background:#10b981; }
+    .ic-indigo{ background:#6366f1; }
+    .ic-orange{ background:#f59e0b; }
+    .ic-blue{ background:#2563eb; }
+    @media (min-width: 576px){ .kpi-card{ grid-column: span 6; } }
+    @media (min-width: 1200px){ .kpi-card{ grid-column: span 3; } }
+
+    /* ===== Panels & Tables (match superadmin) ===== */
+    .panel{ background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); padding:16px; }
+    .table-box{ background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .table thead th{ background:#f1f5f9; font-weight:700; }
+    .rank-num{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; font-weight:800; border-radius:999px; color:#0f172a; background:#e2e8f0; }
+    .rank-1{ background:#fde047; }
+    .rank-2{ background:#d1d5db; }
+    .rank-3{ background:#f59e0b; color:#fff; }
+
+    /* ===== User overview ===== */
+    .user-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
+    .user-card{ grid-column: span 12; display:flex; gap:14px; align-items:center; padding:16px; background:#fff; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .user-card .icon{ width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; }
+    .uc-all .icon{ background:#0ea5e9; }
+    .uc-admin .icon{ background:#f97316; }
+    .uc-teacher .icon{ background:#22c55e; }
+    .uc-parent .icon{ background:#06b6d4; }
+    .user-card .val{ font-weight:800; font-size:22px; }
+    .user-card .lbl{ color:#334155; font-size:13px; }
+    @media (min-width: 576px){ .user-card{ grid-column: span 6; } }
+    @media (min-width: 1200px){ .user-card{ grid-column: span 3; } }
+
+    /* ===== Split blocks ===== */
+    .top-split{ display:grid; gap:14px; grid-template-columns: 1fr; }
+    @media (min-width: 1200px){ .top-split{ grid-template-columns: 2fr 1fr; } }
+
+    /* ===== Responsive sidebar toggle (mobile) ===== */
     .toggle-btn{ display:none; }
-
-    /* Cards */
-    .card{ border:0; border-radius:16px; box-shadow:0 6px 20px rgba(13,27,42,.06); }
-    .card-header{ background:transparent; border:0; font-weight:600; }
-    .kpi{ display:flex; align-items:center; gap:12px; }
-    .kpi .icon{ width:40px; height:40px; border-radius:12px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; }
-    .progress{ height:10px; border-radius:999px; }
-
-    /* Responsive sidebar */
     @media (max-width: 991px){
       .sidebar{ position:fixed; left:-100%; z-index:1045; transition:left .25s ease; }
       .sidebar.show{ left:0; }
@@ -49,7 +95,12 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
       <div class="brand mb-3">
-        <div class="logo"><i class="bi bi-shield-check text-white"></i></div>
+        <div class="logo"><i class="bi bi-shield-check"></i></div>
+        <div>
+          <div class="name">ABT Medu</div>
+          <div class="small" style="opacity:.8">Admin trường</div>
+        </div>
+      </div>
         <div>
           <div>ABT Medu</div>
           <small class="text-secondary">Admin trường</small>
@@ -57,8 +108,17 @@
       </div>
 
       <div class="nav-section" id="sidebarMenu">
-        <!-- Order MUST match user's request -->
-        <div class="nav-item active" data-page="overview"><i class="bi bi-grid-1x2"></i><span>Tổng quan</span></div>
+        <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
+        <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
+        <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
+        <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
+        <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
+        <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
+        <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
+        <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
+        <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
+        <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
+      </div>
         <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
         <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
         <div class="nav-item" data-page="bhyt"><i class="bi bi-heart-pulse"></i><span>Bảo hiểm y tế</span></div>
@@ -87,197 +147,158 @@
 
       <!-- OVERVIEW PAGE (default) -->
       <section id="page-overview">
-        <!-- Section 1: KPIs -->
-        <div class="row g-3 mb-3">
-          <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="kpi">
-                  <div class="icon"><i class="bi bi-people"></i></div>
-                  <div>
-                    <div class="text-secondary small">Tổng số học sinh</div>
-                    <div class="fs-4 fw-bold" id="kpiStudents">0</div>
-                  </div>
+        <!-- Top split: KPIs + Filter (match superadmin spacing) -->
+        <div class="top-split mb-3">
+          <div>
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="icon ic-emerald"><i class="bi bi-people"></i></div>
+                <div>
+                  <div class="val" id="kpiStudents">0</div>
+                  <div class="lbl">Tổng số học sinh</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="icon ic-indigo"><i class="bi bi-hospital"></i></div>
+                <div>
+                  <div class="val" id="kpiBHYTCount">0</div>
+                  <div class="lbl">Tổng số BHYT đã thu</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="icon ic-orange"><i class="bi bi-heart-pulse"></i></div>
+                <div>
+                  <div class="val" id="kpiBHTNCount">0</div>
+                  <div class="lbl">Tổng số BHTN đã thu</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="icon ic-blue"><i class="bi bi-speedometer2"></i></div>
+                <div>
+                  <div class="val" id="progressBHYTText">0%</div>
+                  <div class="lbl">Tiến độ thu BHYT</div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="kpi">
-                  <div class="icon"><i class="bi bi-heart-pulse"></i></div>
-                  <div>
-                    <div class="text-secondary small">Tổng số BHYT đã thu</div>
-                    <div class="fs-4 fw-bold" id="kpiBHYTCount">0</div>
-                  </div>
-                </div>
-              </div>
+
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-bold">Bộ lọc dữ liệu</div>
+              <small class="text-secondary">Áp dụng cho bảng xếp hạng</small>
             </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="kpi">
-                  <div class="icon"><i class="bi bi-activity"></i></div>
-                  <div>
-                    <div class="text-secondary small">Tổng số BHTN đã thu</div>
-                    <div class="fs-4 fw-bold" id="kpiBHTNCount">0</div>
-                  </div>
-                </div>
-              </div>
+            <div class="d-flex gap-2">
+              <select class="form-select form-select-sm" id="filterScope" style="width:auto">
+                <option value="school" selected>Cả trường</option>
+                <option value="class">Theo lớp</option>
+              </select>
+              <select class="form-select form-select-sm d-none" id="filterClass" style="width:auto"></select>
             </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="kpi">
-                  <div class="icon"><i class="bi bi-speedometer2"></i></div>
-                  <div>
-                    <div class="text-secondary small">Tiến độ thu BHYT</div>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="progress flex-1 w-100" role="progressbar" aria-label="BHYT progress">
-                        <div class="progress-bar" id="progressBHYT" style="width:0%"></div>
-                      </div>
-                      <div class="fw-semibold" id="progressBHYTText">0%</div>
-                    </div>
-                  </div>
+
+            <div class="mt-3">
+              <div class="text-secondary small mb-1">Tiến độ thu BHTN</div>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-1 w-100" role="progressbar" aria-label="BHTN progress" style="height:10px;border-radius:999px;">
+                  <div class="progress-bar" id="progressBHTN" style="width:0%"></div>
                 </div>
+                <div class="fw-semibold" id="progressBHTNText">0%</div>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Rankings -->
         <div class="row g-3 mb-4">
-          <div class="col-12 col-md-6">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="kpi">
-                  <div class="icon"><i class="bi bi-speedometer"></i></div>
-                  <div class="w-100">
-                    <div class="text-secondary small mb-2">Tiến độ thu BHTN</div>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="progress flex-1 w-100" role="progressbar" aria-label="BHTN progress">
-                        <div class="progress-bar" id="progressBHTN" style="width:0%"></div>
-                      </div>
-                      <div class="fw-semibold" id="progressBHTNText">0%</div>
-                    </div>
-                  </div>
-                </div>
+          <div class="col-12 col-xl-6">
+            <div class="table-box p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Bảng xếp hạng tiến độ đóng <span class="text-primary">BHYT</span></div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th style="width:90px">Xếp hạng</th>
+                      <th>Lớp</th>
+                      <th class="text-end">Đã thu</th>
+                      <th class="text-end">Tổng HS</th>
+                      <th class="text-end">%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rankBHYT"></tbody>
+                </table>
               </div>
             </div>
           </div>
-          <div class="col-12 col-md-6">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <div class="fw-semibold">Bộ lọc dữ liệu</div>
-                  <div class="d-flex gap-2">
-                    <select class="form-select form-select-sm" id="filterScope" style="width:auto">
-                      <option value="school" selected>Cả trường</option>
-                      <option value="class">Theo lớp</option>
-                    </select>
-                    <select class="form-select form-select-sm d-none" id="filterClass" style="width:auto"></select>
-                  </div>
-                </div>
-                <div class="small text-secondary">Áp dụng cho bảng xếp hạng bên dưới.</div>
+          <div class="col-12 col-xl-6">
+            <div class="table-box p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Bảng xếp hạng tiến độ đóng <span class="text-warning">BHTN</span></div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th style="width:90px">Xếp hạng</th>
+                      <th>Lớp</th>
+                      <th class="text-end">Đã thu</th>
+                      <th class="text-end">Tổng HS</th>
+                      <th class="text-end">%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rankBHTN"></tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Section 2: Rankings -->
-        <div class="row g-3 mb-4">
-          <div class="col-12 col-lg-6">
-            <div class="card h-100">
-              <div class="card-header">Bảng xếp hạng tiến độ đóng BHYT</div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-sm align-middle">
-                    <thead class="table-light">
-                      <tr>
-                        <th>#</th>
-                        <th>Lớp</th>
-                        <th>Đã thu</th>
-                        <th>Tổng HS</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody id="rankBHYT"></tbody>
-                  </table>
-                </div>
+        <!-- Users overview -->
+        <div class="mt-3">
+          <div class="fw-bold mb-2">Tổng quan người dùng</div>
+          <div class="user-grid">
+            <div class="user-card uc-all">
+              <div class="icon"><i class="bi bi-people-fill"></i></div>
+              <div>
+                <div class="val" id="uAll">0</div>
+                <div class="lbl">Tổng user của trường</div>
               </div>
             </div>
-          </div>
-          <div class="col-12 col-lg-6">
-            <div class="card h-100">
-              <div class="card-header">Bảng xếp hạng tiến độ đóng BHTN</div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-sm align-middle">
-                    <thead class="table-light">
-                      <tr>
-                        <th>#</th>
-                        <th>Lớp</th>
-                        <th>Đã thu</th>
-                        <th>Tổng HS</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody id="rankBHTN"></tbody>
-                  </table>
-                </div>
+            <div class="user-card uc-admin">
+              <div class="icon"><i class="bi bi-building-gear"></i></div>
+              <div>
+                <div class="val" id="uAdmin">0</div>
+                <div class="lbl">Số Admin trường</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Users overview -->
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">Tổng quan người dùng</div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded-3 border bg-light h-100">
-                      <div class="text-secondary small">Tổng user của trường</div>
-                      <div class="fs-5 fw-semibold" id="uAll">0</div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded-3 border h-100">
-                      <div class="text-secondary small">Số Admin trường</div>
-                      <div class="fs-5 fw-semibold" id="uAdmin">0</div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded-3 border h-100">
-                      <div class="text-secondary small">Số giáo viên</div>
-                      <div class="fs-5 fw-semibold" id="uTeacher">0</div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded-3 border h-100">
-                      <div class="text-secondary small">Số phụ huynh</div>
-                      <div class="fs-5 fw-semibold" id="uParent">0</div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded-3 border h-100">
-                      <div class="text-secondary small">Số học sinh</div>
-                      <div class="fs-5 fw-semibold" id="uStudent">0</div>
-                    </div>
-                  </div>
-                </div>
+            <div class="user-card uc-teacher">
+              <div class="icon"><i class="bi bi-mortarboard"></i></div>
+              <div>
+                <div class="val" id="uTeacher">0</div>
+                <div class="lbl">Số giáo viên</div>
+              </div>
+            </div>
+            <div class="user-card uc-parent">
+              <div class="icon"><i class="bi bi-person-heart"></i></div>
+              <div>
+                <div class="val" id="uParent">0</div>
+                <div class="lbl">Số phụ huynh</div>
+              </div>
+            </div>
+            <div class="user-card">
+              <div class="icon" style="background:#22c55e;"><i class="bi bi-emoji-smile"></i></div>
+              <div>
+                <div class="val" id="uStudent">0</div>
+                <div class="lbl">Số học sinh</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Placeholder other pages (can be replaced with links) -->
       <section id="page-students" class="d-none">
+        <div class="panel"><div class="panel-body">Đi tới <a href="/views/ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
+      </section> class="d-none">
         <div class="card"><div class="card-body">Đi tới <a href="/views/ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
       </section>
       <section id="page-teachers" class="d-none">
