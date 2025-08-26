@@ -86,134 +86,76 @@
 
     /* Loading overlay */
     #loadingSpinner{ display:none; position:fixed; inset:0; z-index:9999; background:rgba(255,255,255,.6); backdrop-filter: blur(1px); align-items:center; justify-content:center; }
-  
-  
-    
 
-
-    /* ===== Hover lift (nổi cộm khi rà chuột) ===== */
+    /* ===== Hover lift ===== */
     .kpi-card,
     .user-card,
     .panel,
     .table-box {
-    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
-    will-change: transform, box-shadow;
+      transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+      will-change: transform, box-shadow;
     }
     .kpi-card:hover,
     .user-card:hover,
     .panel:hover,
     .table-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(0,0,0,.12);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0,0,0,.12);
     }
 
-    /* Keyboard focus thân thiện (tab qua element có thể click) */
+    /* Keyboard focus */
     .kpi-card:focus-within,
     .user-card:focus-within,
     .panel:focus-within,
     .table-box:focus-within,
     .nav-item:focus-visible,
     .toggle-btn:focus-visible {
-    outline: 2px solid rgba(37,99,235,.6);
-    outline-offset: 2px;
-    border-radius: 12px;
+      outline: 2px solid rgba(37,99,235,.6);
+      outline-offset: 2px;
+      border-radius: 12px;
     }
 
-    /* Giảm chuyển động nếu người dùng chọn reduce motion */
     @media (prefers-reduced-motion: reduce) {
-    .kpi-card, .user-card, .panel, .table-box {
-        transition: none;
-    }
+      .kpi-card, .user-card, .panel, .table-box { transition: none; }
     }
 
     /* ===== Toggle button (mobile only) ===== */
-    .toggle-btn {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 8px;
-    border-radius: 10px;
-    }
-    @media (max-width: 991px){
-    .toggle-btn { display: inline-flex; }
-    }
+    .toggle-btn { display:none; align-items:center; justify-content:center; padding:6px 8px; border-radius:10px; }
+    @media (max-width: 991px){ .toggle-btn { display:inline-flex; } }
 
     /* ===== Off-canvas sidebar polish ===== */
     @media (max-width: 991px){
-    .sidebar {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: -100%;
-        height: 100vh;
-        width: var(--sidebar-w);
-        transition: left .25s ease;
-        box-shadow: 8px 0 16px rgba(0,0,0,.18);
-        touch-action: pan-y; /* cho phép vuốt dọc trong menu */
-    }
-    .sidebar.show { left: 0; }
-    .backdrop { cursor: pointer; }
+      .sidebar { position: fixed; top: 0; bottom: 0; left: -100%; height: 100vh; width: var(--sidebar-w); transition: left .25s ease; box-shadow: 8px 0 16px rgba(0,0,0,.18); touch-action: pan-y; }
+      .sidebar.show { left: 0; }
+      .backdrop { cursor: pointer; }
     }
 
     /* Tăng độ tương phản item active trong sidebar */
-    .nav-item.active {
-    background: linear-gradient(90deg, rgba(59,130,246,.5), rgba(59,130,246,.2));
-    color:#fff;
-    }
+    .nav-item.active { background: linear-gradient(90deg, rgba(59,130,246,.5), rgba(59,130,246,.2)); color:#fff; }
 
+    /* ===== Phân cách trước Đăng xuất ===== */
+    .nav-separator { border-top:1px solid rgba(255,255,255,.2); margin:8px 0; }
 
-
-
-    /* Phân cách trong sidebar */
-    .nav-separator {
-      border-top:1px solid rgba(255,255,255,.2);
-      margin:8px 0;
-    }
-
-    /* Sidebar thu gọn (desktop) */
+    /* ===== Sidebar collapsed (desktop only) ===== */
     @media (min-width: 992px){
-      .sidebar.collapsed{
-        width:60px;
-      }
+      .sidebar.collapsed{ width:60px; }
       .sidebar.collapsed .brand .name,
       .sidebar.collapsed .brand .small,
-      .sidebar.collapsed .nav-item span{
-        display:none;
-      }
-      .sidebar.collapsed .nav-item{
-        justify-content:center;
-        padding:10px 0;
-      }
+      .sidebar.collapsed .nav-item span{ display:none; }
+      .sidebar.collapsed .nav-item{ justify-content:center; padding:10px 0; }
     }
 
-
-    /* KPI cùng hàng ở desktop */
-    @media (min-width: 1200px){
-      /* 4 KPI chia cột đều */
-      #page-overview .kpi-grid .kpi-card:nth-child(1),
-      #page-overview .kpi-grid .kpi-card:nth-child(2),
-      #page-overview .kpi-grid .kpi-card:nth-child(3),
-      #page-overview .kpi-grid .kpi-card:nth-child(4),
-      #page-overview .kpi-grid .kpi-card:nth-child(5){
-        grid-column: span 3;
-      }
-
-      /* Gom tiến độ ngay dưới mỗi loại bảo hiểm */
-      #page-overview .kpi-grid{
-        grid-template-columns: repeat(12, 1fr);
-      }
-      #page-overview .kpi-grid .kpi-card:nth-child(2), /* BHYT đã thu */
-      #page-overview .kpi-grid .kpi-card:nth-child(4){ /* Tiến độ BHYT */
-        grid-column: span 3;
-      }
-      #page-overview .kpi-grid .kpi-card:nth-child(3), /* BHTN đã thu */
-      #page-overview .kpi-grid .kpi-card:nth-child(5){ /* Tiến độ BHTN */
-        grid-column: span 3;
-      }
+    /* ===== KPI placement on desktop (keep mobile as-is) ===== */
+    @media (min-width:1200px){
+      #page-overview .kpi-grid{ grid-template-columns:repeat(12,1fr); grid-auto-rows:1fr; }
+      /* row 1 */
+      #page-overview .kpi-grid .kpi-card:nth-child(1){ grid-column:1 / span 3; grid-row:1; }   /* Tổng HS */
+      #page-overview .kpi-grid .kpi-card:nth-child(2){ grid-column:4 / span 3; grid-row:1; }   /* Tổng BHYT đã thu */
+      #page-overview .kpi-grid .kpi-card:nth-child(3){ grid-column:7 / span 3; grid-row:1; }   /* Tổng BHTN đã thu */
+      /* row 2 (cùng cột với BHYT/BHTN đã thu) */
+      #page-overview .kpi-grid .kpi-card:nth-child(4){ grid-column:4 / span 3; grid-row:2; }   /* Tiến độ BHYT */
+      #page-overview .kpi-grid .kpi-card:nth-child(5){ grid-column:7 / span 3; grid-row:2; }   /* Tiến độ BHTN */
     }
-
-
-  
   </style>
 </head>
 <body>
@@ -227,7 +169,7 @@
           <div class="small" style="opacity:.8">Admin trường</div>
         </div>
         <!-- Nút thu gọn sidebar (desktop) -->
-        <button id="btnCollapseSidebar" class="btn btn-sm btn-link text-white ms-auto d-none d-lg-inline" title="Thu gọn menu">
+        <button id="btnCollapseSidebar" class="btn btn-sm btn-link text-white ms-auto d-none d-lg-inline" title="Thu gọn/mở menu">
           <i class="bi bi-layout-sidebar-inset"></i>
         </button>
       </div>
@@ -242,13 +184,12 @@
         <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
         <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
 
-        <!-- Phân cách -->
+        <!-- Phân cách nhóm chức năng -->
         <div class="nav-separator my-2"></div>
 
         <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
       </div>
     </aside>
-
 
     <div class="backdrop" id="backdrop"></div>
 
@@ -488,7 +429,6 @@
     document.body.style.overflow = willOpen ? 'hidden' : '';
   }
 
-
   function showLoading(){ $('#loadingSpinner').style.display='flex'; }
   function hideLoading(){ $('#loadingSpinner').style.display='none'; }
 
@@ -566,58 +506,53 @@
       .sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
   }
 
+  // Nhận diện chế độ sidebar mobile
+  const mqlMobile = window.matchMedia('(max-width: 991px)');
+  const isMobileSidebarMode = () => mqlMobile.matches;
 
-
-
-
-
-
-
-    // Nhận diện chế độ sidebar mobile
-    const mqlMobile = window.matchMedia('(max-width: 991px)');
-    const isMobileSidebarMode = () => mqlMobile.matches;
-
-    // Đảm bảo trạng thái đúng khi resize
-    function handleSidebarOnResize(){
+  // Đảm bảo trạng thái đúng khi resize
+  function handleSidebarOnResize(){
     const sb = $('#sidebar');
     const bd = $('#backdrop');
     if (isMobileSidebarMode()){
-        // Ở mobile: mặc định ẩn
-        sb.classList.remove('show');
-        bd.classList.remove('show');
+      // Mobile: tắt trạng thái collapsed nếu có
+      sb.classList.remove('show');
+      bd.classList.remove('show');
+      sb.classList.remove('collapsed');
     } else {
-        // Ở desktop: sidebar luôn hiện, backdrop ẩn
-        sb.classList.remove('show');
-        bd.classList.remove('show');
+      // Desktop: khôi phục trạng thái collapsed đã lưu (nếu có)
+      const keepCollapsed = localStorage.getItem('sidebarCollapsed')==='1';
+      sb.classList.toggle('collapsed', !!keepCollapsed);
+      bd.classList.remove('show');
     }
-    }
-    mqlMobile.addEventListener('change', handleSidebarOnResize);
-
-
-
-
-
-
-
-
+  }
+  mqlMobile.addEventListener('change', handleSidebarOnResize);
 
   function wireSidebar(){
     setActivePage('overview');
     $$('#sidebarMenu .nav-item').forEach(item=>{
-        item.addEventListener('click', ()=>{
-            const page = item.dataset.page;
-            if (!page) return;
-            setActivePage(page);
-            if (isMobileSidebarMode()) toggleSidebar(false);
-        });
+      item.addEventListener('click', ()=>{
+        const page = item.dataset.page;
+        if (!page) return;
+        setActivePage(page);
+        if (isMobileSidebarMode()) toggleSidebar(false);
+      });
     });
 
-
-    // 2) Esc để đóng, click backdrop để đóng
+    // Esc để đóng, click backdrop để đóng
     document.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape' && isMobileSidebarMode()){
+      if (e.key === 'Escape' && isMobileSidebarMode()){
         toggleSidebar(false);
-    }
+      }
+    });
+
+    // Toggle collapse (desktop)
+    const btnCol = $('#btnCollapseSidebar');
+    btnCol?.addEventListener('click', ()=>{
+      if (isMobileSidebarMode()) return; // mobile không dùng collapse
+      const sb = $('#sidebar');
+      sb.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed') ? '1' : '0');
     });
 
     $('#btnLogout').addEventListener('click', ()=>{ localStorage.removeItem('user'); window.location.href = '../index.html'; });
@@ -632,52 +567,43 @@
     $('#filterClass').addEventListener('change', applyFilters);
   }
 
+  // === Gestures: vuốt từ mép trái để mở, vuốt trái để đóng (mobile) ===
+  let touchStartX = null, touchStartY = null, edgeSwipe = false;
 
-
-
-    // === Gestures: vuốt từ mép trái để mở, vuốt trái để đóng (mobile) ===
-    let touchStartX = null, touchStartY = null, edgeSwipe = false;
-
-    document.addEventListener('touchstart', (e)=>{
+  document.addEventListener('touchstart', (e)=>{
     if (!isMobileSidebarMode() || e.touches.length !== 1) return;
     const t = e.touches[0];
     touchStartX = t.clientX;
     touchStartY = t.clientY;
     // Vuốt từ sát mép trái (<20px) mới coi là intent mở
     edgeSwipe = touchStartX <= 20;
-    }, {passive: true});
+  }, {passive: true});
 
-    document.addEventListener('touchmove', (e)=>{
+  document.addEventListener('touchmove', (e)=>{
     if (!isMobileSidebarMode() || touchStartX === null) return;
     const t = e.touches[0];
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
 
-    // Nếu người dùng đang kéo dọc nhiều thì bỏ qua để không chặn cuộn
     if (Math.abs(dy) > 30) return;
 
-    // Vuốt từ mép trái sang phải để mở
     if (edgeSwipe && dx > 60){
-        toggleSidebar(true);
-        touchStartX = null; // reset để tránh lặp
-        edgeSwipe = false;
+      toggleSidebar(true);
+      touchStartX = null;
+      edgeSwipe = false;
     }
 
-    // Khi sidebar đang mở, vuốt sang trái để đóng
     if ($('#sidebar').classList.contains('show') && dx < -60){
-        toggleSidebar(false);
-        touchStartX = null;
-        edgeSwipe = false;
+      toggleSidebar(false);
+      touchStartX = null;
+      edgeSwipe = false;
     }
-    }, {passive: true});
+  }, {passive: true});
 
-    document.addEventListener('touchend', ()=>{
+  document.addEventListener('touchend', ()=>{
     touchStartX = null;
     edgeSwipe = false;
-    }, {passive: true});
-
-
-
+  }, {passive: true});
 
   // === Boot ===
   (async function init(){
@@ -686,9 +612,7 @@
     $('#userRole').textContent = user.phan_quyen||'admin';
     $('#schoolName').textContent = user.ten_truong || (user.ma_truong||'');
 
-
-    handleSidebarOnResize(); // đồng bộ trạng thái sidebar theo kích thước ngay khi vào trang
-
+    handleSidebarOnResize(); // đồng bộ trạng thái sidebar theo kích thước
 
     wireSidebar();
     setActivePage('overview');
@@ -746,22 +670,6 @@
       hideLoading();
     }
   })();
-
-
-
-
-
-  // JS toggle sidebar collapse
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const btnCollapse = document.getElementById('btnCollapseSidebar');
-    const sidebar = document.getElementById('sidebar');
-    if(btnCollapse){
-      btnCollapse.addEventListener('click', ()=>{
-        sidebar.classList.toggle('collapsed');
-      });
-    }
-  });
-
-</script>
+  </script>
 </body>
 </html>
