@@ -277,8 +277,51 @@
 
       <!-- Placeholder other pages (hidden by default) -->
       <section id="page-students" class="d-none">
-        <div class="panel"><div>Đi tới <a href="ds_hocsinh.html">Danh sách học sinh</a>.</div></div>
-      </section>
+      <h4 class="page-title mb-3">Danh sách học sinh</h4>
+
+      <!-- Bộ lọc -->
+      <div class="row g-2 mb-2">
+        <div class="col-sm-3">
+          <input class="form-control" id="ad-filter-ma-truong" placeholder="Mã trường (để trống = tất cả)">
+        </div>
+        <div class="col-sm-3">
+          <input class="form-control" id="ad-filter-lop" placeholder="Lớp (để trống = tất cả)">
+        </div>
+        <div class="col-sm-6 d-flex gap-2">
+          <input class="form-control" id="ad-search-box" placeholder="Tìm theo tên, mã BHXH, số định danh…">
+          <button class="btn btn-primary" id="ad-btn-refresh">Tải lại</button>
+          <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#ad-modalThemHS">Thêm học sinh</button>
+          <button class="btn btn-danger d-none" id="ad-btn-delete-multi">Xóa đã chọn</button>
+        </div>
+      </div>
+
+      <!-- Bảng -->
+      <div class="table-responsive table-box">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:34px;"><input type="checkbox" id="ad-chk-all"></th>
+              <th>STT</th>
+              <th>MS BHXH</th>
+              <th>Họ tên</th>
+              <th>Ngày sinh</th>
+              <th>Giới tính</th>
+              <th>Lớp</th>
+              <th>Số định danh</th>
+              <th>SĐT</th>
+              <th>Mã trường</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="ad-tbody"></tbody>
+        </table>
+      </div>
+
+      <nav class="mt-3">
+        <ul class="pagination justify-content-center" id="ad-pagination"></ul>
+      </nav>
+    </section>
+
       <section id="page-teachers" class="d-none">
         <div class="panel"><div>Danh sách giáo viên (đang phát triển).</div></div>
       </section>
@@ -296,6 +339,96 @@
     </main>
   </div>
 
+
+
+
+
+  <!-- Modal: Thêm học sinh -->
+<div class="modal fade" id="ad-modalThemHS" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Thêm học sinh</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <form id="ad-form-themhs" onsubmit="event.preventDefault();AD_handleThemHS();">
+        <div class="row g-2">
+          <div class="col-sm-6"><label class="form-label">MS BHXH</label><input class="form-control" id="ad-inp-msbhxh"></div>
+          <div class="col-sm-6"><label class="form-label">Họ tên</label><input class="form-control" id="ad-inp-hoten"></div>
+          <div class="col-sm-4"><label class="form-label">Ngày sinh</label><input class="form-control" id="ad-inp-ngaysinh" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-4"><label class="form-label d-block">Giới tính</label>
+            <div class="d-flex gap-3">
+              <label class="form-check"><input class="form-check-input" type="radio" name="ad-gt" value="Nam" checked> Nam</label>
+              <label class="form-check"><input class="form-check-input" type="radio" name="ad-gt" value="Nữ"> Nữ</label>
+            </div>
+          </div>
+          <div class="col-sm-4"><label class="form-label">Lớp</label><input class="form-control" id="ad-inp-lop"></div>
+          <div class="col-sm-6"><label class="form-label">Địa chỉ</label><input class="form-control" id="ad-inp-diachi"></div>
+          <div class="col-sm-6"><label class="form-label">SĐT liên hệ</label><input class="form-control" id="ad-inp-sdt"></div>
+          <div class="col-sm-6"><label class="form-label">Số định danh</label><input class="form-control" id="ad-inp-sdd"></div>
+          <div class="col-sm-6"><label class="form-label">Tên cha/mẹ</label><input class="form-control" id="ad-inp-cha-me"></div>
+          <div class="col-sm-6"><label class="form-label">Hạn BHYT</label><input class="form-control" id="ad-inp-han-bhyt" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-6"><label class="form-label">Hạn BHTN</label><input class="form-control" id="ad-inp-han-bhtn" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-6"><label class="form-label">Nơi khám BHYT</label><input class="form-control" id="ad-inp-noikham"></div>
+          <div class="col-sm-6"><label class="form-label">Đối tượng đóng</label><input class="form-control" id="ad-inp-doituong"></div>
+          <div class="col-12"><label class="form-label">Ghi chú</label><input class="form-control" id="ad-inp-ghichu"></div>
+          <div class="col-sm-6"><label class="form-label">Mã trường</label><input class="form-control" id="ad-inp-ma-truong"></div>
+        </div>
+      </form>
+      <div id="ad-themhs-error" class="text-danger mt-2" style="min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      <button class="btn btn-primary" onclick="AD_handleThemHS()">Thêm</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Sửa học sinh -->
+<div class="modal fade" id="ad-modalSuaHS" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Sửa học sinh</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <form id="ad-form-suahs" onsubmit="event.preventDefault();AD_handleSuaHS();">
+        <input type="hidden" id="ad-edit-stt">
+        <div class="row g-2">
+          <div class="col-sm-6"><label class="form-label">MS BHXH</label><input class="form-control" id="ad-edit-msbhxh"></div>
+          <div class="col-sm-6"><label class="form-label">Họ tên</label><input class="form-control" id="ad-edit-hoten"></div>
+          <div class="col-sm-4"><label class="form-label">Ngày sinh</label><input class="form-control" id="ad-edit-ngaysinh" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-4"><label class="form-label d-block">Giới tính</label>
+            <div class="d-flex gap-3">
+              <label class="form-check"><input class="form-check-input" type="radio" name="ad-edit-gt" value="Nam"> Nam</label>
+              <label class="form-check"><input class="form-check-input" type="radio" name="ad-edit-gt" value="Nữ"> Nữ</label>
+            </div>
+          </div>
+          <div class="col-sm-4"><label class="form-label">Lớp</label><input class="form-control" id="ad-edit-lop"></div>
+          <div class="col-sm-6"><label class="form-label">Địa chỉ</label><input class="form-control" id="ad-edit-diachi"></div>
+          <div class="col-sm-6"><label class="form-label">SĐT liên hệ</label><input class="form-control" id="ad-edit-sdt"></div>
+          <div class="col-sm-6"><label class="form-label">Số định danh</label><input class="form-control" id="ad-edit-sdd"></div>
+          <div class="col-sm-6"><label class="form-label">Tên cha/mẹ</label><input class="form-control" id="ad-edit-cha-me"></div>
+          <div class="col-sm-6"><label class="form-label">Hạn BHYT</label><input class="form-control" id="ad-edit-han-bhyt" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-6"><label class="form-label">Hạn BHTN</label><input class="form-control" id="ad-edit-han-bhtn" placeholder="dd/mm/yyyy" autocomplete="off"></div>
+          <div class="col-sm-6"><label class="form-label">Nơi khám BHYT</label><input class="form-control" id="ad-edit-noikham"></div>
+          <div class="col-sm-6"><label class="form-label">Đối tượng đóng</label><input class="form-control" id="ad-edit-doituong"></div>
+          <div class="col-12"><label class="form-label">Ghi chú</label><input class="form-control" id="ad-edit-ghichu"></div>
+          <div class="col-sm-6"><label class="form-label">Mã trường</label><input class="form-control" id="ad-edit-ma-truong"></div>
+        </div>
+      </form>
+      <div id="ad-suahs-error" class="text-danger mt-2" style="min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      <button class="btn btn-primary" onclick="AD_handleSuaHS()">Lưu</button>
+    </div>
+  </div></div>
+</div>
+
+
+
+
   <!-- Loading -->
   <div id="loadingSpinner">
     <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
@@ -305,6 +438,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../js/api.js"></script>
+
 
   <script>
   // === Utilities ===
@@ -498,5 +632,277 @@
     }
   })();
 </script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+(() => {
+  // ===== Phân quyền: chỉ admin/super_admin =====
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = String(user.phan_quyen || "").toLowerCase();
+  if (!user.sdt || (role !== "admin" && role !== "super_admin")) {
+    window.location.href = "../index.html";
+    return;
+  }
+
+  // ====== State ======
+  let AD_STATE = {
+    ma_truong: "", lop_hoc: "",
+    page: 0, limit: 10, total: 0,
+    sortField: "", sortDir: 1,
+    query: "",
+    selected: new Set()
+  };
+
+  // ====== Elements ======
+  const $ = (s, p=document) => p.querySelector(s);
+  const $$ = (s, p=document) => Array.from(p.querySelectorAll(s));
+  const viewHS = $("#view-hocsinh");
+  const navHS = $("#nav-hocsinh");
+
+  // ====== Active nav -> show panel ======
+  navHS?.addEventListener("click", () => {
+    // deactivate others
+    $$(".nav-item").forEach(n => n.classList.remove("active"));
+    navHS.classList.add("active");
+    // hide other sections
+    $$("section[id^='view-']").forEach(sec => sec.classList.add("d-none"));
+    viewHS.classList.remove("d-none");
+    AD_initOnce();
+  });
+
+  // ====== One-time init for HS panel ======
+  let inited = false;
+  function AD_initOnce(){
+    if (inited) return;
+    inited = true;
+
+    // Date pickers
+    flatpickr("#ad-inp-ngaysinh", {dateFormat:"d/m/Y"});
+    flatpickr("#ad-inp-han-bhyt", {dateFormat:"d/m/Y"});
+    flatpickr("#ad-inp-han-bhtn", {dateFormat:"d/m/Y"});
+    flatpickr("#ad-edit-ngaysinh", {dateFormat:"d/m/Y"});
+    flatpickr("#ad-edit-han-bhyt", {dateFormat:"d/m/Y"});
+    flatpickr("#ad-edit-han-bhtn", {dateFormat:"d/m/Y"});
+
+    // Bind filters/search/paging
+    $("#ad-filter-ma-truong").addEventListener("input", e => { AD_STATE.ma_truong = e.target.value.trim(); AD_reload(true); });
+    $("#ad-filter-lop").addEventListener("input", e => { AD_STATE.lop_hoc = e.target.value.trim(); AD_reload(true); });
+    $("#ad-search-box").addEventListener("input", e => { AD_STATE.query = e.target.value.trim(); AD_reload(true); });
+    $("#ad-btn-refresh").addEventListener("click", () => AD_reload(true));
+    $("#ad-chk-all").addEventListener("change", e => {
+      const checked = e.target.checked;
+      $$("#ad-tbody input[type='checkbox']").forEach(ch => {
+        ch.checked = checked;
+        const id = ch.dataset.id;
+        if (checked) AD_STATE.selected.add(id); else AD_STATE.selected.delete(id);
+      });
+      AD_toggleDeleteMulti();
+    });
+
+    // Sort handlers
+    $$("#view-hocsinh th.sortable").forEach(th => {
+      th.addEventListener("click", () => {
+        const f = th.dataset.field || "";
+        if (AD_STATE.sortField === f) AD_STATE.sortDir = -AD_STATE.sortDir;
+        else { AD_STATE.sortField = f; AD_STATE.sortDir = 1; }
+        AD_reload(true);
+      });
+    });
+
+    // Load first
+    AD_reload(true);
+  }
+
+  function AD_toggleDeleteMulti(){
+    const btn = $("#ad-btn-delete-multi");
+    btn.classList.toggle("d-none", AD_STATE.selected.size === 0);
+  }
+
+  // ===== Render table =====
+  function renderRows(items){
+    const tbody = $("#ad-tbody");
+    tbody.innerHTML = items.map(row => {
+      const id = row.stt ?? row.so_dinh_danh ?? "";
+      const gt = (row.gioi_tinh || "").toString();
+      return `
+        <tr>
+          <td><input type="checkbox" data-id="${id}" onchange="AD_onSelectRow(this)"></td>
+          <td>${row.stt ?? ""}</td>
+          <td>${row.ma_so_bhxh ?? ""}</td>
+          <td>${row.ho_ten_hoc_sinh ?? ""}</td>
+          <td>${row.ngay_sinh ?? ""}</td>
+          <td>${gt}</td>
+          <td>${row.lop_hoc ?? ""}</td>
+          <td>${row.so_dinh_danh ?? ""}</td>
+          <td>${row.sdt_lienhe ?? ""}</td>
+          <td>${row.ma_truong ?? ""}</td>
+          <td class="text-nowrap">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick='AD_openEdit(${JSON.stringify(row).replace(/'/g,"&#39;")})'>Sửa</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="AD_deleteOne('${id}')">Xóa</button>
+          </td>
+        </tr>`;
+    }).join("");
+    // row checkbox change (delegated)
+    $$("#ad-tbody input[type='checkbox']").forEach(ch=>{
+      ch.addEventListener("change", e=>{
+        const id = e.target.dataset.id;
+        if (e.target.checked) AD_STATE.selected.add(id);
+        else AD_STATE.selected.delete(id);
+        AD_toggleDeleteMulti();
+      })
+    });
+  }
+
+  // ===== Pagination =====
+  function renderPagination(total, page, limit){
+    const ul = $("#ad-pagination");
+    const pages = Math.max(1, Math.ceil(total/limit));
+    const btn = (p, label, disabled=false, active=false) =>
+      `<li class="page-item ${disabled?'disabled':''} ${active?'active':''}">
+        <a class="page-link" href="javascript:void(0)" data-p="${p}">${label}</a>
+      </li>`;
+    let html = "";
+    html += btn(Math.max(0, page-1), "«", page===0);
+    for(let i=0;i<pages;i++){
+      if (i===0 || i===pages-1 || Math.abs(i-page)<=2){
+        html += btn(i, (i+1), false, i===page);
+      } else if (i===page-3 || i===page+3) {
+        html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+      }
+    }
+    html += btn(Math.min(pages-1, page+1), "»", page>=pages-1);
+    ul.innerHTML = html;
+    $$("#ad-pagination a.page-link").forEach(a=>{
+      a.addEventListener("click", e=>{
+        const p = Number(a.dataset.p||0);
+        AD_STATE.page = p;
+        AD_reload(false);
+      });
+    });
+  }
+
+  // ===== Load data =====
+  async function AD_reload(resetPage=false){
+    if (resetPage) AD_STATE.page = 0;
+    const start = AD_STATE.page * AD_STATE.limit;
+    const res = await getDanhSachHocsinhPaginated(
+      AD_STATE.ma_truong, AD_STATE.lop_hoc,
+      start, AD_STATE.limit,
+      AD_STATE.query, AD_STATE.sortField, AD_STATE.sortDir
+    ); // dùng API sẵn có 
+
+    if (!res || !res.success){
+      $("#ad-tbody").innerHTML = `<tr><td colspan="11" class="text-danger">Không tải được dữ liệu.</td></tr>`;
+      $("#ad-total-hs").textContent = "0";
+      renderPagination(0, 0, AD_STATE.limit);
+      return;
+    }
+    const items = res.data?.items || res.data || [];
+    AD_STATE.total = res.data?.total ?? items.length ?? 0;
+
+    $("#ad-total-hs").textContent = AD_STATE.total;
+    $("#ad-lop-label").textContent = AD_STATE.lop_hoc || "tất cả";
+    AD_STATE.selected.clear(); AD_toggleDeleteMulti();
+    renderRows(items);
+    renderPagination(AD_STATE.total, AD_STATE.page, AD_STATE.limit);
+  }
+
+  // ===== CRUD Helpers =====
+  window.AD_onSelectRow = function(ch){ /* handled in renderRows */ };
+
+  window.AD_openEdit = function(row){
+    $("#ad-edit-stt").value = row.stt || "";
+    $("#ad-edit-msbhxh").value = row.ma_so_bhxh || "";
+    $("#ad-edit-hoten").value = row.ho_ten_hoc_sinh || "";
+    $("#ad-edit-ngaysinh").value = row.ngay_sinh || "";
+    $$("input[name='ad-edit-gt']").forEach(r => r.checked = (r.value === String(row.gioi_tinh||"")));
+    $("#ad-edit-lop").value = row.lop_hoc || "";
+    $("#ad-edit-diachi").value = row.dia_chi || "";
+    $("#ad-edit-sdt").value = row.sdt_lienhe || "";
+    $("#ad-edit-sdd").value = row.so_dinh_danh || "";
+    $("#ad-edit-cha-me").value = row.ten_cha_me || "";
+    $("#ad-edit-han-bhyt").value = row.ngay_het_han_bhyt || "";
+    $("#ad-edit-han-bhtn").value = row.ngay_het_han_bhtn || "";
+    $("#ad-edit-noikham").value = row.noi_kham_bhyt || "";
+    $("#ad-edit-doituong").value = row.doi_tuong_dong || "";
+    $("#ad-edit-ghichu").value = row.ghi_chu || "";
+    $("#ad-edit-ma-truong").value = row.ma_truong || "";
+
+    new bootstrap.Modal($("#ad-modalSuaHS")).show();
+  };
+
+  window.AD_deleteOne = async function(id){
+    if (!confirm("Bạn chắc chắn muốn xóa dòng này?")) return;
+    const r = await xoaHocsinh(id); // API có sẵn 
+    if (!r || !r.success) { alert(r?.message || "Xóa thất bại"); return; }
+    AD_reload(false);
+  };
+
+  $("#ad-btn-delete-multi").addEventListener("click", async ()=>{
+    if (AD_STATE.selected.size===0) return;
+    if (!confirm(`Xóa ${AD_STATE.selected.size} dòng đã chọn?`)) return;
+    const ids = Array.from(AD_STATE.selected);
+    const r = await xoaNhieuHocsinh(ids); // API có sẵn 
+    if (!r || !r.success) { alert(r?.message || "Xóa nhiều thất bại"); return; }
+    AD_reload(true);
+  });
+
+  window.AD_handleThemHS = async function(){
+    const payload = {
+      ma_so_bhxh: $("#ad-inp-msbhxh").value.trim(),
+      ho_ten_hoc_sinh: $("#ad-inp-hoten").value.trim(),
+      ngay_sinh: $("#ad-inp-ngaysinh").value.trim(),
+      gioi_tinh: $$("input[name='ad-gt']:checked")[0]?.value || "",
+      dia_chi: $("#ad-inp-diachi").value.trim(),
+      ngay_het_han_bhyt: $("#ad-inp-han-bhyt").value.trim(),
+      ngay_het_han_bhtn: $("#ad-inp-han-bhtn").value.trim(),
+      lop_hoc: $("#ad-inp-lop").value.trim(),
+      sdt_lienhe: $("#ad-inp-sdt").value.trim(),
+      so_dinh_danh: $("#ad-inp-sdd").value.trim(),
+      noi_kham_bhyt: $("#ad-inp-noikham").value.trim(),
+      ten_cha_me: $("#ad-inp-cha-me").value.trim(),
+      doi_tuong_dong: $("#ad-inp-doituong").value.trim(),
+      ghi_chu: $("#ad-inp-ghichu").value.trim(),
+      ma_truong: $("#ad-inp-ma-truong").value.trim() || $("#ad-filter-ma-truong").value.trim() || ""
+    };
+    const r = await themHocsinh(payload); // API có sẵn 
+    if (!r || !r.success){ $("#ad-themhs-error").textContent = r?.message || "Thêm thất bại"; return; }
+    $("#ad-themhs-error").textContent = "";
+    bootstrap.Modal.getInstance($("#ad-modalThemHS")).hide();
+    AD_reload(true);
+  };
+
+  window.AD_handleSuaHS = async function(){
+    const payload = {
+      stt: $("#ad-edit-stt").value,
+      ma_so_bhxh: $("#ad-edit-msbhxh").value.trim(),
+      ho_ten_hoc_sinh: $("#ad-edit-hoten").value.trim(),
+      ngay_sinh: $("#ad-edit-ngaysinh").value.trim(),
+      gioi_tinh: $$("input[name='ad-edit-gt']:checked")[0]?.value || "",
+      dia_chi: $("#ad-edit-diachi").value.trim(),
+      ngay_het_han_bhyt: $("#ad-edit-han-bhyt").value.trim(),
+      ngay_het_han_bhtn: $("#ad-edit-han-bhtn").value.trim(),
+      lop_hoc: $("#ad-edit-lop").value.trim(),
+      sdt_lienhe: $("#ad-edit-sdt").value.trim(),
+      so_dinh_danh: $("#ad-edit-sdd").value.trim(),
+      noi_kham_bhyt: $("#ad-edit-noikham").value.trim(),
+      ten_cha_me: $("#ad-edit-cha-me").value.trim(),
+      doi_tuong_dong: $("#ad-edit-doituong").value.trim(),
+      ghi_chu: $("#ad-edit-ghichu").value.trim(),
+      ma_truong: $("#ad-edit-ma-truong").value.trim() || $("#ad-filter-ma-truong").value.trim() || ""
+    };
+    const r = await suaHocsinh(payload); // API có sẵn 
+    if (!r || !r.success){ $("#ad-suahs-error").textContent = r?.message || "Cập nhật thất bại"; return; }
+    $("#ad-suahs-error").textContent = "";
+    bootstrap.Modal.getInstance($("#ad-modalSuaHS")).hide();
+    AD_reload(false);
+  };
+
+})();
+</script>
+
 </body>
 </html>
