@@ -161,6 +161,58 @@
     color:#fff;
     }
 
+
+
+
+    /* Phân cách trong sidebar */
+    .nav-separator {
+      border-top:1px solid rgba(255,255,255,.2);
+      margin:8px 0;
+    }
+
+    /* Sidebar thu gọn (desktop) */
+    @media (min-width: 992px){
+      .sidebar.collapsed{
+        width:60px;
+      }
+      .sidebar.collapsed .brand .name,
+      .sidebar.collapsed .brand .small,
+      .sidebar.collapsed .nav-item span{
+        display:none;
+      }
+      .sidebar.collapsed .nav-item{
+        justify-content:center;
+        padding:10px 0;
+      }
+    }
+
+
+    /* KPI cùng hàng ở desktop */
+    @media (min-width: 1200px){
+      /* 4 KPI chia cột đều */
+      #page-overview .kpi-grid .kpi-card:nth-child(1),
+      #page-overview .kpi-grid .kpi-card:nth-child(2),
+      #page-overview .kpi-grid .kpi-card:nth-child(3),
+      #page-overview .kpi-grid .kpi-card:nth-child(4),
+      #page-overview .kpi-grid .kpi-card:nth-child(5){
+        grid-column: span 3;
+      }
+
+      /* Gom tiến độ ngay dưới mỗi loại bảo hiểm */
+      #page-overview .kpi-grid{
+        grid-template-columns: repeat(12, 1fr);
+      }
+      #page-overview .kpi-grid .kpi-card:nth-child(2), /* BHYT đã thu */
+      #page-overview .kpi-grid .kpi-card:nth-child(4){ /* Tiến độ BHYT */
+        grid-column: span 3;
+      }
+      #page-overview .kpi-grid .kpi-card:nth-child(3), /* BHTN đã thu */
+      #page-overview .kpi-grid .kpi-card:nth-child(5){ /* Tiến độ BHTN */
+        grid-column: span 3;
+      }
+    }
+
+
   
   </style>
 </head>
@@ -174,6 +226,10 @@
           <div class="name">ABT Medu</div>
           <div class="small" style="opacity:.8">Admin trường</div>
         </div>
+        <!-- Nút thu gọn sidebar (desktop) -->
+        <button id="btnCollapseSidebar" class="btn btn-sm btn-link text-white ms-auto d-none d-lg-inline" title="Thu gọn menu">
+          <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
       </div>
 
       <div class="nav-section" id="sidebarMenu">
@@ -185,10 +241,14 @@
         <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
         <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
         <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
-        <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
+
+        <!-- Phân cách -->
+        <div class="nav-separator my-2"></div>
+
         <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
       </div>
     </aside>
+
 
     <div class="backdrop" id="backdrop"></div>
 
@@ -686,6 +746,22 @@
       hideLoading();
     }
   })();
+
+
+
+
+
+  // JS toggle sidebar collapse
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const btnCollapse = document.getElementById('btnCollapseSidebar');
+    const sidebar = document.getElementById('sidebar');
+    if(btnCollapse){
+      btnCollapse.addEventListener('click', ()=>{
+        sidebar.classList.toggle('collapsed');
+      });
+    }
+  });
+
 </script>
 </body>
 </html>
