@@ -885,6 +885,13 @@
       if (rs.success){
         ADM.selected.clear();
         
+        // Ẩn nút xóa nhiều + bỏ chọn tất cả checkbox (nếu còn hiển thị)
+        $('#adm-btn-delmany').classList.add('d-none');
+        const chkAll = $('#adm-chk-all');
+        if (chkAll) chkAll.checked = false;
+        $$('.adm-chk').forEach(cb => { cb.checked = false; });
+
+
         showToast('Xóa nhiều học sinh thành công!', 'success');
         await adm_reloadStudents();
       } else {
