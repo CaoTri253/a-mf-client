@@ -454,6 +454,19 @@
     </div>
   </div>
 
+
+
+  <!-- Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+    <div id="toastNoti" class="toast align-items-center text-white bg-primary border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastNotiBody">—</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -491,6 +504,88 @@
   function adm_isValidDateVN(s){ if(!/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return false; const [d,m,y]=s.split('/').map(Number); const dt=new Date(y,m-1,d); return dt.getFullYear()===y && (dt.getMonth()+1)===m && dt.getDate()===d; }
   function adm_readDateStr(sel){ const el=document.querySelector(sel); return (el && el.value)? el.value.trim() : ""; }
 
+
+
+
+  // phát hiện kích thước trang
+  function adm_detectPageSize(){
+    const w = window.innerWidth;
+    // mobile <= 576 → 3; tablet <= 991 → 5; desktop → 10
+    ADM.pageSize = (w <= 576) ? 3 : (w <= 991) ? 5 : 10;
+  }
+  window.addEventListener('resize', () => {
+    const prev = ADM.pageSize;
+    adm_detectPageSize();
+    if (ADM.pageSize !== prev){
+      ADM.page = 1;
+      adm_renderTable();
+      adm_renderPagin();
+    }
+  });
+
+
+
+
+
+
+
+  function adm_isValidPhone(s){ return /^0\d{9,10}$/.test(String(s||'').trim()); }
+  function adm_isValidSdd(s){ return /^\d{9,12}$/.test(String(s||'').trim()); }
+
+  // Validate từng dòng import (tham khảo validateImportRowNew bên ds_hocsinh.html)
+  function adm_validateImportRowNew(
+    row, rowNum,
+    soDinhDanhSet, maSoBHXHSet,
+    existedSoDinhDanhSet, existedMaSoBHXHSet,
+    requiredMaTruong
+  ){
+    const required = [
+      ['ma_so_bhxh', 'Mã số BHXH'],
+      ['ho_ten_hoc_sinh', 'Họ tên học sinh'],
+      ['ngay_sinh', 'Ngày sinh'],
+      ['gioi_tinh', 'Giới tính'],
+      ['dia_chi', 'Địa chỉ'],
+      ['ngay_het_han_bhyt', 'Hạn BHYT'],
+      ['ngay_het_han_bhtn', 'Hạn BHTN'],
+      ['lop_hoc', 'Lớp'],
+      ['sdt_lienhe', 'SĐT liên hệ'],
+      ['so_dinh_danh', 'Số định danh'],
+      ['noi_kham_bhyt', 'Nơi khám BHYT'],
+      ['ten_cha_me', 'Tên cha/mẹ'],
+      ['ma_truong', 'Mã trường']
+    ];
+    for (const [k,label] of required){
+      if (!row[k] || String(row[k]).trim()===''){
+        return `Dòng ${rowNum}: Trường "${label}" không được để trống.`;
+      }
+    }
+    if (!adm_isValidDateVN(row.ngay_sinh)) return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không hợp lệ.`;
+    if (!adm_isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không hợp lệ.`;
+    if (!adm_isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không hợp lệ.`;
+    if (!adm_isValidPhone(row.sdt_lienhe)) return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+    if (!adm_isValidSdd(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ.`;
+
+    if (requiredMaTruong && String(row.ma_truong).trim() !== String(requiredMaTruong).trim()){
+      return `Dòng ${rowNum}: Mã trường "${row.ma_truong}" không khớp với tài khoản hiện tại.`;
+    }
+
+    const ms = String(row.ma_so_bhxh).trim();
+    const sdd = String(row.so_dinh_danh).trim();
+
+    if (maSoBHXHSet.has(ms)) return `Dòng ${rowNum}: Mã số BHXH "${ms}" bị trùng trong file import.`;
+    if (soDinhDanhSet.has(sdd)) return `Dòng ${rowNum}: Số định danh "${sdd}" bị trùng trong file import.`;
+
+    if (existedMaSoBHXHSet.has(ms)) return `Dòng ${rowNum}: Mã số BHXH "${ms}" đã tồn tại trong hệ thống.`;
+    if (existedSoDinhDanhSet.has(sdd)) return `Dòng ${rowNum}: Số định danh "${sdd}" đã tồn tại trong hệ thống.`;
+
+    maSoBHXHSet.add(ms);
+    soDinhDanhSet.add(sdd);
+    return "";
+  }
+
+
+
+
   // fetch toàn trường 1 lần – client-side filter/search/paginate
   async function adm_reloadStudents(){
     try{
@@ -501,6 +596,7 @@
       // build datalist lớp
       const classes = [...new Set(ADM.all.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
       $('#admClassList').innerHTML = classes.map(c=>`<option value="${c}">`).join('');
+      adm_detectPageSize();      // << thêm dòng này
       adm_applyFilters();
     } finally { hideLoading(); }
   }
@@ -673,8 +769,14 @@
     showLoading();
     const rs = await themHocsinh(hs);
     hideLoading();
-    if (rs.success){ bootstrap.Modal.getInstance($('#admModalAdd')).hide(); await adm_reloadStudents(); }
-    else { $('#adm-add-err').textContent = rs.message || 'Thêm thất bại'; }
+    if (rs.success){
+      bootstrap.Modal.getInstance($('#admModalAdd')).hide();
+      showToast('Thêm học sinh thành công!', 'success');
+      await adm_reloadStudents();
+    } else {
+      $('#adm-add-err').textContent = rs.message || 'Thêm thất bại';
+      showToast($('#adm-add-err').textContent, 'danger');
+    }
   }
 
   // mở modal Sửa
@@ -734,37 +836,78 @@
     showLoading();
     const rs = await suaHocsinh(hs);
     hideLoading();
-    if (rs.success){ bootstrap.Modal.getInstance($('#admModalEdit')).hide(); await adm_reloadStudents(); }
-    else { $('#adm-edit-err').textContent = rs.message || 'Cập nhật thất bại'; }
+    if (rs.success){
+      bootstrap.Modal.getInstance($('#admModalEdit')).hide();
+      showToast('Cập nhật học sinh thành công!', 'success');
+      await adm_reloadStudents();
+    } else {
+      $('#adm-edit-err').textContent = rs.message || 'Cập nhật thất bại';
+      showToast($('#adm-edit-err').textContent, 'danger');
+    }
   }
 
   // xóa 1 / xóa nhiều
   function adm_confirmDelete(stt){
     $('#admConfirmTitle').textContent='Xác nhận xóa';
     $('#admConfirmBody').innerHTML='Bạn có chắc chắn muốn xóa học sinh này?';
-    const btn = $('#admConfirmBtn'); btn.onclick = async ()=>{
-      showLoading(); const rs = await xoaHocsinh(stt); hideLoading();
-      if (rs.success) await adm_reloadStudents();
-    };
-    new bootstrap.Modal('#admModalConfirm').show();
-  }
-  function adm_confirmDeleteMany(){
-    if (!ADM.selected.size) return;
-    $('#admConfirmTitle').textContent='Xác nhận xóa nhiều';
-    $('#admConfirmBody').innerHTML=`Bạn có chắc chắn muốn xóa <b>${ADM.selected.size}</b> học sinh đã chọn?`;
-    const btn = $('#admConfirmBtn'); btn.onclick = async ()=>{
-      showLoading(); const rs = await xoaNhieuHocsinh([...ADM.selected]); hideLoading();
-      if (rs.success) { ADM.selected.clear(); await adm_reloadStudents(); }
+    const btn = $('#admConfirmBtn');
+    btn.onclick = async ()=>{
+      // Ẩn modal NGAY lập tức trước khi xóa (fix lỗi “modal treo”)
+      const m = bootstrap.Modal.getInstance($('#admModalConfirm'));
+      m?.hide();
+
+      showLoading();
+      const rs = await xoaHocsinh(stt);
+      hideLoading();
+      if (rs.success){
+        showToast('Xóa học sinh thành công!', 'success');
+        await adm_reloadStudents();
+      } else {
+        showToast(rs.message || 'Xóa học sinh thất bại!', 'danger');
+      }
     };
     new bootstrap.Modal('#admModalConfirm').show();
   }
 
+  function adm_confirmDeleteMany(){
+    if (!ADM.selected.size) return;
+    $('#admConfirmTitle').textContent='Xác nhận xóa nhiều';
+    $('#admConfirmBody').innerHTML=`Bạn có chắc chắn muốn xóa <b>${ADM.selected.size}</b> học sinh đã chọn?`;
+    const btn = $('#admConfirmBtn');
+    btn.onclick = async ()=>{
+      // Ẩn modal trước khi xóa
+      const m = bootstrap.Modal.getInstance($('#admModalConfirm'));
+      m?.hide();
+
+      showLoading();
+      const rs = await xoaNhieuHocsinh([...ADM.selected]);
+      hideLoading();
+      if (rs.success){
+        ADM.selected.clear();
+        showToast('Xóa nhiều học sinh thành công!', 'success');
+        await adm_reloadStudents();
+      } else {
+        showToast(rs.message || 'Xóa nhiều học sinh thất bại!', 'danger');
+      }
+    };
+    new bootstrap.Modal('#admModalConfirm').show();
+  }
+
+
   // wire UI
   function adm_wireStudentsPage(){
+
+    // detect page size
+    adm_detectPageSize();
+
+
     // inputs
     $('#adm-loc-lop').addEventListener('input', ()=>{ ADM.page=1; adm_applyFilters(); });
     $('#adm-search').addEventListener('input', ()=>{ ADM.page=1; adm_applyFilters(); });
-    $('#adm-btn-reload').addEventListener('click', adm_reloadStudents);
+    $('#adm-btn-reload').addEventListener('click', ()=> {
+      adm_reloadStudents().then(()=> showToast('Đã tải lại danh sách học sinh', 'success'));
+    });
+
     $('#adm-btn-add').addEventListener('click', adm_openAddModal);
     $('#adm-btn-add-save').addEventListener('click', adm_saveAdd);
     $('#adm-btn-edit-save').addEventListener('click', adm_saveEdit);
@@ -780,20 +923,60 @@
         const data = await f.files[0].arrayBuffer();
         const wb = XLSX.read(data, {type:'array'}); const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''}); rows.shift();
-        // tối thiểu: map thành đối tượng + gán ma_truong hiện tại
+
+        // validate + chuẩn hóa dữ liệu
         const user = JSON.parse(localStorage.getItem('user')||'{}');
-        const list = rows.map(r=>({
-          ma_so_bhxh:String(r[1]||''), ho_ten_hoc_sinh:r[2]||'', ngay_sinh:adm_displayNgay(r[3])||'',
-          gioi_tinh:r[4]||'', dia_chi:r[5]||'', ngay_het_han_bhyt:adm_displayNgay(r[6])||'',
-          ngay_het_han_bhtn:adm_displayNgay(r[7])||'', lop_hoc:String(r[8]||''), sdt_lienhe:String(r[9]||''),
-          so_dinh_danh:String(r[10]||''), noi_kham_bhyt:String(r[11]||''), ten_cha_me:String(r[12]||''),
+        const existedSoDinhDanhSet = new Set(ADM.all.map(r => String(r.so_dinh_danh||'').trim()).filter(Boolean));
+        const existedMaSoBHXHSet  = new Set(ADM.all.map(r => String(r.ma_so_bhxh||'').trim()).filter(Boolean));
+
+        const soDinhDanhSet = new Set();
+        const maSoBHXHSet   = new Set();
+
+        const list = rows.map(r => ({
+          ma_so_bhxh:String(r[1]||'').trim(),
+          ho_ten_hoc_sinh:(r[2]||'').toString().trim(),
+          ngay_sinh:adm_displayNgay(r[3])||'',
+          gioi_tinh:(r[4]||'').toString().trim(),
+          dia_chi:(r[5]||'').toString().trim(),
+          ngay_het_han_bhyt:adm_displayNgay(r[6])||'',
+          ngay_het_han_bhtn:adm_displayNgay(r[7])||'',
+          lop_hoc:String(r[8]||'').trim(),
+          sdt_lienhe:String(r[9]||'').trim(),
+          so_dinh_danh:String(r[10]||'').trim(),
+          noi_kham_bhyt:String(r[11]||'').trim(),
+          ten_cha_me:String(r[12]||'').trim(),
           doi_tuong_dong:(r[13]&&String(r[13]).trim())?String(r[13]).trim():'null',
           ghi_chu:(r[14]&&String(r[14]).trim())?String(r[14]).trim():'null',
-          ma_truong:String(r[15]||user.ma_truong)
+          ma_truong:String(r[15]||user.ma_truong).trim()
         }));
+
+        for (let i=0;i<list.length;i++){
+          const errMsg = adm_validateImportRowNew(
+            list[i], i+2,
+            soDinhDanhSet, maSoBHXHSet,
+            existedSoDinhDanhSet, existedMaSoBHXHSet,
+            user.ma_truong
+          );
+          if (errMsg){
+            hideLoading();
+            err.textContent = errMsg;
+            showToast(errMsg, 'danger');
+            return;
+          }
+        }
+
         const rs = await importDanhSachHocsinh(list);
-        if (rs.success){ bootstrap.Modal.getInstance($('#admModalImport')).hide(); await adm_reloadStudents(); }
-        else err.textContent = rs.message || 'Import thất bại';
+        hideLoading();
+        if (rs.success){
+          bootstrap.Modal.getInstance($('#admModalImport')).hide();
+          showToast('Import danh sách thành công!', 'success');
+          await adm_reloadStudents();
+        } else {
+          const msg = rs.message || 'Import thất bại';
+          err.textContent = msg;
+          showToast(msg, 'danger');
+        }
+
       } finally { hideLoading(); }
     });
   }
@@ -844,8 +1027,18 @@
     bd.classList.toggle('show', willOpen);
   }
 
+  // loading & toast
   function showLoading(){ $('#loadingSpinner').style.display='flex'; }
+
   function hideLoading(){ $('#loadingSpinner').style.display='none'; }
+
+  function showToast(msg, type="primary"){
+    const t = $('#toastNoti');
+    $('#toastNotiBody').innerText = msg;
+    t.className = `toast align-items-center text-white bg-${type} border-0`;
+    new bootstrap.Toast(t, { delay: 3500 }).show();
+  }
+
 
   // === State for filters ===
   let STATE = { students: [], bhytPaid: [], bhtnPaid: [] };
