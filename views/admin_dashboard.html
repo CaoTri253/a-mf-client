@@ -529,8 +529,8 @@
 
 
 
-  function adm_isValidPhone(s){ return /^0\d{9,10}$/.test(String(s||'').trim()); }
-  function adm_isValidSdd(s){ return /^\d{9,12}$/.test(String(s||'').trim()); }
+  function adm_isValidPhone(s){ return /^0\d{9}$/.test(String(s||'').trim()); }
+  function adm_isValidSdd(s){ return /^\d{12}$/.test(String(s||'').trim()); }
 
   // Validate từng dòng import (tham khảo validateImportRowNew bên ds_hocsinh.html)
   function adm_validateImportRowNew(
@@ -563,7 +563,7 @@
     if (!adm_isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không hợp lệ.`;
     if (!adm_isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không hợp lệ.`;
     if (!adm_isValidPhone(row.sdt_lienhe)) return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
-    if (!adm_isValidSdd(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ.`;
+    if (!adm_isValidSdd(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ. Số định danh phải gồm 12 số!`;
 
     if (requiredMaTruong && String(row.ma_truong).trim() !== String(requiredMaTruong).trim()){
       return `Dòng ${rowNum}: Mã trường "${row.ma_truong}" không khớp với tài khoản hiện tại.`;
@@ -885,9 +885,6 @@
       if (rs.success){
         ADM.selected.clear();
         
-        $('#adm-btn-delmany').classList.add('d-none');
-        $('#adm-chk-all')?.checked = false;
-        $$('.adm-chk').forEach(cb => cb.checked = false);
         showToast('Xóa nhiều học sinh thành công!', 'success');
         await adm_reloadStudents();
       } else {
