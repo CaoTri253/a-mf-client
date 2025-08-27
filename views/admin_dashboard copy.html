@@ -134,6 +134,14 @@
       <!-- OVERVIEW PAGE (default) -->
       <section id="page-overview">
         <!-- Top split: KPIs + Filters -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="h5 fw-bold mb-0">Tổng quan</div>
+          <button id="btnOverviewReload" class="btn btn-sm btn-primary">
+            <i class="bi bi-arrow-repeat"></i> Tải lại
+          </button>
+        </div>
+
+
         <div class="top-split mb-3">
           <!-- Left: KPIs (5 cards) -->
           <div>
@@ -734,9 +742,16 @@
     $('#adm-form-add').reset?.();
     $('#adm-add-err').textContent = '';
     // init datepickers
-    ADM.fpAdd.ngay = ADM.fpAdd.ngay || flatpickr('#add-ngaysinh',{ dateFormat:'d/m/Y', allowInput:true });
-    ADM.fpAdd.bhyt= ADM.fpAdd.bhyt || flatpickr('#add-bhyt',{ dateFormat:'d/m/Y', allowInput:true });
-    ADM.fpAdd.bhtn= ADM.fpAdd.bhtn || flatpickr('#add-bhtn',{ dateFormat:'d/m/Y', allowInput:true });
+    ADM.fpAdd.ngay = ADM.fpAdd.ngay || flatpickr('#add-ngaysinh', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+    ADM.fpAdd.bhyt = ADM.fpAdd.bhyt || flatpickr('#add-bhyt', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+    ADM.fpAdd.bhtn = ADM.fpAdd.bhtn || flatpickr('#add-bhtn', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+
     new bootstrap.Modal('#admModalAdd').show();
   }
 
@@ -783,9 +798,16 @@
   function adm_openEditModal(hs){
     if (!hs) return;
     // init pickers 1 lần
-    ADM.fpEdit.ngay = ADM.fpEdit.ngay || flatpickr('#edit-ngaysinh',{ dateFormat:'d/m/Y', allowInput:true });
-    ADM.fpEdit.bhyt= ADM.fpEdit.bhyt || flatpickr('#edit-bhyt',{ dateFormat:'d/m/Y', allowInput:true });
-    ADM.fpEdit.bhtn= ADM.fpEdit.bhtn || flatpickr('#edit-bhtn',{ dateFormat:'d/m/Y', allowInput:true });
+    ADM.fpEdit.ngay = ADM.fpEdit.ngay || flatpickr('#edit-ngaysinh', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+    ADM.fpEdit.bhyt = ADM.fpEdit.bhyt || flatpickr('#edit-bhyt', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+    ADM.fpEdit.bhtn = ADM.fpEdit.bhtn || flatpickr('#edit-bhtn', {
+      dateFormat:'d/m/Y', allowInput:true, disableMobile:true
+    });
+
 
     $('#adm-edit-err').textContent='';
     $('#edit-stt').value = hs.stt;
@@ -803,6 +825,12 @@
     $('#edit-noikham').value = hs.noi_kham_bhyt||'';
     $('#edit-doituong').value = (hs.doi_tuong_dong && hs.doi_tuong_dong!=='null')? hs.doi_tuong_dong : '';
     $('#edit-ghichu').value = (hs.ghi_chu && hs.ghi_chu!=='null')? hs.ghi_chu : '';
+
+    // set lại giá trị cho datepickers
+    if (ADM.fpEdit.ngay) ADM.fpEdit.ngay.setDate($('#edit-ngaysinh').value || null, true, 'd/m/Y');
+    if (ADM.fpEdit.bhyt) ADM.fpEdit.bhyt.setDate($('#edit-bhyt').value || null, true, 'd/m/Y');
+    if (ADM.fpEdit.bhtn) ADM.fpEdit.bhtn.setDate($('#edit-bhtn').value || null, true, 'd/m/Y');
+
 
     new bootstrap.Modal('#admModalEdit').show();
   }
@@ -1073,6 +1101,68 @@
     renderRanking('#rankBHTN', buildClassRanking(students, bhtn));
   }
 
+
+
+
+
+
+  
+  async function reloadOverview(ma_truong){
+    try{
+      showLoading();
+      const [{ total:studentsTotal, rows:students }, bhytRows, bhtnRows] = await Promise.all([
+        countStudentsBySchool(ma_truong),
+        fetchBHYT(ma_truong),
+        fetchBHTN(ma_truong)
+      ]);
+
+      const isPaid = r => {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so = String(r.so_ho_so||'');
+        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
+      };
+      const bhytPaid = bhytRows.filter(isPaid);
+      const bhtnPaid = bhtnRows.filter(isPaid);
+
+      renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
+
+      const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
+      const sel = $('#filterClass');
+      sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+      STATE = { students, bhytPaid, bhtnPaid };
+      applyFilters();
+
+      // Users overview
+      const rs = await listUsers();
+      const users = Array.isArray(rs?.data||rs?.users) ? (rs.data||rs.users) : [];
+      const uSchool = users.filter(u => String(u.ma_truong||'').trim() === ma_truong);
+      const roleEq = r => uSchool.filter(u => String(u.phan_quyen||'').trim().toLowerCase() === r).length;
+      const parentCount = uSchool.filter(u => {
+        const r = String(u.phan_quyen||'').trim().toLowerCase();
+        return r === 'phu_huynh' || r === 'user';
+      }).length;
+      $('#uAll').textContent = uSchool.length.toLocaleString('vi-VN');
+      $('#uAdmin').textContent = roleEq('admin').toLocaleString('vi-VN');
+      $('#uTeacher').textContent = roleEq('giao_vien').toLocaleString('vi-VN');
+      $('#uParent').textContent = parentCount.toLocaleString('vi-VN');
+      $('#uStudent').textContent = studentsTotal.toLocaleString('vi-VN');
+
+      showToast('Đã tải lại dữ liệu tổng quan!', 'success');
+    } catch(e){
+      console.error(e);
+      showToast('Không tải lại được dữ liệu tổng quan', 'danger');
+    } finally{
+      hideLoading();
+    }
+  }
+
+
+
+
+
+
   // === API helpers (use functions from ../js/api.js) ===
   async function listUsers(){
     try{
@@ -1154,6 +1244,10 @@
     $('#userName').textContent = user.ho_ten||user.sdt||'Admin';
     $('#userRole').textContent = user.phan_quyen||'admin';
     $('#schoolName').textContent = user.ten_truong || (user.ma_truong||'');
+
+    // reload overview on click
+    $('#btnOverviewReload')?.addEventListener('click', ()=> reloadOverview(user.ma_truong||''));
+
 
     wireSidebar();
     setActivePage('overview');
