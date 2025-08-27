@@ -860,6 +860,13 @@
       const rs = await xoaHocsinh(stt);
       hideLoading();
       if (rs.success){
+        // Ẩn nút xóa nhiều + bỏ chọn tất cả checkbox (nếu còn hiển thị)
+        $('#adm-btn-delmany').classList.add('d-none');
+        const chkAll = $('#adm-chk-all');
+        if (chkAll) chkAll.checked = false;
+        $$('.adm-chk').forEach(cb => { cb.checked = false; });
+
+        
         showToast('Xóa học sinh thành công!', 'success');
         await adm_reloadStudents();
       } else {
