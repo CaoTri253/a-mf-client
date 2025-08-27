@@ -1647,15 +1647,15 @@
       }
     };
 
-    // ==== tích hợp vào nav có sẵn ====
-    function wireBHYTPage(){ BHYT.wireOnce(); const user = JSON.parse(localStorage.getItem('user')||'{}'); BHYT.reloadAll(user.ma_truong||''); }
+    // ===== Glue cho router hiện có (đừng ghi đè setActivePage)
+    function bhyt_wirePage() {
+      BHYT.wireOnce();
+    }
+    function bhyt_reload() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      BHYT.reloadAll(user.ma_truong || '');
+    }
 
-    // sửa setActivePage để nạp BHYT khi mở tab
-    const _old_setActivePage = setActivePage;
-    setActivePage = function(page){
-      _old_setActivePage(page);
-      if (page==='bhyt') wireBHYTPage();
-    };
   </script>
 
 
