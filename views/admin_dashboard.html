@@ -885,6 +885,9 @@
       if (rs.success){
         ADM.selected.clear();
         
+        $('#adm-btn-delmany').classList.add('d-none');
+        $('#adm-chk-all')?.checked = false;
+        $$('.adm-chk').forEach(cb => cb.checked = false);
         showToast('Xóa nhiều học sinh thành công!', 'success');
         await adm_reloadStudents();
       } else {
