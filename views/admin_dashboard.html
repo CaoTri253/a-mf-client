@@ -1105,7 +1105,8 @@
 
 
 
-  // === Reload Trang Tổng quang ===
+
+  
   async function reloadOverview(ma_truong){
     try{
       showLoading();
@@ -1156,7 +1157,6 @@
       hideLoading();
     }
   }
-
 
 
 
@@ -1244,6 +1244,10 @@
     $('#userName').textContent = user.ho_ten||user.sdt||'Admin';
     $('#userRole').textContent = user.phan_quyen||'admin';
     $('#schoolName').textContent = user.ten_truong || (user.ma_truong||'');
+
+    // reload overview on click
+    $('#btnOverviewReload')?.addEventListener('click', ()=> reloadOverview(user.ma_truong||''));
+
 
     wireSidebar();
     setActivePage('overview');
