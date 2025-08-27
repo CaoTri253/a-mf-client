@@ -120,6 +120,9 @@
     <main class="content w-100">
       <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
         <div>
+          <button id="btnToggleSidebar" class="btn btn-light border toggle-btn">
+            <i class="bi bi-list"></i>
+          </button>
           <div class="page-title h4 mb-1">Bảng điều khiển – <span id="schoolName">Trường ...</span></div>
           <div class="sub-muted">Người dùng: <strong id="userName">—</strong> • Quyền: <span id="userRole">admin</span></div>
         </div>
@@ -280,15 +283,12 @@
       <section id="page-students" class="d-none">
         <h4 class="page-title mb-3">Danh sách học sinh</h4>
 
-        <!-- Thanh tác vụ + bộ lọc phạm vi -->
+        <!-- Thanh công cụ -->
         <div class="row g-2 mb-2">
-          <div class="col-sm-3">
-            <input class="form-control" id="adhs-filter-ma-truong" placeholder="Mã trường (mặc định: của bạn)">
-          </div>
           <div class="col-sm-3">
             <input class="form-control" id="adhs-filter-lop" placeholder="Lọc theo lớp (để trống = tất cả)">
           </div>
-          <div class="col-sm-6 d-flex gap-2">
+          <div class="col-sm-9 d-flex gap-2">
             <input class="form-control" id="adhs-search" placeholder="Tìm theo tên, BHXH, SĐT, Số định danh…">
             <button class="btn btn-primary" id="adhs-btn-refresh">Tải lại</button>
             <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#adhs-modalThem">Thêm học sinh</button>
@@ -297,12 +297,8 @@
           </div>
         </div>
 
-        <!-- Thống kê nhỏ -->
-        <div class="text-muted mb-2">
-          Lớp: <span id="adhs-lop-label">tất cả</span> • Tổng: <span id="adhs-total">0</span>
-        </div>
+        <div class="text-muted mb-2">Lớp: <span id="adhs-lop-label">tất cả</span> • Tổng: <span id="adhs-total">0</span></div>
 
-        <!-- Bảng -->
         <div class="table-responsive table-box">
           <table class="table table-striped table-hover align-middle mb-0">
             <thead class="table-light">
@@ -316,19 +312,20 @@
                 <th class="sortable" data-field="lop_hoc">Lớp</th>
                 <th class="sortable" data-field="so_dinh_danh">Số định danh</th>
                 <th class="sortable" data-field="sdt_lienhe">SĐT</th>
-                <th class="sortable" data-field="ma_truong">Mã trường</th>
-                <th>Thao tác</th>
+                <th class="th-action">Thao tác</th>
               </tr>
             </thead>
             <tbody id="adhs-tbody"></tbody>
           </table>
         </div>
 
-        <!-- Phân trang -->
         <nav class="mt-3">
           <ul class="pagination justify-content-center" id="adhs-pagin"></ul>
         </nav>
       </section>
+
+<!-- Modals Thêm / Sửa / Import: GIỮ như bản bạn đang dùng (không khác gì trước, chỉ bỏ field "Mã trường") -->
+
 
       <!-- Modal: Thêm -->
       <div class="modal fade" id="adhs-modalThem" tabindex="-1" aria-hidden="true">
@@ -472,168 +469,127 @@
 
 
   <script>
-  /** ===== Admin – Danh sách học sinh (embedded) =====
-   *  Giữ nguyên triết lý & hành vi như ds_hocsinh.html,
-   *  nhưng nạp dữ liệu theo trường (ma_truong) + mọi lớp (lop_hoc="").
-   *  Dùng API đã có: getDanhSachHocsinhPaginated, themHocsinh, suaHocsinh, xoaHocsinh, xoaNhieuHocsinh, importDanhSachHocsinh.
-   */
-
   (() => {
-    const U = JSON.parse(localStorage.getItem('user')||'{}');
-    const ROLE = String(U.phan_quyen||'').toLowerCase();
-    if (!U.sdt || !(ROLE==='admin' || ROLE==='super_admin' || ROLE==='superadmin')) return;
+    const user = JSON.parse(localStorage.getItem('user')||'{}');
+    const role = String(user.phan_quyen||'').toLowerCase();
+    if (!user.sdt || !(role==='admin' || role==='super_admin' || role==='superadmin')) return;
 
-    // One-time init khi click menu "students"
+    // Gọi init phần Students khi người dùng click menu Students
     let inited = false;
-    const onStudentsShown = () => { if (!inited){ inited = true; boot(); } };
-
-    // Gắn vào menu sẵn có data-page="students"
     document.querySelectorAll('#sidebarMenu .nav-item[data-page="students"]').forEach(el=>{
-      el.addEventListener('click', onStudentsShown);
+      el.addEventListener('click', () => { if (!inited){ inited = true; boot(); } });
     });
-
-    // Nếu trang load với hash ?page=students thì mở luôn (không bắt buộc)
-    if (location.hash.includes('students')) onStudentsShown();
 
     // ====== STATE ======
     const S = {
-      ma_truong: U.ma_truong || '',
-      lop_hoc: '',
+      ma_truong: (user.ma_truong||'').trim(),   // luôn dùng trường của admin
+      lop_hoc: '',                               // để trống = tất cả
       page: 0, limit: 20, total: 0,
       sortField: '', sortDir: 1,
       query: '',
-      selected: new Set(),
-      lastItems: []
+      selected: new Set()
     };
 
-    // ====== Helpers ======
     const $ = (s, r=document)=>r.querySelector(s);
     const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+    const busy = on => { const sp = $('#loadingSpinner'); if (sp) sp.style.display = on?'flex':'none'; };
 
-    function setBusy(on){ const sp = document.getElementById('loadingSpinner'); if (!sp) return; sp.style.display = on?'flex':'none'; }
-    function setDelManyVisible(){ $('#adhs-btn-del-many')?.classList.toggle('d-none', S.selected.size===0); }
-    function fmt(v){ return (v??''); }
-
-    // ====== Paging & Sorting render ======
     function renderRows(items){
       const tb = $('#adhs-tbody');
-      if (!items || !items.length){
-        tb.innerHTML = `<tr><td colspan="11" class="text-center text-secondary py-4">Không có dữ liệu</td></tr>`;
+      if (!items?.length){
+        tb.innerHTML = `<tr><td colspan="10" class="text-center text-secondary py-4">Không có dữ liệu</td></tr>`;
         return;
       }
-      S.lastItems = items.slice(0);
       tb.innerHTML = items.map(row=>{
         const id = row.stt ?? row.so_dinh_danh ?? '';
         const rowEsc = encodeURIComponent(JSON.stringify(row));
-        return `
-          <tr>
-            <td><input type="checkbox" data-id="${id}"></td>
-            <td>${fmt(row.stt)}</td>
-            <td>${fmt(row.ma_so_bhxh)}</td>
-            <td>${fmt(row.ho_ten_hoc_sinh)}</td>
-            <td>${fmt(row.ngay_sinh)}</td>
-            <td>${fmt(row.gioi_tinh)}</td>
-            <td>${fmt(row.lop_hoc)}</td>
-            <td>${fmt(row.so_dinh_danh)}</td>
-            <td>${fmt(row.sdt_lienhe)}</td>
-            <td>${fmt(row.ma_truong)}</td>
-            <td class="text-nowrap">
-              <button class="btn btn-sm btn-outline-primary me-1" data-action="edit" data-row='${rowEsc}'>Sửa</button>
-              <button class="btn btn-sm btn-outline-danger" data-action="del" data-id="${id}">Xóa</button>
-            </td>
-          </tr>`;
+        return `<tr>
+          <td><input type="checkbox" data-id="${id}"></td>
+          <td>${row.stt??''}</td>
+          <td>${row.ma_so_bhxh??''}</td>
+          <td>${row.ho_ten_hoc_sinh??''}</td>
+          <td>${row.ngay_sinh??''}</td>
+          <td>${row.gioi_tinh??''}</td>
+          <td>${row.lop_hoc??''}</td>
+          <td>${row.so_dinh_danh??''}</td>
+          <td>${row.sdt_lienhe??''}</td>
+          <td class="text-nowrap">
+            <button class="btn btn-sm btn-outline-primary me-1" data-action="edit" data-row="${rowEsc}">Sửa</button>
+            <button class="btn btn-sm btn-outline-danger" data-action="del" data-id="${id}">Xóa</button>
+          </td>
+        </tr>`;
       }).join('');
 
-      // bind row events
+      // chọn nhiều / sửa / xóa
       $$('#adhs-tbody input[type="checkbox"]').forEach(ch=>{
         ch.addEventListener('change', e=>{
           const id = e.target.dataset.id;
           if (e.target.checked) S.selected.add(id); else S.selected.delete(id);
-          setDelManyVisible();
+          $('#adhs-btn-del-many').classList.toggle('d-none', S.selected.size===0);
         });
       });
-      // edit/delete
-      $$('#adhs-tbody [data-action]').forEach(btn=>{
-        const act = btn.dataset.action;
-        if (act==='edit'){
-          btn.addEventListener('click', ()=>{
-            const row = JSON.parse(decodeURIComponent(btn.dataset.row||'%7B%7D'));
-            openEdit(row);
-          });
-        } else if (act==='del'){
-          btn.addEventListener('click', async ()=>{
-            if (!confirm('Xóa bản ghi này?')) return;
-            setBusy(true);
-            try{
-              const rs = await xoaHocsinh(btn.dataset.id);
-              if (!rs?.success) alert(rs?.message||'Xóa thất bại');
-              await reload(false);
-            } finally { setBusy(false); }
-          });
-        }
+      $$('#adhs-tbody [data-action="edit"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const r = JSON.parse(decodeURIComponent(btn.dataset.row||'%7B%7D'));
+          openEdit(r);
+        });
+      });
+      $$('#adhs-tbody [data-action="del"]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          if (!confirm('Xóa bản ghi này?')) return;
+          busy(true);
+          try{
+            const rs = await xoaHocsinh(btn.dataset.id);
+            if (!rs?.success) alert(rs?.message || 'Xóa thất bại');
+            await reload(false);
+          } finally { busy(false); }
+        });
       });
     }
 
     function renderPagination(){
       const ul = $('#adhs-pagin');
       const pages = Math.max(1, Math.ceil(S.total / S.limit));
-      const cur = S.page;
       const mk = (p, lbl, dis, act) => `<li class="page-item ${dis?'disabled':''} ${act?'active':''}"><a class="page-link" href="#" data-p="${p}">${lbl}</a></li>`;
-      let html = '';
-      html += mk(Math.max(0,cur-1),'«',cur===0,false);
-      for(let i=0;i<pages;i++){
-        if (i===0 || i===pages-1 || Math.abs(i-cur)<=2) html += mk(i, i+1, false, i===cur);
-        else if (i===cur-3 || i===cur+3) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+      let html = mk(Math.max(0,S.page-1),'«',S.page===0,false);
+      for (let i=0;i<pages;i++){
+        if (i===0 || i===pages-1 || Math.abs(i-S.page)<=2) html += mk(i, i+1, false, i===S.page);
+        else if (i===S.page-3 || i===S.page+3) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
       }
-      html += mk(Math.min(pages-1,cur+1),'»',cur>=pages-1,false);
+      html += mk(Math.min(pages-1,S.page+1),'»',S.page>=pages-1,false);
       ul.innerHTML = html;
       $$('#adhs-pagin a.page-link').forEach(a=>{
         a.addEventListener('click', e=>{
           e.preventDefault();
-          const p = Number(a.dataset.p||0);
-          if (p===S.page) return;
-          S.page = p;
-          reload(false);
+          const p = +a.dataset.p; if (p===S.page) return;
+          S.page = p; reload(false);
         });
       });
     }
 
     async function reload(resetPage){
       if (resetPage) S.page = 0;
-      setBusy(true);
+      busy(true);
       try{
         const start = S.page * S.limit;
-        const res = await getDanhSachHocsinhPaginated(
-          S.ma_truong || '', S.lop_hoc || '', start, S.limit,
-          S.query || '', S.sortField || '', S.sortDir || 1
-        ); // tái dùng API trang gốc :contentReference[oaicite:4]{index=4}
+        const rs = await getDanhSachHocsinhPaginated(
+          S.ma_truong, S.lop_hoc, start, S.limit,
+          S.query, S.sortField, S.sortDir
+        ); // API của bạn :contentReference[oaicite:1]{index=1}
 
-        const items = res?.data?.items ?? res?.data ?? [];
-        S.total = res?.data?.total ?? (Array.isArray(items)? items.length : 0);
+        const items = rs?.data?.items ?? rs?.data ?? [];
+        S.total = rs?.data?.total ?? (Array.isArray(items) ? items.length : 0);
 
         $('#adhs-total').textContent = S.total;
         $('#adhs-lop-label').textContent = S.lop_hoc || 'tất cả';
-        S.selected.clear(); setDelManyVisible();
+        S.selected.clear(); $('#adhs-btn-del-many').classList.add('d-none');
+
         renderRows(items);
         renderPagination();
-      } finally { setBusy(false); }
-    }
-
-    function bindSort(){
-      $$('#page-students th.sortable').forEach(th=>{
-        th.addEventListener('click', ()=>{
-          const f = th.dataset.field||'';
-          if (S.sortField===f) S.sortDir = -S.sortDir;
-          else { S.sortField=f; S.sortDir=1; }
-          reload(true);
-        });
-      });
+      } finally { busy(false); }
     }
 
     function bindHeader(){
-      // mặc định đổ mã trường của admin
-      $('#adhs-filter-ma-truong').value = S.ma_truong;
-      $('#adhs-filter-ma-truong').addEventListener('input', e=>{ S.ma_truong = e.target.value.trim(); reload(true); });
       $('#adhs-filter-lop').addEventListener('input', e=>{ S.lop_hoc = e.target.value.trim(); reload(true); });
       $('#adhs-search').addEventListener('input', e=>{ S.query = e.target.value.trim(); reload(true); });
       $('#adhs-btn-refresh').addEventListener('click', ()=> reload(true));
@@ -644,30 +600,55 @@
           const id = ch.dataset.id;
           if (checked) S.selected.add(id); else S.selected.delete(id);
         });
-        setDelManyVisible();
+        $('#adhs-btn-del-many').classList.toggle('d-none', S.selected.size===0);
+      });
+      $$('#page-students th.sortable').forEach(th=>{
+        th.addEventListener('click', ()=>{
+          const f = th.dataset.field||'';
+          if (S.sortField === f) S.sortDir = -S.sortDir;
+          else { S.sortField = f; S.sortDir = 1; }
+          reload(true);
+        });
       });
       $('#adhs-btn-del-many').addEventListener('click', async ()=>{
         if (S.selected.size===0) return;
         if (!confirm(`Xóa ${S.selected.size} dòng đã chọn?`)) return;
-        setBusy(true);
+        busy(true);
         try{
           const ids = Array.from(S.selected);
-          const rs = await xoaNhieuHocsinh(ids);
-          if (!rs?.success) alert(rs?.message||'Xóa nhiều thất bại');
+          const r = await xoaNhieuHocsinh(ids);
+          if (!r?.success) alert(r?.message || 'Xóa nhiều thất bại');
           await reload(true);
-        } finally { setBusy(false); }
+        } finally { busy(false); }
       });
     }
 
-    // ====== Add / Edit ======
-    function getRadio(name){ return document.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
+    function openEdit(row){
+      // điền form (giữ y như trang gốc, không có field mã trường)
+      document.getElementById('adhs-edit-stt').value = row.stt || '';
+      document.getElementById('adhs-edit-bhxh').value = row.ma_so_bhxh || '';
+      document.getElementById('adhs-edit-hoten').value = row.ho_ten_hoc_sinh || '';
+      document.getElementById('adhs-edit-ngaysinh').value = row.ngay_sinh || '';
+      document.querySelectorAll('input[name="adhs-edit-gt"]').forEach(r=> r.checked = (r.value === String(row.gioi_tinh||'')));
+      document.getElementById('adhs-edit-lop').value = row.lop_hoc || '';
+      document.getElementById('adhs-edit-diachi').value = row.dia_chi || '';
+      document.getElementById('adhs-edit-sdt').value = row.sdt_lienhe || '';
+      document.getElementById('adhs-edit-sdd').value = row.so_dinh_danh || '';
+      document.getElementById('adhs-edit-chame').value = row.ten_cha_me || '';
+      document.getElementById('adhs-edit-han-bhyt').value = row.ngay_het_han_bhyt || '';
+      document.getElementById('adhs-edit-han-bhtn').value = row.ngay_het_han_bhtn || '';
+      document.getElementById('adhs-edit-noikham').value = row.noi_kham_bhyt || '';
+      document.getElementById('adhs-edit-doituong').value = row.doi_tuong_dong || '';
+      document.getElementById('adhs-edit-ghichu').value = row.ghi_chu || '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('adhs-modalSua')).show();
+    }
 
     async function ADMHS_handleAdd(){
       const payload = {
         ma_so_bhxh: $('#adhs-add-bhxh').value.trim(),
         ho_ten_hoc_sinh: $('#adhs-add-hoten').value.trim(),
         ngay_sinh: $('#adhs-add-ngaysinh').value.trim(),
-        gioi_tinh: getRadio('adhs-add-gt'),
+        gioi_tinh: document.querySelector('input[name="adhs-add-gt"]:checked')?.value || '',
         dia_chi: $('#adhs-add-diachi').value.trim(),
         ngay_het_han_bhyt: $('#adhs-add-han-bhyt').value.trim(),
         ngay_het_han_bhtn: $('#adhs-add-han-bhtn').value.trim(),
@@ -678,38 +659,18 @@
         ten_cha_me: $('#adhs-add-chame').value.trim(),
         doi_tuong_dong: $('#adhs-add-doituong').value.trim() || 'null',
         ghi_chu: $('#adhs-add-ghichu').value.trim() || 'null',
-        ma_truong: $('#adhs-add-ma-truong').value.trim() || S.ma_truong || ''
+        ma_truong: S.ma_truong                                  // luôn gửi trường của admin
       };
-      setBusy(true);
+      busy(true);
       try{
         const rs = await themHocsinh(payload);
-        if (!rs?.success){ $('#adhs-add-err').textContent = rs?.message || 'Thêm thất bại'; return; }
-        $('#adhs-add-err').textContent = '';
-        bootstrap.Modal.getInstance($('#adhs-modalThem')).hide();
+        if (!rs?.success){ document.getElementById('adhs-add-err').textContent = rs?.message || 'Thêm thất bại'; return; }
+        document.getElementById('adhs-add-err').textContent = '';
+        bootstrap.Modal.getInstance(document.getElementById('adhs-modalThem')).hide();
         await reload(true);
-      } finally { setBusy(false); }
+      } finally { busy(false); }
     }
     window.ADMHS_handleAdd = ADMHS_handleAdd;
-
-    function openEdit(row){
-      $('#adhs-edit-stt').value = row.stt || '';
-      $('#adhs-edit-bhxh').value = row.ma_so_bhxh || '';
-      $('#adhs-edit-hoten').value = row.ho_ten_hoc_sinh || '';
-      $('#adhs-edit-ngaysinh').value = row.ngay_sinh || '';
-      $$('input[name="adhs-edit-gt"]').forEach(r=> r.checked = (r.value === String(row.gioi_tinh||'')));
-      $('#adhs-edit-lop').value = row.lop_hoc || '';
-      $('#adhs-edit-diachi').value = row.dia_chi || '';
-      $('#adhs-edit-sdt').value = row.sdt_lienhe || '';
-      $('#adhs-edit-sdd').value = row.so_dinh_danh || '';
-      $('#adhs-edit-chame').value = row.ten_cha_me || '';
-      $('#adhs-edit-han-bhyt').value = row.ngay_het_han_bhyt || '';
-      $('#adhs-edit-han-bhtn').value = row.ngay_het_han_bhtn || '';
-      $('#adhs-edit-noikham').value = row.noi_kham_bhyt || '';
-      $('#adhs-edit-doituong').value = row.doi_tuong_dong || '';
-      $('#adhs-edit-ghichu').value = row.ghi_chu || '';
-      $('#adhs-edit-ma-truong').value = row.ma_truong || S.ma_truong || '';
-      bootstrap.Modal.getOrCreateInstance($('#adhs-modalSua')).show();
-    }
 
     async function ADMHS_handleEdit(){
       const payload = {
@@ -717,7 +678,7 @@
         ma_so_bhxh: $('#adhs-edit-bhxh').value.trim(),
         ho_ten_hoc_sinh: $('#adhs-edit-hoten').value.trim(),
         ngay_sinh: $('#adhs-edit-ngaysinh').value.trim(),
-        gioi_tinh: getRadio('adhs-edit-gt'),
+        gioi_tinh: document.querySelector('input[name="adhs-edit-gt"]:checked')?.value || '',
         dia_chi: $('#adhs-edit-diachi').value.trim(),
         ngay_het_han_bhyt: $('#adhs-edit-han-bhyt').value.trim(),
         ngay_het_han_bhtn: $('#adhs-edit-han-bhtn').value.trim(),
@@ -728,77 +689,63 @@
         ten_cha_me: $('#adhs-edit-chame').value.trim(),
         doi_tuong_dong: $('#adhs-edit-doituong').value.trim() || 'null',
         ghi_chu: $('#adhs-edit-ghichu').value.trim() || 'null',
-        ma_truong: $('#adhs-edit-ma-truong').value.trim() || S.ma_truong || ''
+        ma_truong: S.ma_truong
       };
-      setBusy(true);
+      busy(true);
       try{
         const rs = await suaHocsinh(payload);
-        if (!rs?.success){ $('#adhs-edit-err').textContent = rs?.message || 'Cập nhật thất bại'; return; }
-        $('#adhs-edit-err').textContent = '';
-        bootstrap.Modal.getInstance($('#adhs-modalSua')).hide();
+        if (!rs?.success){ document.getElementById('adhs-edit-err').textContent = rs?.message || 'Cập nhật thất bại'; return; }
+        document.getElementById('adhs-edit-err').textContent = '';
+        bootstrap.Modal.getInstance(document.getElementById('adhs-modalSua')).hide();
         await reload(false);
-      } finally { setBusy(false); }
+      } finally { busy(false); }
     }
     window.ADMHS_handleEdit = ADMHS_handleEdit;
 
-    // ====== Import Excel ======
     async function ADMHS_handleImport(){
-      const input = $('#adhs-import-file');
+      const input = document.getElementById('adhs-import-file');
       const file = input?.files?.[0];
-      if (!file){ $('#adhs-import-err').textContent = 'Hãy chọn file .xlsx/.xls'; return; }
-      $('#adhs-import-err').textContent = '';
-      setBusy(true);
+      if (!file){ document.getElementById('adhs-import-err').textContent = 'Hãy chọn file .xlsx/.xls'; return; }
+      document.getElementById('adhs-import-err').textContent = '';
+      busy(true);
       try{
         const data = await file.arrayBuffer();
         const wb = XLSX.read(data, {type:'array'});
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
-
-        // Chuẩn hóa key, fallback ma_truong/lop_hoc theo filter
-        const norm = rows.map(r=>({
-          ma_so_bhxh: r.ma_so_bhxh || r.MS_BHXH || r['ma so bhxh'] || '',
-          ho_ten_hoc_sinh: r.ho_ten_hoc_sinh || r.ho_ten || r['ho ten'] || r['Họ tên'] || '',
-          ngay_sinh: r.ngay_sinh || r['ngay sinh'] || r['Ngày sinh'] || '',
-          gioi_tinh: r.gioi_tinh || r['gioi tinh'] || r['Giới tính'] || '',
-          dia_chi: r.dia_chi || r['dia chi'] || r['Địa chỉ'] || '',
-          ngay_het_han_bhyt: r.ngay_het_han_bhyt || r['han bhyt'] || '',
-          ngay_het_han_bhtn: r.ngay_het_han_bhtn || r['han bhtn'] || '',
-          lop_hoc: r.lop_hoc || r.lop || S.lop_hoc || '',
+        const payload = rows.map(r=>({
+          ma_so_bhxh: r.ma_so_bhxh || r.MS_BHXH || '',
+          ho_ten_hoc_sinh: r.ho_ten_hoc_sinh || r.ho_ten || '',
+          ngay_sinh: r.ngay_sinh || r['Ngày sinh'] || '',
+          gioi_tinh: r.gioi_tinh || '',
+          dia_chi: r.dia_chi || '',
+          ngay_het_han_bhyt: r.ngay_het_han_bhyt || '',
+          ngay_het_han_bhtn: r.ngay_het_han_bhtn || '',
+          lop_hoc: r.lop_hoc || r.lop || '',
           sdt_lienhe: r.sdt_lienhe || r.sdt || '',
-          so_dinh_danh: r.so_dinh_danh || r['so dinh danh'] || '',
-          noi_kham_bhyt: r.noi_kham_bhyt || r['noi kham'] || '',
-          ten_cha_me: r.ten_cha_me || r['ten cha me'] || '',
-          doi_tuong_dong: r.doi_tuong_dong || r['doi tuong dong'] || 'null',
-          ghi_chu: r.ghi_chu || r['ghi chu'] || 'null',
-          ma_truong: r.ma_truong || S.ma_truong || ''
+          so_dinh_danh: r.so_dinh_danh || '',
+          noi_kham_bhyt: r.noi_kham_bhyt || '',
+          ten_cha_me: r.ten_cha_me || '',
+          doi_tuong_dong: r.doi_tuong_dong || 'null',
+          ghi_chu: r.ghi_chu || 'null',
+          ma_truong: S.ma_truong
         }));
-
-        const rs = await importDanhSachHocsinh(norm);
-        if (!rs?.success){ $('#adhs-import-err').textContent = rs?.message || 'Nhập thất bại'; return; }
-        bootstrap.Modal.getInstance($('#adhs-modalImport')).hide();
+        const rs = await importDanhSachHocsinh(payload);
+        if (!rs?.success){ document.getElementById('adhs-import-err').textContent = rs?.message || 'Nhập thất bại'; return; }
+        bootstrap.Modal.getInstance(document.getElementById('adhs-modalImport')).hide();
         await reload(true);
-      } catch(err){
-        $('#adhs-import-err').textContent = 'Không đọc được file: ' + (err?.message||err);
-      } finally { setBusy(false); }
+      } finally { busy(false); }
     }
     window.ADMHS_handleImport = ADMHS_handleImport;
 
-    // ====== Boot (first show) ======
     function boot(){
-      // init pickers
-      flatpickr('#adhs-add-ngaysinh', {dateFormat:'d/m/Y', allowInput:true});
-      flatpickr('#adhs-add-han-bhyt', {dateFormat:'d/m/Y', allowInput:true});
-      flatpickr('#adhs-add-han-bhtn', {dateFormat:'d/m/Y', allowInput:true});
-      flatpickr('#adhs-edit-ngaysinh', {dateFormat:'d/m/Y', allowInput:true});
-      flatpickr('#adhs-edit-han-bhyt', {dateFormat:'d/m/Y', allowInput:true});
-      flatpickr('#adhs-edit-han-bhtn', {dateFormat:'d/m/Y', allowInput:true});
-
+      // datepickers chỉ phục vụ modal, bạn có thể thêm nếu đã dùng flatpickr
       bindHeader();
-      bindSort();
       reload(true);
     }
   })();
   </script>
+
 
 
   <script>
