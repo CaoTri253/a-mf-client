@@ -1338,440 +1338,396 @@
 
   <script>
     /* =========================================================
-      BHYT_ADMIN: Khớp UI + hành vi của 2 trang GV trong 2 tab
-      - Namespaced để không đụng code cũ
-      - Chỉ hoạt động khi #page-bhyt hiển thị
+      BHYT – Script đầy đủ cho 2 tab (CHƯA THU / ĐÃ THU)
+      Phụ thuộc (đã có sẵn trong dự án của bạn):
+      - ../js/api.js (API_BASE + getAllDanhSachHocsinh, getDanhSachBHYT, nopHoSoBHYT, suaHoSoBHYT)
+      - Bootstrap 5, QRCode, html2canvas
+      - Các modal/ID: 
+        #modalNopHoSoBHYT, #modalSuaHoSoBHYT, #modalBulkNopHoSo, #modalPhieuThu, #modalTheBHYT
+        #receiptA5, #pt_* (phiếu thu), #bhytCard + #card_* (thẻ)
+      - Các vùng tab:
+        CHƯA THU: #bhyt-ct-lop, #bhyt-ct-search, #bhyt-ct-reload, #bhyt-ct-bulk, 
+                  #bhyt-ct-total, #bhyt-ct-tablebox, #bhyt-ct-pagin
+        ĐÃ THU:   #bhyt-dt-lop, #bhyt-dt-search, #bhyt-dt-reload, 
+                  #bhyt-dt-total, #bhyt-dt-tablebox, #bhyt-dt-pagin
       ========================================================= */
-
-    /* Utils API bền vững: tránh 404 & HTML trả về khi parse JSON */
     (function(){
-      // 1) Danh sách base URL để thử (tuỳ môi trường bạn, có thể thêm/bớt)
-      const CANDIDATES = [
-        // nếu bạn đang host ở subpath /abt-medu-frontend/
-        location.origin + '/abt-medu-frontend/api',
-        // relative trong cùng thư mục
-        './api',
-        // relative lùi một cấp
-        '../api',
-      ];
-
-      async function tryFetchJSON(fullUrl){
-        const res = await fetch(fullUrl, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status} at ${fullUrl}`);
-        const ct = res.headers.get('content-type')||'';
-        if (!ct.toLowerCase().includes('application/json')) {
-          const text = await res.text();
-          throw new Error(`Expected JSON but got: ${String(text).slice(0,120)}... at ${fullUrl}`);
-        }
-        return await res.json();
-      }
-
-      // Hàm gọi API: pass ?func=...&param=...
-      window.apiCallJSON = async function(query){
-        let lastErr;
-        for (const base of CANDIDATES) {
-          try {
-            const full = base + (query.startsWith('?') ? query : ('?' + query));
-            const data = await tryFetchJSON(full);
-            // lưu base thành công để lần sau dùng luôn (giảm số lần thử)
-            window.API_BASE = base;
-            return data;
-          } catch (e) { lastErr = e; }
-        }
-        throw lastErr || new Error('All API candidates failed');
-      };
-    })();
-
-    (function(){
-      const $  = (sel, root=document) => (root||document).querySelector(sel);
-      const $$ = (sel, root=document) => Array.from((root||document).querySelectorAll(sel));
-      const fmt = n => new Intl.NumberFormat('vi-VN').format(n||0);
-
-      // ==== Utils ngày/tháng giống trang GV ====
-      const displayDate = (raw)=>{
-        if(!raw) return "";
+      // ---------- helpers ----------
+      const $  = (s, r=document)=> (r||document).querySelector(s);
+      const $$ = (s, r=document)=> Array.from((r||document).querySelectorAll(s));
+      const fmt = n => new Intl.NumberFormat('vi-VN').format(Number(n||0));
+      const esc = s => String(s??'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c]));
+      const dVN = raw=>{
+        if(!raw) return '';
         if (typeof raw==='string' && /^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
-        if (typeof raw==='string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)){ const [y,m,d]=raw.split('-'); return `${d}/${m}/${y}`;}
+        if (typeof raw==='string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)){ const [y,m,d]=raw.split('-'); return `${d}/${m}/${y}`; }
         return raw;
       };
-      const parseVNDate=(str)=>{const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return null;const d=new Date(+m[3],+m[2]-1,+m[1]);return(d.getFullYear()==+m[3]&&d.getMonth()==+m[2]-1&&d.getDate()==+m[1])?d:null;};
-      const addDaysExact=(dateObj,days)=>{const d=new Date(dateObj.getFullYear(),dateObj.getMonth(),dateObj.getDate(),12,0,0);d.setDate(d.getDate()+days);return new Date(d.getFullYear(),d.getMonth(),d.getDate());};
-      const formatVNDate=(d)=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
-      // ==== State 2 tab ====
-      const CT = { all:[], filtered:[], page:1, pageSize:20, sortField:'ho_ten_hoc_sinh', sortDir:1, selected:new Set() };
-      const DT = { all:[], filtered:[], page:1, pageSize:20, sortField:'ho_ten_hoc_sinh', sortDir:1 };
+      function assertApiJs(){
+        if (!window.API_BASE) console.warn('[BHYT] Chưa thấy API_BASE – đảm bảo ../js/api.js load TRƯỚC script này.');
+        ['getAllDanhSachHocsinh','getDanhSachBHYT','nopHoSoBHYT','suaHoSoBHYT'].forEach(fn=>{
+          if (typeof window[fn] !== 'function') console.warn(`[BHYT] Thiếu hàm ${fn} trong api.js`);
+        });
+      }
+      assertApiJs();
 
+      // ---------- state ----------
+      const ST = {
+        user: null, ma_truong: '',
+        // CHƯA THU
+        ctAll: [], ctView: [], ctPage: 1, ctPageSize: 20, ctSort: {f:'ho_ten_hoc_sinh', dir:1}, ctSelected: new Set(),
+        // ĐÃ THU
+        dtAll: [], dtView: [], dtPage: 1, dtPageSize: 20, dtSort: {f:'ho_ten_hoc_sinh', dir:1},
+      };
       function detectPageSize(){
         const w = window.innerWidth;
-        const sz = (w<=600)?5:(w<=999)?10:20;
-        CT.pageSize = DT.pageSize = sz;
+        const sz = (w<=600)?5:(w<=992)?10:20;
+        ST.ctPageSize = ST.dtPageSize = sz;
       }
-      window.addEventListener('resize', ()=>{ const old=CT.pageSize; detectPageSize(); if (old!==CT.pageSize){ CT.page=1; DT.page=1; renderCT(); renderDT(); } });
+      window.addEventListener('resize', ()=>{ const old=ST.ctPageSize; detectPageSize(); if(old!==ST.ctPageSize){ ST.ctPage=1; ST.dtPage=1; renderCT(); renderDT(); }});
 
-      // ==== API giống trang GV ====
-      const API_BASE = window.API_BASE || '../api'; // nếu đã có trong bundle của bạn thì dùng y như vậy
-     // MỚI (dùng util tự dò base + kiểm tra content-type)
-      async function getAllStudents(ma_truong, lop){
-        return await apiCallJSON(
-          `func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop||'')}`
-        );
-      }
-      async function getAllBHYT(ma_truong, lop){
-        return await apiCallJSON(
-          `func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop||'')}`
-        );
-      }
-      async function getTenTruong(ma_truong){
-        return await apiCallJSON(`func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`);
-      }
-      async function nopHoSoBHYT(payload){
-        const q = Object.entries(payload).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
-        return await apiCallJSON(`func=NopHoSoBHYT&${q}`);
-      }
-      async function suaHoSoBHYT(payload){
-        const q = Object.entries(payload).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
-        return await apiCallJSON(`func=SuaHoSoBHYT&${q}`);
-}
+      // ---------- API proxy (gọi thẳng api.js) ----------
+      async function apiGetStudents(ma_truong, lop){ return await window.getAllDanhSachHocsinh(ma_truong, lop||''); }
+      async function apiGetBHYT(ma_truong, lop){ return await window.getDanhSachBHYT(ma_truong, lop||''); }
+      async function apiNopHoSo(payload){ return await window.nopHoSoBHYT(payload); }
+      async function apiSuaHoSo(payload){ return await window.suaHoSoBHYT(payload); }
 
-      // ==== Render bảng: CT (chưa thu) ====
-      function renderCT(){
-        const root = $('#ct-ds-container');
-        const pag  = $('#ct-pagination');
-        if (!root) return;
-
-        // sort + slice
-        const arr = CT.filtered.slice().sort((a,b)=>{
-          const f=CT.sortField, dir=CT.sortDir;
-          const av=(a[f]??'').toString().toLowerCase(); const bv=(b[f]??'').toString().toLowerCase();
-          return (av>bv?1:av<bv?-1:0) * dir;
+      // ---------- render: CHƯA THU ----------
+      function sortArr(arr, srt){
+        return arr.slice().sort((a,b)=>{
+          const av = String(a[srt.f]??'').toLowerCase();
+          const bv = String(b[srt.f]??'').toLowerCase();
+          return (av>bv?1:av<bv?-1:0) * srt.dir;
         });
-        const total = arr.length, pages = Math.max(1, Math.ceil(total/CT.pageSize));
-        if (CT.page>pages) CT.page=pages;
-        const start=(CT.page-1)*CT.pageSize, end=start+CT.pageSize;
-        const rows = arr.slice(start,end);
+      }
+      function renderCT(){
+        const root = $('#bhyt-ct-tablebox'); const pag = $('#bhyt-ct-pagin'); if(!root) return;
+        const sorted = sortArr(ST.ctView, ST.ctSort);
+        const total = sorted.length, pages = Math.max(1, Math.ceil(total/ST.ctPageSize));
+        if (ST.ctPage>pages) ST.ctPage=pages;
+        const start=(ST.ctPage-1)*ST.ctPageSize, end=start+ST.ctPageSize;
+        const rows = sorted.slice(start,end);
 
-        // header + table body (bám markup trang GV)
-        const th = (label, field)=>`<th class="sortable" onclick="BHYT_ADMIN.sortCT('${field}')">${label} <span class="sort-icon">${CT.sortField===field?(CT.sortDir===1?'▲':'▼'):''}</span></th>`;
+        const th = (label, field)=>`<th class="sortable" data-f="${field}">${label} <span class="sort-icon">${ST.ctSort.f===field?(ST.ctSort.dir===1?'▲':'▼'):''}</span></th>`;
         root.innerHTML = `
           <table class="table table-striped table-hover align-middle">
-            <thead>
-              <tr>
-                <th style="width:36px"><input type="checkbox" id="ct-chk-all"></th>
-                ${th('Họ tên','ho_ten_hoc_sinh')}
-                ${th('Ngày sinh','ngay_sinh')}
-                <th>Số định danh</th>
-                <th class="th-action">Thao tác</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              <th style="width:36px"><input type="checkbox" id="ct-chk-all"></th>
+              ${th('Họ tên','ho_ten_hoc_sinh')}
+              ${th('Ngày sinh','ngay_sinh')}
+              ${th('Số định danh','so_dinh_danh')}
+              <th class="th-action">Thao tác</th>
+            </tr></thead>
             <tbody>
               ${rows.map(r=>`
                 <tr>
-                  <td><input type="checkbox" class="ct-chk" data-sdd="${r.so_dinh_danh||''}" ${CT.selected.has(r.so_dinh_danh)?'checked':''}></td>
-                  <td>${r.ho_ten_hoc_sinh||''}</td>
-                  <td>${displayDate(r.ngay_sinh)||''}</td>
-                  <td>${r.so_dinh_danh||''}</td>
+                  <td><input type="checkbox" class="ct-chk" data-sdd="${esc(r.so_dinh_danh||'')}" ${ST.ctSelected.has(String(r.so_dinh_danh||''))?'checked':''}></td>
+                  <td>${esc(r.ho_ten_hoc_sinh||'')}</td>
+                  <td>${esc(dVN(r.ngay_sinh)||'')}</td>
+                  <td>${esc(r.so_dinh_danh||'')}</td>
                   <td class="action-btns">
-                    <button class="btn btn-sm btn-success" data-act="nop" data-sdd="${r.so_dinh_danh||''}" data-hoten="${r.ho_ten_hoc_sinh||''}">Nộp hồ sơ</button>
+                    <button class="btn btn-sm btn-success" data-act="nop" data-sdd="${esc(r.so_dinh_danh||'')}" data-hoten="${esc(r.ho_ten_hoc_sinh||'')}">Nộp hồ sơ</button>
                   </td>
-                </tr>
-              `).join('')}
+                </tr>`).join('')}
             </tbody>
           </table>
         `;
 
-        // total & lop
-        $('#ct-total-hs').textContent = `• Tổng: ${fmt(total)}`;
+        // total
+        $('#bhyt-ct-total') && ($('#bhyt-ct-total').textContent = fmt(total));
 
-        // checkbox & actions
-        $('#ct-chk-all')?.addEventListener('change', (e)=> {
-          $$('.ct-chk').forEach(ch=>{
-            ch.checked = e.target.checked;
-            const k = ch.dataset.sdd; if (ch.checked) CT.selected.add(k); else CT.selected.delete(k);
-          });
-          $('#ct-btn-bulk').style.display = CT.selected.size ? '' : 'none';
+        // sort
+        $$('#bhyt-ct-tablebox th.sortable').forEach(thEl=>{
+          thEl.onclick = ()=>{ const f=thEl.dataset.f; ST.ctSort = (ST.ctSort.f===f)? {f, dir:-ST.ctSort.dir} : {f, dir:1}; ST.ctPage=1; renderCT(); };
+        });
+
+        // chk all / chk row
+        $('#ct-chk-all')?.addEventListener('change', e=>{
+          const on = e.target.checked; ST.ctSelected.clear();
+          $$('.ct-chk').forEach(ch=>{ ch.checked = on; if (on) ST.ctSelected.add(ch.dataset.sdd); });
+          $('#bhyt-ct-bulk') && ($('#bhyt-ct-bulk').disabled = !ST.ctSelected.size);
         });
         $$('.ct-chk').forEach(ch=>{
-          ch.addEventListener('change', ()=>{
-            const k = ch.dataset.sdd; if (ch.checked) CT.selected.add(k); else CT.selected.delete(k);
-            $('#ct-btn-bulk').style.display = CT.selected.size ? '' : 'none';
-          });
+          ch.onchange = ()=>{ const k=ch.dataset.sdd; if(ch.checked) ST.ctSelected.add(k); else ST.ctSelected.delete(k);
+            $('#bhyt-ct-bulk') && ($('#bhyt-ct-bulk').disabled = !ST.ctSelected.size);
+          };
         });
 
-        // row actions
+        // actions
         $$('.action-btns .btn', root).forEach(btn=>{
           if (btn.dataset.act==='nop'){
-            btn.addEventListener('click', ()=>{
-              openNopHoSoModal({
-                sdd: btn.dataset.sdd,
-                hoten: btn.getAttribute('data-hoten')||'',
-              });
-            });
+            btn.onclick = ()=> openNopHoSo({ sdd: btn.dataset.sdd, hoten: btn.dataset.hoten });
           }
         });
 
         // pagination
         pag.innerHTML = '';
-        const ul = pag;
         for(let p=1;p<=pages;p++){
-          const li = document.createElement('li'); li.className='page-item'+(p===CT.page?' active':'');
-          li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
-          li.addEventListener('click', (ev)=>{ ev.preventDefault(); CT.page=p; renderCT(); });
-          ul.appendChild(li);
+          const li=document.createElement('li'); li.className='page-item'+(p===ST.ctPage?' active':'');
+          li.innerHTML=`<a class="page-link" href="#">${p}</a>`;
+          li.onclick=(ev)=>{ ev.preventDefault(); ST.ctPage=p; renderCT(); };
+          pag.appendChild(li);
         }
       }
-      // sort handler (expose)
-      window.BHYT_ADMIN = window.BHYT_ADMIN||{};
-      window.BHYT_ADMIN.sortCT = (field)=>{ if (CT.sortField===field) CT.sortDir=-CT.sortDir; else {CT.sortField=field; CT.sortDir=1;} renderCT(); };
 
-      // ==== Render bảng: DT (đã thu) ====
+      // ---------- render: ĐÃ THU ----------
       function renderDT(){
-        const root = $('#dt-ds-container');
-        const pag  = $('#dt-pagination'); if(!root) return;
+        const root = $('#bhyt-dt-tablebox'); const pag = $('#bhyt-dt-pagin'); if(!root) return;
+        const sorted = sortArr(ST.dtView, ST.dtSort);
+        const total = sorted.length, pages = Math.max(1, Math.ceil(total/ST.dtPageSize));
+        if (ST.dtPage>pages) ST.dtPage=pages;
+        const start=(ST.dtPage-1)*ST.dtPageSize, end=start+ST.dtPageSize;
+        const rows = sorted.slice(start,end);
 
-        const arr = DT.filtered.slice().sort((a,b)=>{
-          const f=DT.sortField, dir=DT.sortDir;
-          const av=(a[f]??'').toString().toLowerCase(); const bv=(b[f]??'').toString().toLowerCase();
-          return (av>bv?1:av<bv?-1:0) * dir;
-        });
-        const total = arr.length, pages = Math.max(1, Math.ceil(total/DT.pageSize));
-        if (DT.page>pages) DT.page=pages;
-        const start=(DT.page-1)*DT.pageSize, end=start+DT.pageSize;
-        const rows = arr.slice(start,end);
-
-        const th = (label, field)=>`<th class="sortable" onclick="BHYT_ADMIN.sortDT('${field}')">${label} <span class="sort-icon">${DT.sortField===field?(DT.sortDir===1?'▲':'▼'):''}</span></th>`;
+        const th = (label, field)=>`<th class="sortable" data-f="${field}">${label} <span class="sort-icon">${ST.dtSort.f===field?(ST.dtSort.dir===1?'▲':'▼'):''}</span></th>`;
         root.innerHTML = `
           <table class="table table-striped table-hover align-middle">
-            <thead>
-              <tr>
-                ${th('Họ tên','ho_ten_hoc_sinh')}
-                ${th('Ngày sinh','ngay_sinh')}
-                <th>Số định danh</th>
-                <th>Số hồ sơ</th>
-                <th>Nơi khám</th>
-                <th class="th-action">Thao tác</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              ${th('Họ tên','ho_ten_hoc_sinh')}
+              ${th('Ngày sinh','ngay_sinh')}
+              ${th('Số định danh','so_dinh_danh')}
+              <th>Số hồ sơ</th>
+              <th>Nơi khám</th>
+              <th class="th-action">Thao tác</th>
+            </tr></thead>
             <tbody>
-              ${rows.map(r=>`
+              ${rows.map((r,i)=>`
                 <tr>
-                  <td>${r.ho_ten_hoc_sinh||''}<span class="hoso-text">${r.trang_thai==='1'?' <span class="status-badge status-active">Hoạt động</span>':''}</span></td>
-                  <td>${displayDate(r.ngay_sinh)||''}</td>
-                  <td>${r.so_dinh_danh||''}</td>
-                  <td>${r.so_ho_so||''}</td>
-                  <td>${r.noi_kham_bhyt||''}</td>
+                  <td>${esc(r.ho_ten_hoc_sinh||'')}</td>
+                  <td>${esc(dVN(r.ngay_sinh)||'')}</td>
+                  <td>${esc(r.so_dinh_danh||'')}</td>
+                  <td>${esc(r.so_ho_so||'')}</td>
+                  <td>${esc(r.noi_kham_bhyt||'')}</td>
                   <td class="action-btns">
-                    <button class="btn btn-sm btn-outline-primary" data-act="card" data-index="${r._i||0}">Thẻ</button>
-                    <button class="btn btn-sm btn-outline-secondary" data-act="phieu" data-index="${r._i||0}">Phiếu thu</button>
-                    <button class="btn btn-sm btn-outline-success" data-act="sua" data-index="${r._i||0}">Sửa</button>
+                    <button class="btn btn-sm btn-outline-primary" data-act="card" data-i="${i}">Thẻ</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-act="phieu" data-i="${i}">Phiếu thu</button>
+                    <button class="btn btn-sm btn-outline-success" data-act="sua" data-i="${i}">Sửa</button>
                   </td>
-                </tr>
-              `).join('')}
+                </tr>`).join('')}
             </tbody>
           </table>
         `;
-        $('#dt-total-hs').textContent = `• Tổng: ${fmt(total)}`;
+
+        $('#bhyt-dt-total') && ($('#bhyt-dt-total').textContent = fmt(total));
+
+        // sort
+        $$('#bhyt-dt-tablebox th.sortable').forEach(thEl=>{
+          thEl.onclick = ()=>{ const f=thEl.dataset.f; ST.dtSort = (ST.dtSort.f===f)? {f, dir:-ST.dtSort.dir} : {f, dir:1}; ST.dtPage=1; renderDT(); };
+        });
 
         // actions
         $$('.action-btns .btn', root).forEach(btn=>{
-          const idx = +btn.dataset.index|0; const row = DT.filtered[idx];
-          if (btn.dataset.act==='card')  btn.onclick = ()=> openCardModal(row);
-          if (btn.dataset.act==='phieu') btn.onclick = ()=> openReceiptModal(row);
-          if (btn.dataset.act==='sua')   btn.onclick = ()=> openSuaHoSoModal(row);
+          const idx = Number(btn.dataset.i)||0;
+          const row = rows[idx];
+          if (btn.dataset.act==='card')  btn.onclick = ()=> openCard(row);
+          if (btn.dataset.act==='phieu') btn.onclick = ()=> openReceipt(row);
+          if (btn.dataset.act==='sua')   btn.onclick = ()=> openSuaHoSo(row);
         });
 
         // pagination
         pag.innerHTML = '';
         for(let p=1;p<=pages;p++){
-          const li = document.createElement('li'); li.className='page-item'+(p===DT.page?' active':'');
-          li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
-          li.addEventListener('click', (ev)=>{ ev.preventDefault(); DT.page=p; renderDT(); });
+          const li=document.createElement('li'); li.className='page-item'+(p===ST.dtPage?' active':'');
+          li.innerHTML=`<a class="page-link" href="#">${p}</a>`;
+          li.onclick=(ev)=>{ ev.preventDefault(); ST.dtPage=p; renderDT(); };
           pag.appendChild(li);
         }
       }
-      window.BHYT_ADMIN.sortDT = (field)=>{ if (DT.sortField===field) DT.sortDir=-DT.sortDir; else {DT.sortField=field; DT.sortDir=1;} renderDT(); };
 
-      // ==== Search ====
-      $('#ct-search-box')?.addEventListener('input', ()=>{
-        const q = $('#ct-search-box').value.trim().toLowerCase();
-        CT.filtered = !q ? CT.all : CT.all.filter(hs =>
-          (hs.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
-          (displayDate(hs.ngay_sinh)||'').toLowerCase().includes(q) ||
-          (hs.so_dinh_danh||'').toLowerCase().includes(q)
+      // ---------- search / filter ----------
+      $('#bhyt-ct-search')?.addEventListener('input', ()=>{
+        const q = $('#bhyt-ct-search').value.trim().toLowerCase();
+        ST.ctView = !q ? ST.ctAll : ST.ctAll.filter(x =>
+          (x.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
+          (dVN(x.ngay_sinh)||'').toLowerCase().includes(q) ||
+          (x.so_dinh_danh||'').toLowerCase().includes(q)
         );
-        CT.page=1; renderCT();
+        ST.ctPage=1; renderCT();
       });
-      $('#dt-search-box')?.addEventListener('input', ()=>{
-        const q = $('#dt-search-box').value.trim().toLowerCase();
-        DT.filtered = !q ? DT.all : DT.all.filter(hs =>
-          (hs.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
-          (displayDate(hs.ngay_sinh)||'').toLowerCase().includes(q) ||
-          (hs.so_dinh_danh||'').toLowerCase().includes(q)
+      $('#bhyt-dt-search')?.addEventListener('input', ()=>{
+        const q = $('#bhyt-dt-search').value.trim().toLowerCase();
+        ST.dtView = !q ? ST.dtAll : ST.dtAll.filter(x =>
+          (x.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
+          (dVN(x.ngay_sinh)||'').toLowerCase().includes(q) ||
+          (x.so_dinh_danh||'').toLowerCase().includes(q) ||
+          (x.so_ho_so||'').toLowerCase().includes(q)
         );
-        DT.page=1; renderDT();
+        ST.dtPage=1; renderDT();
       });
 
-      // ==== Nộp nhiều ====
-      $('#ct-btn-bulk')?.addEventListener('click', ()=>{
-        $('#bulkCount').textContent = CT.selected.size;
+      // reload buttons
+      $('#bhyt-ct-reload')?.addEventListener('click', ()=> reloadAll());
+      $('#bhyt-dt-reload')?.addEventListener('click', ()=> reloadAll());
+
+      // bulk button
+      $('#bhyt-ct-bulk') && ($('#bhyt-ct-bulk').disabled = true);
+      $('#bhyt-ct-bulk')?.addEventListener('click', ()=>{
+        $('#bulkCount') && ($('#bulkCount').textContent = ST.ctSelected.size);
         new bootstrap.Modal('#modalBulkNopHoSo').show();
       });
       $('#btnBulkSubmit')?.addEventListener('click', async ()=>{
-        // TODO: gọi API nộp nhiều theo danh sách CT.selected
+        // Tuỳ backend: lặp gọi nopHoSoBHYT cho từng SĐĐ đã chọn (nếu cần)
+        // Ở đây chỉ đóng modal để tránh block UI
         bootstrap.Modal.getInstance($('#modalBulkNopHoSo'))?.hide();
       });
 
-      // ==== Modal Nộp hồ sơ (1 HS) ====
-      function openNopHoSoModal({sdd,hoten}){
-        $('#bhyt_nop_sdd').value   = sdd||'';
-        $('#bhyt_nop_hoten').value = hoten||'';
-        $('#bhyt_nop_ngay').value  = new Date().toISOString().slice(0,10);
-        $('#bhyt_nop_sotien').value = '';
-        $('#bhyt_nop_noikham').value = '';
-        $('#bhyt_nop_note').value  = '';
+      // ---------- modal: Nộp hồ sơ (1 HS) ----------
+      function openNopHoSo({sdd, hoten}){
+        $('#bhyt_nop_sdd')   && ($('#bhyt_nop_sdd').value = sdd||'');
+        $('#bhyt_nop_hoten') && ($('#bhyt_nop_hoten').value = hoten||'');
+        $('#bhyt_nop_ngay')  && ($('#bhyt_nop_ngay').value = new Date().toISOString().slice(0,10));
+        $('#bhyt_nop_sotien')&& ($('#bhyt_nop_sotien').value = '');
+        $('#bhyt_nop_noikham') && ($('#bhyt_nop_noikham').value = '');
+        $('#bhyt_nop_note')  && ($('#bhyt_nop_note').value = '');
         new bootstrap.Modal('#modalNopHoSoBHYT').show();
       }
       $('#btnNopHoSoBHYT')?.addEventListener('click', async ()=>{
-        // TODO: gọi API nộp hồ sơ 1 HS
-        bootstrap.Modal.getInstance($('#modalNopHoSoBHYT'))?.hide();
+        const payload = {
+          so_dinh_danh: $('#bhyt_nop_sdd')?.value?.trim() || '',
+          ngay_nop: $('#bhyt_nop_ngay')?.value || '',
+          so_tien: Number($('#bhyt_nop_sotien')?.value || 0),
+          noi_kham: $('#bhyt_nop_noikham')?.value || '',
+          ghi_chu: $('#bhyt_nop_note')?.value || '',
+          ma_truong: ST.ma_truong
+        };
+        try{
+          const rs = await apiNopHoSo(payload);
+          if (!rs?.success) console.warn('[BHYT] Nộp hồ sơ không thành công:', rs?.message);
+        } finally {
+          bootstrap.Modal.getInstance($('#modalNopHoSoBHYT'))?.hide();
+          await reloadAll();
+        }
       });
 
-      // ==== Modal Sửa hồ sơ ====
-      function openSuaHoSoModal(row){
-        $('#bhyt_sua_sohoso').value = row.so_ho_so||'';
-        $('#bhyt_sua_sotien').value = (row.so_tien||'').toString().replaceAll(',','');
-        $('#bhyt_sua_trangthai').value = (row.trang_thai??'');
-        $('#bhyt_sua_ngaybd').value = (row.ngay_bat_dau_bhyt||'').slice(0,10);
-        $('#bhyt_sua_ngaykt').value = (row.ngay_ket_thuc_bhyt||'').slice(0,10);
-        $('#bhyt_sua_noikham').value = row.noi_kham_bhyt||'';
-        $('#bhyt_sua_note').value = row.ghi_chu||'';
+      // ---------- modal: Sửa hồ sơ ----------
+      function openSuaHoSo(row){
+        $('#bhyt_sua_sohoso') && ($('#bhyt_sua_sohoso').value = row.so_ho_so||'');
+        $('#bhyt_sua_sotien') && ($('#bhyt_sua_sotien').value = Number(String(row.so_tien||'').replaceAll(',',''))||0);
+        $('#bhyt_sua_trangthai') && ($('#bhyt_sua_trangthai').value = row.trang_thai??'');
+        $('#bhyt_sua_ngaybd') && ($('#bhyt_sua_ngaybd').value = (row.ngay_bat_dau_bhyt||'').slice(0,10));
+        $('#bhyt_sua_ngaykt') && ($('#bhyt_sua_ngaykt').value = (row.ngay_ket_thuc_bhyt||'').slice(0,10));
+        $('#bhyt_sua_noikham') && ($('#bhyt_sua_noikham').value = row.noi_kham_bhyt||'');
+        $('#bhyt_sua_note') && ($('#bhyt_sua_note').value = row.ghi_chu||'');
         new bootstrap.Modal('#modalSuaHoSoBHYT').show();
       }
       $('#btnSuaHoSoBHYT')?.addEventListener('click', async ()=>{
-        // TODO: gọi API cập nhật hồ sơ
-        bootstrap.Modal.getInstance($('#modalSuaHoSoBHYT'))?.hide();
+        const payload = {
+          so_ho_so: $('#bhyt_sua_sohoso')?.value?.trim() || '',
+          so_tien: Number($('#bhyt_sua_sotien')?.value || 0),
+          trang_thai: $('#bhyt_sua_trangthai')?.value || '',
+          ngay_bat_dau_bhyt: $('#bhyt_sua_ngaybd')?.value || '',
+          ngay_ket_thuc_bhyt: $('#bhyt_sua_ngaykt')?.value || '',
+          noi_kham: $('#bhyt_sua_noikham')?.value || '',
+          ghi_chu: $('#bhyt_sua_note')?.value || '',
+          ma_truong: ST.ma_truong
+        };
+        try{
+          const rs = await apiSuaHoSo(payload);
+          if (!rs?.success) console.warn('[BHYT] Sửa hồ sơ không thành công:', rs?.message);
+        } finally {
+          bootstrap.Modal.getInstance($('#modalSuaHoSoBHYT'))?.hide();
+          await reloadAll();
+        }
       });
 
-      // ==== Modal Phiếu thu (A5) ====
-      function openReceiptModal(row){
-        const user = JSON.parse(localStorage.getItem('user')||'{}');
-        $('#pt_school').textContent = user.ten_truong||user.ma_truong||'';
-        $('#pt_class').textContent  = row.lop_hoc||'';
-        $('#pt_date').textContent   = displayDate(row.ngay_nop)||displayDate(row.ngay_thu)||displayDate(new Date().toISOString().slice(0,10));
-        $('#pt_name').textContent   = row.ho_ten_hoc_sinh||'';
-        $('#pt_sdd').textContent    = row.so_dinh_danh||'';
-        $('#pt_sohoso').textContent = row.so_ho_so||'';
-        $('#pt_sotien').textContent = fmt(Number(String(row.so_tien||'').replaceAll(',',''))||0);
-        $('#pt_noikham').textContent= row.noi_kham_bhyt||'';
-        $('#pt_note').textContent   = row.ghi_chu||'';
-        $('#pt_thu').textContent    = user.ho_ten||user.sdt||'';
+      // ---------- modal: Phiếu thu A5 ----------
+      function openReceipt(row){
+        const u = ST.user || {};
+        $('#pt_school') && ($('#pt_school').textContent = u.ten_truong||u.ma_truong||'');
+        $('#pt_class')  && ($('#pt_class').textContent  = row.lop_hoc||'');
+        $('#pt_date')   && ($('#pt_date').textContent   = dVN(row.ngay_nop||row.ngay_thu||new Date().toISOString().slice(0,10)));
+        $('#pt_name')   && ($('#pt_name').textContent   = row.ho_ten_hoc_sinh||'');
+        $('#pt_sdd')    && ($('#pt_sdd').textContent    = row.so_dinh_danh||'');
+        $('#pt_sohoso') && ($('#pt_sohoso').textContent = row.so_ho_so||'');
+        $('#pt_sotien') && ($('#pt_sotien').textContent = fmt(Number(String(row.so_tien||'').replaceAll(',',''))||0));
+        $('#pt_noikham')&& ($('#pt_noikham').textContent= row.noi_kham_bhyt||'');
+        $('#pt_note')   && ($('#pt_note').textContent   = row.ghi_chu||'');
+        $('#pt_thu')    && ($('#pt_thu').textContent    = u.ho_ten||u.sdt||'');
 
-        // QR từ số hồ sơ
-        $('#pt_qr').innerHTML = '';
-        new QRCode($('#pt_qr'), { text: `BHYT:${row.so_ho_so||''}`, width: 96, height: 96 });
-
+        if (window.QRCode && $('#pt_qr')){ $('#pt_qr').innerHTML=''; new QRCode($('#pt_qr'), { text:`BHYT:${row.so_ho_so||''}`, width:96, height:96 }); }
         new bootstrap.Modal('#modalPhieuThu').show();
       }
       $('#btnReceiptPrint')?.addEventListener('click', ()=> window.print());
       $('#btnReceiptDownload')?.addEventListener('click', async ()=>{
-        const node = $('#receiptA5');
+        if (!window.html2canvas) return;
+        const node = $('#receiptA5'); if (!node) return;
         const canvas = await html2canvas(node, { scale:2, useCORS:true, backgroundColor:'#fff' });
         const link = document.createElement('a'); link.download='phieu_thu_bhyt.png'; link.href=canvas.toDataURL('image/png'); link.click();
       });
 
-      // ==== Modal Thẻ BHYT (A6 ngang) ====
-      function openCardModal(row){
-        const user = JSON.parse(localStorage.getItem('user')||'{}');
-        $('#card_school').textContent = user.ten_truong||user.ma_truong||'';
-        $('#card_mbhyt').textContent  = row.ma_bhyt||row.ma_so_bhyt||'';
-        $('#card_name').textContent   = row.ho_ten_hoc_sinh||'';
-        $('#card_dob').textContent    = displayDate(row.ngay_sinh)||'';
-        $('#card_sex').textContent    = row.gioi_tinh||'';
-        $('#card_addr').textContent   = row.dia_chi||'';
-        $('#card_noikham').textContent= row.noi_kham_bhyt||'';
-        $('#card_from').textContent   = displayDate(row.ngay_bat_dau_bhyt)||'';
-        $('#card_to').textContent     = displayDate(row.ngay_ket_thuc_bhyt)||'';
+      // ---------- modal: Thẻ BHYT ----------
+      function openCard(row){
+        const u = ST.user || {};
+        $('#card_school') && ($('#card_school').textContent = u.ten_truong||u.ma_truong||'');
+        $('#card_mbhyt')  && ($('#card_mbhyt').textContent  = row.ma_bhyt||row.ma_so_bhyt||'');
+        $('#card_name')   && ($('#card_name').textContent   = row.ho_ten_hoc_sinh||'');
+        $('#card_dob')    && ($('#card_dob').textContent    = dVN(row.ngay_sinh)||'');
+        $('#card_sex')    && ($('#card_sex').textContent    = row.gioi_tinh||'');
+        $('#card_addr')   && ($('#card_addr').textContent   = row.dia_chi||'');
+        $('#card_noikham')&& ($('#card_noikham').textContent= row.noi_kham_bhyt||'');
+        $('#card_from')   && ($('#card_from').textContent   = dVN(row.ngay_bat_dau_bhyt)||'');
+        $('#card_to')     && ($('#card_to').textContent     = dVN(row.ngay_ket_thuc_bhyt)||'');
 
-        // scale card để fit viewport nếu cần
-        const wrap = $('#cardScaleWrap');
-        wrap.style.transform = 'scale(1)';
-        const maxW = Math.min(window.innerWidth-48, 900);
-        const scale = Math.min(1, maxW / 420);
-        wrap.style.transform = `scale(${scale})`;
-
+        const wrap = $('#cardScaleWrap'); if (wrap){ wrap.style.transform='scale(1)'; const maxW = Math.min(window.innerWidth-48, 900); const scale = Math.min(1, maxW/420); wrap.style.transform=`scale(${scale})`; }
         new bootstrap.Modal('#modalTheBHYT').show();
       }
       $('#btnCardPrint')?.addEventListener('click', ()=> window.print());
       $('#btnCardDownload')?.addEventListener('click', async ()=>{
-        const card = $('#bhytCard'); card.classList.add('exporting');
+        if (!window.html2canvas) return;
+        const card = $('#bhytCard'); if (!card) return;
+        card.classList.add('exporting');
         const canvas = await html2canvas(card, { scale:2, useCORS:true, backgroundColor:'#fff' });
         const link = document.createElement('a'); link.download='the_bhyt.png'; link.href=canvas.toDataURL('image/png'); link.click();
         card.classList.remove('exporting');
       });
 
-      // ==== Nạp dữ liệu & khởi động ====
-      async function boot(){
+      // ---------- load & wire ----------
+      function wireOnce(){
+        // Chỉ cần những handler chưa gắn ở trên
+        // (đã gắn search/reload/bulk ở phía trên).
+      }
+
+      async function reloadAll(){
+        try{
+          ST.user = JSON.parse(localStorage.getItem('user')||'{}');
+        }catch{ ST.user = {}; }
+        ST.ma_truong = ST.user?.ma_truong || '';
+
         detectPageSize();
 
-        const user = JSON.parse(localStorage.getItem('user')||'{}');
-        const ma_truong = (user.ma_truong||'').trim();
-        const lop = (user.lop_hoc||'').trim(); // nếu admin không có lop_hoc, vẫn chạy full
+        // lấy toàn bộ HS & BHYT cho trường
+        const [hsRes, bhRes] = await Promise.all([
+          apiGetStudents(ST.ma_truong, ''),
+          apiGetBHYT(ST.ma_truong, '')
+        ]);
 
-        // 1) Lấy toàn bộ HS & hồ sơ BHYT để phân luồng
-        try{
-        const [studentsRes, bhytRes] = await Promise.all([
-                  getAllStudents(ma_truong, ''),      // lấy tất cả lớp
-                  getAllBHYT(ma_truong, '')
-                ]);
-                const students = Array.isArray(studentsRes?.data)? studentsRes.data : (studentsRes?.rows||[]);
-                const bhytRows = Array.isArray(bhytRes?.data)? bhytRes.data : [];
-        }
-        catch(e){
-          console.error(e);
-          showToast('Lỗi tải dữ liệu học sinh hoặc BHYT: '+e.message, 'danger');
-          return;
-        }
+        const students = Array.isArray(hsRes?.data) ? hsRes.data : [];
+        const bhyt     = Array.isArray(bhRes?.data) ? bhRes.data : [];
 
-        // map theo SĐD
-        const bySdd = new Map();
-        for (const r of bhytRows){
-          const k = String(r.so_dinh_danh||'').trim();
-          if (!k) continue;
-          bySdd.set(k, r);
-        }
+        // map theo số định danh để chia 2 tab
+        const hasBHYT = new Set(bhyt.map(r=> String(r.so_dinh_danh||'').trim()).filter(Boolean));
+        ST.ctAll = students.filter(s=> !hasBHYT.has(String(s.so_dinh_danh||'').trim()));
+        ST.dtAll = bhyt.slice();
 
-        // chia chưa thu / đã thu
-        const ct = [], dt = [];
-        for (const s of students){
-          const k = String(s.so_dinh_danh||'').trim();
-          const merged = { ...s, ...(bySdd.get(k)||{}) };
-          if (bySdd.has(k)) dt.push(merged); else ct.push(merged);
-        }
-
-        // attach index cho DT (dùng khi click actions)
-        DT.all = dt.map((r,i)=> ({...r, _i:i}));
-        DT.filtered = DT.all.slice();
-        CT.all = ct.slice();
-        CT.filtered = CT.all.slice();
-
-        // Hiển thị lớp (nếu có) và tổng
-        $('#ct-lop-hoc').textContent = lop || 'tất cả';
-        $('#dt-lop-hoc').textContent = lop || 'tất cả';
+        ST.ctView = ST.ctAll.slice(); ST.dtView = ST.dtAll.slice();
+        ST.ctPage=1; ST.dtPage=1;
 
         renderCT(); renderDT();
       }
 
-      // Chỉ chạy khi người dùng mở trang BHYT
-      const pageObserver = new MutationObserver(()=>{
+      // ---------- expose cho router ----------
+      window.bhyt_wirePage = ()=> wireOnce();
+      window.bhyt_reload   = ()=> reloadAll();
+
+      // Nếu trang đã mở sẵn
+      document.addEventListener('DOMContentLoaded', ()=>{
         const page = $('#page-bhyt');
-        if (page && !page.dataset.booted && getComputedStyle(page).display!=='none'){
-          page.dataset.booted = '1';
-          boot().catch(console.error);
-        }
+        if (page && getComputedStyle(page).display!=='none'){ wireOnce(); reloadAll(); }
       });
-      pageObserver.observe(document.body, { attributes:true, childList:true, subtree:true });
     })();
   </script>
+
 
 
 
