@@ -96,19 +96,32 @@
 
 
 
-    /* ===== BHYT (copy tinh gọn từ 2 file GV) ===== */
-    #page-bhyt .bhyt-sticky{position:sticky;top:0;z-index:10;background:#fff;padding-bottom:4px;margin-bottom:8px}
-    #page-bhyt .table-hs{background:#fff;border-radius:var(--card-radius);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+    /* ===== BHYT: header sticky + table look giống mẫu ===== */
+    #page-bhyt .sticky-header-box{position:sticky;top:0;z-index:998;background:#f8f9fa;padding-bottom:2px}
+    #page-bhyt .header{font-size:22px;font-weight:700;margin-bottom:8px;padding-bottom:6px;background:#f8f9fa}
+    #page-bhyt .search-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;position:sticky;top:52px;z-index:997;background:#f8f9fa;padding-bottom:4px}
+    #page-bhyt .search-input{flex:1;min-width:180px}
+    #page-bhyt .table-hs{background:#fff;border-radius:8px;box-shadow:0 1px 6px #0002}
+    #page-bhyt .total-count{font-size:1rem;font-weight:400;color:#444}
+    #page-bhyt th.th-action{min-width:170px}
     #page-bhyt th.sortable{cursor:pointer;user-select:none}
+    #page-bhyt th.sortable:hover{background:#f1f1f1}
+    #page-bhyt .sort-icon{font-size:13px;margin-left:4px;vertical-align:middle}
+    #page-bhyt .action-btns{display:flex;flex-wrap:wrap;gap:6px}
+    #page-bhyt .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px}
+
+    /* badge trạng thái (giống mẫu) */
     #page-bhyt .status-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:600;font-size:12px}
     #page-bhyt .status-pending{color:#b91c1c;background:#fee2e2}
     #page-bhyt .status-paid-wait{color:#b91c1c;background:#ffe4e6}
     #page-bhyt .status-active{color:#065f46;background:#d1fae5}
-    #page-bhyt .rank-num{width:32px;height:32px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
-    #page-bhyt .a5-paper{width:210mm;min-height:148mm;background:#fff;border:1px solid #ddd;box-shadow:0 1px 8px #0002;padding:12mm}
-    #page-bhyt .bhyt-card{width:86mm;height:54mm;border:1px solid #ddd;background:#fff;box-shadow:0 1px 8px #0002;padding:10px}
 
-  
+    /* A5 preview in modal: đổi về portrait như mẫu GV khi in riêng */
+    #page-bhyt .a5-paper{width:148mm;min-height:210mm;background:#fff;color:#111;border:1px solid #eee;margin:0 auto;padding:10mm 12mm;line-height:1.35;font-size:13px}
+
+    /* Card xem thẻ: giữ kích thước ngang + export */
+    #page-bhyt .bhyt-card.exporting{height:auto !important;overflow:visible !important}
+    #page-bhyt .bhyt-card.exporting .bhyt-inner{padding-bottom:48px !important}
   
   </style>
 
@@ -509,15 +522,19 @@
           <div class="tab-pane fade show active" id="bhyt-chuathu" role="tabpanel">
             <!-- Filter row (giống giao diện GV) -->
             <div class="bhyt-sticky">
-              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                <select id="bhyt-ct-lop" class="form-select" style="max-width:220px">
-                  <option value="">Theo lớp</option>
-                </select>
-                <input id="bhyt-ct-search" class="form-control flex-grow-1 search-input" placeholder="Tìm theo tên, SĐĐ, SĐT..." />
-                <button id="bhyt-ct-reload" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Tải lại</button>
-                <button id="bhyt-ct-bulk" class="btn btn-success"><i class="bi bi-upload"></i> Nộp nhiều</button>
+              <!-- [PATCH HTML - Header CHƯA THU giống mẫu] -->
+              <div class="sticky-header-box">
+                <div class="header">
+                  DANH SÁCH HỌC SINH CHƯA THU BHYT LỚP <span id="bhyt-ct-lop-text">tất cả</span>
+                  <span class="total-count" id="bhyt-ct-total">(0 học sinh)</span>
+                </div>
+                <div class="search-row mb-2">
+                  <!-- Giữ input sẵn có nhưng đổi placeholder cho đúng mẫu -->
+                  <input id="bhyt-ct-search" class="form-control search-input" placeholder="Tìm theo tên, ngày sinh, số định danh..." />
+                </div>
+                <!-- Nút Nộp nhiều đặt ngay dưới search như mẫu -->
+                <button id="bhyt-ct-bulk" class="btn btn-primary d-none">Nộp nhiều hồ sơ</button>
               </div>
-              <div class="text-secondary">Tổng: <span id="bhyt-ct-total">0</span></div>
             </div>
 
             <div class="table-responsive table-hs" id="bhyt-ct-tablebox"></div>
@@ -527,14 +544,16 @@
           <!-- Tab ĐÃ THU -->
           <div class="tab-pane fade" id="bhyt-dathu" role="tabpanel">
             <div class="bhyt-sticky">
-              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                <select id="bhyt-dt-lop" class="form-select" style="max-width:220px">
-                  <option value="">Theo lớp</option>
-                </select>
-                <input id="bhyt-dt-search" class="form-control flex-grow-1 search-input" placeholder="Tìm theo tên, số hồ sơ, SĐĐ..." />
-                <button id="bhyt-dt-reload" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Tải lại</button>
+              <!-- [PATCH HTML - Header ĐÃ THU giống mẫu] -->
+              <div class="sticky-header-box">
+                <div class="header">
+                  DANH SÁCH HỌC SINH ĐÃ THAM GIA BHYT LỚP <span id="bhyt-dt-lop-text">tất cả</span>
+                  <span class="total-count" id="bhyt-dt-total">(0 học sinh)</span>
+                </div>
+                <div class="search-row mb-2">
+                  <input id="bhyt-dt-search" class="form-control search-input" placeholder="Tìm theo tên, ngày sinh, số định danh..." />
+                </div>
               </div>
-              <div class="text-secondary">Tổng: <span id="bhyt-dt-total">0</span></div>
             </div>
 
             <div class="table-responsive table-hs" id="bhyt-dt-tablebox"></div>
@@ -549,6 +568,16 @@
             <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHYT</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
               <input type="hidden" id="bhyt-nop-sdd">
+              <!-- [PATCH HTML - Fields hiển thị trong modal Nộp] -->
+              <div class="mb-2">
+                <label>Họ tên học sinh:</label>
+                <input class="form-control" id="bhyt-nop-hoten" readonly>
+              </div>
+              <div class="mb-2">
+                <label>Ngày sinh:</label>
+                <input class="form-control" id="bhyt-nop-ngaysinh" readonly>
+              </div>
+
               <div class="row g-2">
                 <div class="col-md-4">
                   <label class="form-label">Số tháng</label>
