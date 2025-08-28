@@ -543,61 +543,39 @@
 
       <!-- BẢO HIỂM Y TẾ (embedded, for admin) -->
       <section id="page-bhyt" class="d-none">
-        <div class="mb-2">
-          <div class="h5 fw-bold">Bảo hiểm y tế</div>
-          <div class="text-secondary">Dựa trên giao diện & logic từ <code>ds_hocsinh_chuathu_giaovien.html</code> / <code>ds_hocsinh_dathu_giaovien.html</code>.</div>
-        </div>
-
-        <!-- Tabs -->
         <ul class="nav nav-tabs mb-3" id="bhytTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-chuathu" data-bs-toggle="tab" data-bs-target="#bhyt-chuathu" type="button" role="tab">
-              Danh sách chưa thu BHYT
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-dathu" data-bs-toggle="tab" data-bs-target="#bhyt-dathu" type="button" role="tab">
-              Danh sách đã thu BHYT
-            </button>
-          </li>
+          <li class="nav-item"><button class="nav-link active" id="tab-chuathu" data-bs-target="#bhyt-chuathu" ...>Danh sách chưa thu BHYT</button></li>
+          <li class="nav-item"><button class="nav-link" id="tab-dathu" data-bs-target="#bhyt-dathu" ...>Danh sách đã thu BHYT</button></li>
         </ul>
 
         <div class="tab-content">
-
-          <!-- Tab CHƯA THU -->
+          <!-- CHƯA THU -->
           <div class="tab-pane fade show active" id="bhyt-chuathu" role="tabpanel">
-            <div class="sticky-header-box">
-              <div class="header">
-                DANH SÁCH HỌC SINH ĐÃ THAM GIA BHYT LỚP <span id="dt-lop-hoc"></span>
-                <span class="total-count" id="dt-total-hs"></span>
+            <div class="bhyt-sticky">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <select id="bhyt-ct-lop" class="form-select" style="max-width:220px"><option value="">Theo lớp</option></select>
+                <input id="bhyt-ct-search" class="form-control flex-grow-1 search-input" placeholder="Tìm theo tên, SĐĐ, SĐT." />
+                <button id="bhyt-ct-reload" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Tải lại</button>
+                <button id="bhyt-ct-bulk" class="btn btn-success"><i class="bi bi-upload"></i> Nộp nhiều</button>
               </div>
-
-              <div class="search-row mb-2">
-                <input class="form-control search-input" id="dt-search-box"
-                      placeholder="Tìm theo tên, ngày sinh, số định danh..." />
-              </div>
+              <div class="text-secondary">Tổng: <span id="bhyt-ct-total">0</span></div>
             </div>
-
-            <div class="table-responsive table-hs" id="dt-ds-container"></div>
-            <nav class="mt-2"><ul class="pagination justify-content-center" id="dt-pagination"></ul></nav>
+            <div class="table-responsive table-hs" id="bhyt-ct-tablebox"></div>
+            <nav class="mt-2"><ul class="pagination justify-content-center" id="bhyt-ct-pagin"></ul></nav>
           </div>
 
-          <!-- Tab ĐÃ THU -->
+          <!-- ĐÃ THU -->
           <div class="tab-pane fade" id="bhyt-dathu" role="tabpanel">
-            <div class="sticky-header-box">
-              <div class="header">
-                DANH SÁCH HỌC SINH ĐÃ THAM GIA BHYT LỚP <span id="dt-lop-hoc"></span>
-                <span class="total-count" id="dt-total-hs"></span>
+            <div class="bhyt-sticky">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <select id="bhyt-dt-lop" class="form-select" style="max-width:220px"><option value="">Theo lớp</option></select>
+                <input id="bhyt-dt-search" class="form-control flex-grow-1 search-input" placeholder="Tìm theo tên, SĐĐ, SĐT, số HS, số hồ sơ." />
+                <button id="bhyt-dt-reload" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Tải lại</button>
               </div>
-
-              <div class="search-row mb-2">
-                <input class="form-control search-input" id="dt-search-box"
-                      placeholder="Tìm theo tên, ngày sinh, số định danh..." />
-              </div>
+              <div class="text-secondary">Tổng: <span id="bhyt-dt-total">0</span></div>
             </div>
-
-            <div class="table-responsive table-hs" id="dt-ds-container"></div>
-            <nav class="mt-2"><ul class="pagination justify-content-center" id="dt-pagination"></ul></nav>
+            <div class="table-responsive table-hs" id="bhyt-dt-tablebox"></div>
+            <nav class="mt-2"><ul class="pagination justify-content-center" id="bhyt-dt-pagin"></ul></nav>
           </div>
         </div>
 
