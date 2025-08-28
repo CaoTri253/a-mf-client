@@ -787,6 +787,23 @@
 
 
   <script>
+  // Shim: nếu api.js khai báo const API_BASE thì đưa nó lên window cho các script khác dùng
+  (function(){
+    if (typeof window.API_BASE === 'undefined') {
+      try {
+        if (typeof API_BASE !== 'undefined') window.API_BASE = API_BASE;
+      } catch(e) {}
+    }
+  })();
+  </script>
+
+
+
+
+
+
+
+  <script>
   // ====== KHỐI HỌC SINH CHO ADMIN ======
   let ADM = {
     all: [],           // toàn bộ HS trường
@@ -1366,11 +1383,13 @@
       };
 
       function assertApiJs(){
-        if (!window.API_BASE) console.warn('[BHYT] Chưa thấy API_BASE – đảm bảo ../js/api.js load TRƯỚC script này.');
-        ['getAllDanhSachHocsinh','getDanhSachBHYT','nopHoSoBHYT','suaHoSoBHYT'].forEach(fn=>{
+        // BỎ: if (!window.API_BASE) console.warn('[BHYT] ...');
+        const requiredFns = ['getAllDanhSachHocsinh','getDanhSachBHYT','nopHoSoBHYT','suaHoSoBHYT'];
+        requiredFns.forEach(fn=>{
           if (typeof window[fn] !== 'function') console.warn(`[BHYT] Thiếu hàm ${fn} trong api.js`);
         });
       }
+
       assertApiJs();
 
       // ---------- state ----------
