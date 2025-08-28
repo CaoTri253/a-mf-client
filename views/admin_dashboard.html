@@ -1357,12 +1357,53 @@
 
 
 
+
   <script>
     /* =========================================================
       BHYT_ADMIN: Khớp UI + hành vi của 2 trang GV trong 2 tab
       - Namespaced để không đụng code cũ
       - Chỉ hoạt động khi #page-bhyt hiển thị
       ========================================================= */
+
+    /* Utils API bền vững: tránh 404 & HTML trả về khi parse JSON */
+    (function(){
+      // 1) Danh sách base URL để thử (tuỳ môi trường bạn, có thể thêm/bớt)
+      const CANDIDATES = [
+        // nếu bạn đang host ở subpath /abt-medu-frontend/
+        location.origin + '/abt-medu-frontend/api',
+        // relative trong cùng thư mục
+        './api',
+        // relative lùi một cấp
+        '../api',
+      ];
+
+      async function tryFetchJSON(fullUrl){
+        const res = await fetch(fullUrl, { credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP ${res.status} at ${fullUrl}`);
+        const ct = res.headers.get('content-type')||'';
+        if (!ct.toLowerCase().includes('application/json')) {
+          const text = await res.text();
+          throw new Error(`Expected JSON but got: ${String(text).slice(0,120)}... at ${fullUrl}`);
+        }
+        return await res.json();
+      }
+
+      // Hàm gọi API: pass ?func=...&param=...
+      window.apiCallJSON = async function(query){
+        let lastErr;
+        for (const base of CANDIDATES) {
+          try {
+            const full = base + (query.startsWith('?') ? query : ('?' + query));
+            const data = await tryFetchJSON(full);
+            // lưu base thành công để lần sau dùng luôn (giảm số lần thử)
+            window.API_BASE = base;
+            return data;
+          } catch (e) { lastErr = e; }
+        }
+        throw lastErr || new Error('All API candidates failed');
+      };
+    })();
+
     (function(){
       const $  = (sel, root=document) => (root||document).querySelector(sel);
       const $$ = (sel, root=document) => Array.from((root||document).querySelectorAll(sel));
@@ -1392,10 +1433,28 @@
 
       // ==== API giống trang GV ====
       const API_BASE = window.API_BASE || '../api'; // nếu đã có trong bundle của bạn thì dùng y như vậy
-      async function getAllBHYT(ma_truong,lop){ const u=`${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`; const r=await fetch(u); return r.json(); }
-      async function getTenTruong(ma_truong){ try{const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`; const r=await fetch(u); const j=await r.json(); const user=JSON.parse(localStorage.getItem('user')||'{}'); return j?.ten_truong||j?.data?.ten_truong||user.ten_truong||ma_truong||'—';}catch(e){const user=JSON.parse(localStorage.getItem('user')||'{}'); return user.ten_truong||ma_truong||'—';} }
-      async function getAllStudents(ma_truong,lop){ const u=`${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`; const r=await fetch(u); return r.json(); }
-      async function getHosoBHYTByHS(sdd,ma_truong,lop){ const u=`${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(sdd)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`; const r=await fetch(u); return r.json(); }
+     // MỚI (dùng util tự dò base + kiểm tra content-type)
+      async function getAllStudents(ma_truong, lop){
+        return await apiCallJSON(
+          `func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop||'')}`
+        );
+      }
+      async function getAllBHYT(ma_truong, lop){
+        return await apiCallJSON(
+          `func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop||'')}`
+        );
+      }
+      async function getTenTruong(ma_truong){
+        return await apiCallJSON(`func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`);
+      }
+      async function nopHoSoBHYT(payload){
+        const q = Object.entries(payload).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+        return await apiCallJSON(`func=NopHoSoBHYT&${q}`);
+      }
+      async function suaHoSoBHYT(payload){
+        const q = Object.entries(payload).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+        return await apiCallJSON(`func=SuaHoSoBHYT&${q}`);
+}
 
       // ==== Render bảng: CT (chưa thu) ====
       function renderCT(){
@@ -1681,14 +1740,21 @@
         const lop = (user.lop_hoc||'').trim(); // nếu admin không có lop_hoc, vẫn chạy full
 
         // 1) Lấy toàn bộ HS & hồ sơ BHYT để phân luồng
+        try{
         const [studentsRes, bhytRes] = await Promise.all([
-          getAllStudents(ma_truong, ''),      // lấy tất cả lớp
-          getAllBHYT(ma_truong, '')
-        ]);
-        const students = Array.isArray(studentsRes?.data)? studentsRes.data : (studentsRes?.rows||[]);
-        const bhytRows = Array.isArray(bhytRes?.data)? bhytRes.data : [];
+                  getAllStudents(ma_truong, ''),      // lấy tất cả lớp
+                  getAllBHYT(ma_truong, '')
+                ]);
+                const students = Array.isArray(studentsRes?.data)? studentsRes.data : (studentsRes?.rows||[]);
+                const bhytRows = Array.isArray(bhytRes?.data)? bhytRes.data : [];
+        }
+        catch(e){
+          console.error(e);
+          showToast('Lỗi tải dữ liệu học sinh hoặc BHYT: '+e.message, 'danger');
+          return;
+        }
 
-        // map theo SĐĐ
+        // map theo SĐD
         const bySdd = new Map();
         for (const r of bhytRows){
           const k = String(r.so_dinh_danh||'').trim();
@@ -1758,6 +1824,36 @@
     return user;
   }
 
+
+
+
+  /* GLUE cho trang BHYT: đảm bảo router gọi không lỗi ngay cả khi module BHYT chưa kịp nạp */
+  (function(){
+    function safeGetUser(){ try { return JSON.parse(localStorage.getItem('user')||'{}'); } catch { return {}; } }
+
+    // nếu module BHYT (BHYT hoặc BHYT_ADMIN) đã gắn hàm thật thì dùng; nếu chưa thì tạm gắn "stub"
+    if (!window.bhyt_wirePage) {
+      window.bhyt_wirePage = function(){
+        // ưu tiên module BHYT_ADMIN
+        if (window.BHYT && typeof BHYT.wireOnce==='function') return BHYT.wireOnce();
+        if (window.BHYT_ADMIN && typeof BHYT_ADMIN.wireOnce==='function') return BHYT_ADMIN.wireOnce();
+        // chưa nạp xong module: không làm gì, tránh crash
+      };
+    }
+    if (!window.bhyt_reload) {
+      window.bhyt_reload = function(){
+        const u = safeGetUser();
+        if (window.BHYT && typeof BHYT.reloadAll==='function') return BHYT.reloadAll(u.ma_truong||'');
+        if (window.BHYT_ADMIN && typeof BHYT_ADMIN.reloadAll==='function') return BHYT_ADMIN.reloadAll(u.ma_truong||'');
+        // chưa nạp xong module: không làm gì, tránh crash
+      };
+    }
+  })();
+
+
+
+
+
   function setActivePage(page){
     $$('#sidebarMenu .nav-item').forEach(el=> el.classList.toggle('active', el.dataset.page === page));
     $$('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
@@ -1772,14 +1868,6 @@
       adm_reloadStudents();
     }
 
-
-
-
-    // NEW: khi vào trang BHYT, khởi tạo UI 1 lần và reload dữ liệu
-    if (page === 'bhyt') {
-      if (!sec.dataset.wired) { bhyt_wirePage(); sec.dataset.wired = '1'; }
-      bhyt_reload();
-    }
   }
 
 
