@@ -504,9 +504,8 @@
           <div class="row g-2 align-items-center">
             <div class="col-12 col-lg-6">
               <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
-              <select id="bhyt-class-select" class="form-select" multiple>
-                <option value="">-- Chọn lớp --</option>
-              </select>
+              <select id="bhyt-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
+              <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; để trống = toàn trường</small>
             </div>
             <div class="col-12 col-lg-6">
               <label class="form-label fw-semibold">Tìm kiếm</label>
@@ -1406,16 +1405,11 @@
     /* ===== Lớp (multiple) ===== */
     async function loadClassOptions(){
       const res = await getAllHocsinhByClass(bhyt_user.ma_truong, "");
-      const el = document.getElementById('bhyt-class-select');
-      if (!el) return;
-
-      let classes = [];
-      if (res?.success && Array.isArray(res.data)) {
-        classes = [...new Set(res.data.map(x => String(x.lop_hoc || "").trim()).filter(Boolean))].sort();
+      const el = document.getElementById('bhyt-classes'); if(!el) return; el.innerHTML="";
+      if(res?.success && Array.isArray(res.data)){
+        [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+          .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
       }
-
-      el.innerHTML = '<option value="">-- Chọn lớp --</option>' + 
-        classes.map(cls => `<option value="${cls}">${cls}</option>`).join('');
     }
 
     /* ===== Lấy dữ liệu “chưa thu” (nhiều lớp) ===== */
@@ -1894,50 +1888,10 @@
     window.bhyt_wirePage = function(){
       if (window._bhytWired) return;
       window._bhytWired = true;
-
-      if(!bhyt_user?.ma_truong){ 
-        console.warn('Thiếu thông tin trường'); 
-        return; 
-      }
-
-      // Load danh sách lớp vào <select>
+      if(!bhyt_user?.ma_truong){ console.warn('Thiếu thông tin trường'); }
       loadClassOptions();
-
-      // Gắn sự kiện thay đổi lớp
-      const select = $('#bhyt-class-select');
-      if (select) {
-        select.addEventListener('change', () => {
-          const selected = Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
-          // Cập nhật danh sách đã chọn
-          bhyt_selectedClasses = selected;
-          // Lọc lại danh sách
-          applyBHYTFilter();
-        });
-      }
-
-      // Tự động tải danh sách khi vào tab
       fetchChuaThuHocsinh();
     };
-
-
-
-    function applyBHYTFilter() {
-      const search = (document.getElementById('bhyt-search')?.value || '').trim().toLowerCase();
-      const selectedClasses = bhyt_selectedClasses || [];
-
-      const filtered = (bhyt_allData || []).filter(hs => {
-        const matchSearch = !search || 
-          hs.ho_ten_hoc_sinh?.toLowerCase().includes(search) ||
-          hs.lop_hoc?.toLowerCase().includes(search) ||
-          hs.so_dinh_danh?.includes(search);
-        
-        const matchClass = selectedClasses.length === 0 || selectedClasses.includes(hs.lop_hoc);
-        
-        return matchSearch && matchClass;
-      });
-
-      renderBHYTList(filtered);
-    }
 
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
