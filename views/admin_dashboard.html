@@ -1291,7 +1291,7 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.4) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2.5) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
     /* ===== Fallback Loading ===== */
@@ -1307,7 +1307,7 @@
       if (typeof window.hideLoading!=='function') window.hideLoading = ()=>{ const el=document.getElementById('loadingSpinner'); if(el) el.style.display='none'; };
     })();
 
-    /* ===== Toast success (xanh lá) & Force unlock scroll ===== */
+    /* ===== Toast success (xanh lá) & Force unlock scroll & Mobile CSS ===== */
     function toastSuccess(msg){
       try { if (typeof window.showToast === 'function') return window.showToast(msg, 'success'); } catch(_) {}
       let cont = document.getElementById('toast-container');
@@ -1331,8 +1331,8 @@
     }
     function forceUnlockScroll(){
       try{
-        document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
         document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+        document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
         document.body.classList.remove('modal-open');
         document.body.style.overflow = '';
         document.body.style.removeProperty('padding-right');
@@ -1342,9 +1342,38 @@
     function hookModalUnlock(id){
       const el = document.getElementById(id);
       if(!el) return;
-      // khi đóng/hide modal (dù user bấm X hay backdrop), chắc chắn gỡ mờ & mở cuộn
       el.addEventListener('hidden.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
       el.addEventListener('hidePrevented.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
+    }
+    // khoảng cách nút thao tác trên mobile
+    (function bhytMobileFixCSS(){
+      if (document.getElementById('bhyt-mobile-fixes')) return;
+      const s = document.createElement('style'); s.id='bhyt-mobile-fixes';
+      s.textContent = `
+        #page-bhyt .action-btns{display:flex;flex-direction:column;gap:8px;}
+        @media (min-width: 992px){ #page-bhyt .action-btns{gap:6px;} }
+      `;
+      document.head.appendChild(s);
+    })();
+
+    /* ===== Helpers cho QR giống trang mẫu ===== */
+    function bhyt_stripVN(str){
+      return String(str||"").normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'')
+        .replace(/đ/g,'d').replace(/Đ/g,'D');
+    }
+    function bhyt_initials(str){
+      return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase();
+    }
+    /* Payload theo mẫu: MT=<ma_truong>;S=<ten_truong>;L=<lop>;N=<ten_hs>;M=<so_thang>;E=<han_moi> */
+    function bhyt_buildQRPayload(schoolCode, school, classCode, name, months, endDate){
+      const mt = String(schoolCode||"").slice(0,24);
+      const s  = bhyt_stripVN(school).slice(0,60);
+      const c  = String(classCode||"").slice(0,12);
+      const n  = bhyt_stripVN(name).slice(0,60);
+      const m  = String(months||"");
+      const e  = String(endDate||"").slice(0,10);
+      return `MT=${mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
     }
 
     /* ===== Biến trạng thái ===== */
@@ -1652,15 +1681,7 @@
       document.getElementById('bulk-count-label').innerText = list.length;
       document.getElementById('bulk-exp-note').innerText = "";
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
-      (async ()=>{
-        const g=await ensureGiaBHYT();
-        const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12';
-        const anyOld=parseVNDate(list[0]?.ngay_het_han_bhyt);
-        const {exp,amount,note}=computeAmountAndExp(anyOld?formatVNDate(anyOld):"", months, g?.gia_tien);
-        document.getElementById('bulk-exp-preview').innerText=exp;
-        document.getElementById('bulk-amount-preview').innerText=(amount||0).toLocaleString('vi-VN');
-        document.getElementById('bulk-exp-note').innerText=note||"";
-      })();
+      (async ()=>{ const g=await ensureGiaBHYT(); const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12'; const anyOld=parseVNDate(list[0]?.ngay_het_han_bhyt); const {exp,amount,note}=computeAmountAndExp(anyOld?formatVNDate(anyOld):"", months, g?.gia_tien); document.getElementById('bulk-exp-preview').innerText=exp; document.getElementById('bulk-amount-preview').innerText=(amount||0).toLocaleString('vi-VN'); document.getElementById('bulk-exp-note').innerText=note||""; })();
     }
     async function submitBulkNopHoSo(){
       const list = getSelectedRowsData(); if(!list.length) return;
@@ -1731,72 +1752,77 @@
         const months = '12';
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
-        document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
-        document.getElementById('rec-class').innerText = hs.lop_hoc||'—';
+        document.getElementById('rec-school').innerText       = school || (bhyt_user.ten_truong||'—');
+        document.getElementById('rec-class').innerText        = hs.lop_hoc||'—';
         document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh||'—';
-        document.getElementById('rec-address').innerText = hs.dia_chi||'—';
-        document.getElementById('rec-content').innerText = 'Thu Bảo hiểm y tế (BHYT) học sinh';
-        document.getElementById('rec-months').innerText = months;
+        document.getElementById('rec-address').innerText      = hs.dia_chi||'—';
+        document.getElementById('rec-content').innerText      = 'Thu Bảo hiểm y tế (BHYT) học sinh';
+        document.getElementById('rec-months').innerText       = months;
         const startDate = formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1));
-        document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
-        document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
-        document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
+        document.getElementById('rec-range').innerText        = `từ ngày ${startDate} đến ngày ${exp}`;
+        document.getElementById('rec-amount').innerText       = (amount||0).toLocaleString('vi-VN');
+        document.getElementById('rec-amount-text').innerText  = numberToVietnameseText(amount||0);
         document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || '—';
         const t=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
+
+        // QR theo mẫu
         const qrWrap=document.getElementById('receipt-qr'); qrWrap.innerHTML="";
-        new QRCode(qrWrap, { text: `${bhyt_user.ma_truong}|${hs.so_dinh_danh}|${months}|${amount}`, width: 96, height: 96 });
+        const qrText = bhyt_buildQRPayload(bhyt_user.ma_truong, school, hs.lop_hoc||"", hs.ho_ten_hoc_sinh||"", months, exp);
+        try{
+          new QRCode(qrWrap, { text: qrText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.L });
+        }catch(e){
+          const fallback = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(hs.lop_hoc||"").slice(0,12)};N=${bhyt_initials(hs.ho_ten_hoc_sinh)};M=${months};E=${exp}`;
+          new QRCode(qrWrap, { text: fallback, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.L });
+        }
+
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } finally{ hideLoading(); }
     }
 
-    /* In ngay trong trang hiện tại – KHÔNG vỡ giao diện, không nhân bản */
+    /* In trong trang qua iframe – KHÔNG đơ, QR in được trên mobile */
     function printReceiptOnly(){
       const src = document.getElementById('receiptA5'); if(!src) return;
 
-      // Clone + thay QR bằng ảnh để in nét
+      // Clone & đổi QR canvas sang <img> để mobile in được
       const clone = src.cloneNode(true);
-      const live = src.querySelector('#receipt-qr canvas, #receipt-qr img');
-      if (live){
-        const tgt = clone.querySelector('#receipt-qr');
-        if (tgt){
-          tgt.innerHTML='';
-          const dataURL = (live.tagName.toLowerCase()==='canvas') ? live.toDataURL('image/png') : live.src;
-          const im = document.createElement('img'); im.src=dataURL; im.width=96; im.height=96;
-          tgt.appendChild(im);
-        }
+      const cv = clone.querySelector('#receipt-qr canvas');
+      if (cv){
+        const img = document.createElement('img');
+        img.alt = 'QR';
+        img.width = cv.width; img.height = cv.height;
+        try { img.src = cv.toDataURL('image/png'); } catch(_){}
+        cv.replaceWith(img);
       }
 
-      // Holder in tạm
-      let holder = document.getElementById('__printArea'); if(holder) holder.remove();
-      holder = document.createElement('div'); holder.id='__printArea'; holder.appendChild(clone);
-      document.body.appendChild(holder);
-
-      // Style in: ẩn TẤT CẢ direct-child của body trừ __printArea (không đụng display con bên trong)
-      let style = document.getElementById('__printStyle'); if(style) style.remove();
-      style = document.createElement('style'); style.id='__printStyle';
-      style.textContent = `
+      const css = `
         @page { size: A5 portrait; margin: 10mm; }
-        @media print{
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body > *:not(#__printArea){ display:none !important; }  /* tránh nhân bản */
-          #__printArea{ display:block !important; }
-        }
-        #__printArea .a5-paper{
-          width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
-          color:#000; line-height:1.35; font-size:13px; background:#fff; page-break-inside: avoid;
-        }
+        html,body{background:#fff !important;margin:0 !important;padding:0 !important;}
+        .a5-paper{width:148mm;min-height:210mm;margin:0 auto;padding:10mm 12mm;color:#000;}
+        *{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
       `;
-      document.head.appendChild(style);
 
+      let frame = document.getElementById('bhyt-print-frame');
+      if(!frame){
+        frame = document.createElement('iframe');
+        frame.id = 'bhyt-print-frame';
+        frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+        document.body.appendChild(frame);
+      }
+
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(`<html><head><title>In phiếu thu</title><style>${css}</style></head><body>${clone.outerHTML}</body></html>`);
+      doc.close();
+
+      const w = frame.contentWindow;
       const cleanup = ()=>{
-        document.getElementById('__printArea')?.remove();
-        document.getElementById('__printStyle')?.remove();
-        setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
+        w.onafterprint=null;
+        setTimeout(()=>{ doc.body.innerHTML=''; },0);
         forceUnlockScroll();
       };
-      window.addEventListener('afterprint', cleanup, {once:true});
-      window.print();
-      setTimeout(cleanup, 800); // fallback
+      w.onafterprint = cleanup;
+      setTimeout(()=>{ try{ w.focus(); w.print(); }catch(_){ cleanup(); } }, 150);
+      setTimeout(cleanup, 2500); // fallback nếu onafterprint không bắn
     }
 
     async function downloadReceiptImage(){
@@ -1809,8 +1835,6 @@
     document.getElementById('bhyt-btn-reload')?.addEventListener('click', fetchChuaThuHocsinh);
     document.getElementById('bhyt-search')?.addEventListener('input', doSearchBHYT);
     document.getElementById('btn-bulk-submit')?.addEventListener('click', showBulkNopHoSoModal);
-
-    /* Hook modal để tránh kẹt màn mờ khi đóng mà chưa nộp */
     hookModalUnlock('modalBulkNopHoSo');
     hookModalUnlock('modalNopHoSoBHYT');
     hookModalUnlock('modalSuaHoSoBHYT');
@@ -1828,6 +1852,7 @@
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
 
 
 
