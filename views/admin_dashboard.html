@@ -1736,6 +1736,7 @@
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
         const months = '12';
+        const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
         document.getElementById('rec-class').innerText = hs.lop_hoc||'—';
@@ -1754,8 +1755,7 @@
         const schoolName = document.getElementById('schoolName').innerText.trim();
         const classCode = hs.lop_hoc || "";
         const studentName = hs.ho_ten_hoc_sinh || "";
-        const { exp } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, parseInt(gia.gia_tien, 10));
-        const endText = exp || ''; // Giữ nguyên định dạng dd/mm/yyyy
+        const endText = exp;
 
         
         const primaryText = buildQRPayload(
@@ -1816,11 +1816,9 @@
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       document.body.appendChild(iframe);
-      
 
       const content = receipt.outerHTML;
       const doc = iframe.contentDocument || iframe.contentWindow.document;
-      
       doc.open();
       doc.write(`
         <!DOCTYPE html>
