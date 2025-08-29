@@ -1291,7 +1291,7 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.1) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2.2) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
     /* ===== Fallback Loading ===== */
@@ -1339,7 +1339,7 @@
       const amount=(parseInt(basePrice||0,10)||0)*(m||0);
       return {exp, amount, note};
     }
-    /* ---- FIX 1: hoa hồng = tỷ lệ × số tiền ---- */
+    /* Rate hoa hồng → số thập phân */
     function toRate(val){ let n=Number(String(val??'').replace(',','.')); if(!isFinite(n)||n<=0) return 0; return n>1 ? n/100 : n; }
     function getRateByMonths(g, months){
       const m=String(months);
@@ -1496,7 +1496,7 @@
         const noikham = document.getElementById('nhs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = Math.round(amount * rate);          // ✅ FIX 1: tỷ lệ × số tiền
+        const hh = parseFloat((amount * rate).toFixed(2));     // ❗ KHÔNG làm tròn về số nguyên
         const res = await nopHoSoBHYTApi({
           so_dinh_danh: _currentHS.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1505,7 +1505,7 @@
           noi_kham_bhyt: noikham,
           so_tien: amount,
           hoa_hong: hh,
-          so_ho_so: 'null',                             // ✅ FIX 3: để null theo logic gốc
+          so_ho_so: 'null',                                    // giữ null theo logic gốc
           han_su_dung_bhyt_moi: exp
         });
         if(res?.success){
@@ -1549,7 +1549,7 @@
         const noikham = document.getElementById('shs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = Math.round(amount * rate);          // ✅ FIX 1
+        const hh = parseFloat((amount * rate).toFixed(2));     // ❗ không làm tròn integer
         const res = await suaHoSoBHYTApi({
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1581,6 +1581,7 @@
     function toggleSelectAllBulk(el){ document.querySelectorAll('.chk-bulk-row').forEach(cb=>{ if(cb.disabled) return; cb.checked=el.checked; const stt=cb.getAttribute('data-stt'); if(el.checked){ if(!bulkSelected.includes(stt)) bulkSelected.push(stt); } else { bulkSelected = bulkSelected.filter(x=>x!==stt); } }); updateBulkButton(); }
     function updateBulkButton(){ const btn=document.getElementById('btn-bulk-submit'); const c=getSelectedRowsData().length; if(!btn) return; if(c>0){ btn.style.display=''; btn.innerText=`Nộp nhiều hồ sơ (${c})`; } else { btn.style.display='none'; btn.innerText='Nộp nhiều hồ sơ (0)'; } }
     function clearBulkSelection(){ bulkSelected=[]; document.querySelectorAll('.chk-bulk-row').forEach(cb=>cb.checked=false); const allCb=document.getElementById('chk-bulk-all'); if(allCb) allCb.checked=false; updateBulkButton(); }
+
     function showBulkNopHoSoModal(){
       const list = getSelectedRowsData(); if (!list.length) return;
       document.getElementById('bulk-count-label').innerText = list.length;
@@ -1598,7 +1599,7 @@
         const rate=getRateByMonths(g, months);
         for (const hs of list){
           const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-          const hh = Math.round(amount * rate);        // ✅ FIX 1
+          const hh = parseFloat((amount * rate).toFixed(2));   // ❗ không làm tròn integer
           await nopHoSoBHYTApi({
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
@@ -1607,12 +1608,19 @@
             noi_kham_bhyt: noikham || hs.noi_kham_bhyt || "",
             so_tien: amount,
             hoa_hong: hh,
-            so_ho_so: 'null',                           // ✅ FIX 3
+            so_ho_so: 'null',
             han_su_dung_bhyt_moi: exp
           });
         }
         showToast && showToast(`Đã nộp ${list.length} hồ sơ`);
-        bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSo'))?.hide();
+        const mm = bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSo'));
+        if (mm) mm.hide();
+        // dọn backdrop nếu Bootstrap chưa kịp remove (fix dính mờ)
+        setTimeout(()=>{
+          document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+        },150);
         await fetchChuaThuHocsinh();
       }catch(e){ console.error(e); }
       finally{ hideLoading(); }
@@ -1645,7 +1653,7 @@
       });
     });
 
-    /* ===== Phiếu thu (Preview & In) ===== */
+    /* ===== Phiếu thu (Preview & In TRONG TRANG) ===== */
     async function openPreviewReceipt(stt){
       const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       showLoading();
@@ -1672,21 +1680,65 @@
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } finally{ hideLoading(); }
     }
-    /* ---- FIX 2: In mở TAB MỚI & chỉ in khối A5 ---- */
+
+    /* In ngay trong trang hiện tại, chỉ khối A5, không mở tab mới */
     function printReceiptOnly(){
-      const el = document.getElementById('receiptA5'); if(!el) return;
-      const css = `
-        @page { size: A5 portrait; margin: 10mm; }
-        html,body{background:#fff;margin:0;padding:0;}
-        .a5-paper{width:148mm;min-height:210mm;margin:0 auto;padding:10mm 12mm;color:#000;line-height:1.35;font-size:13px;}
+      const src = document.getElementById('receiptA5'); if(!src) return;
+
+      // clone & thay QR canvas bằng ảnh để bản in sắc nét
+      const clone = src.cloneNode(true);
+      const live = src.querySelector('#receipt-qr canvas, #receipt-qr img');
+      if (live){
+        const tgt = clone.querySelector('#receipt-qr');
+        if (tgt){
+          tgt.innerHTML='';
+          const dataURL = (live.tagName.toLowerCase()==='canvas') ? live.toDataURL('image/png') : live.src;
+          const im = document.createElement('img'); im.src=dataURL; im.width=96; im.height=96;
+          tgt.appendChild(im);
+        }
+      }
+
+      // vùng in tạm
+      const holder = document.createElement('div');
+      holder.id='__printArea';
+      holder.style.background='#fff';
+      holder.innerHTML='';
+      holder.appendChild(clone);
+      document.body.appendChild(holder);
+
+      // style in: chỉ hiện A5
+      const style = document.createElement('style');
+      style.id='__printStyle';
+      style.textContent = `
+        @media print{
+          body *{ visibility: hidden !important; }
+          #__printArea, #__printArea *{ visibility: visible !important; }
+          #__printArea{ position: fixed; inset: 0 auto auto 0; width: 100%; background:#fff; }
+          @page { size: A5 portrait; margin: 10mm; }
+        }
+        #__printArea .a5-paper{
+          width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
+          color:#000; line-height:1.35; font-size:13px; background:#fff;
+        }
       `;
-      const w = window.open('', '_blank');
-      w.document.open();
-      w.document.write(`<html><head><meta charset="utf-8"><title>In phiếu thu</title><style>${css}</style></head><body><div class="a5-paper">${el.outerHTML}</div></body></html>`);
-      w.document.close();
-      w.focus();
-      setTimeout(()=>{ try{ w.print(); }catch(_){} }, 250);
+      document.head.appendChild(style);
+
+      const cleanup = ()=>{
+        document.getElementById('__printArea')?.remove();
+        document.getElementById('__printStyle')?.remove();
+      };
+
+      // gọi print & dọn dẹp
+      const after = ()=>{
+        cleanup();
+        setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
+      };
+      window.addEventListener('afterprint', after, {once:true});
+      window.print();
+      // fallback dọn dẹp nếu trình duyệt không bắn afterprint
+      setTimeout(after, 800);
     }
+
     async function downloadReceiptImage(){
       const el = document.getElementById('receiptA5'); if(!el) return;
       const canvas = await html2canvas(el,{useCORS:true,scale:2});
@@ -1710,6 +1762,7 @@
     /* Init nhẹ */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
 
 
 
