@@ -113,6 +113,13 @@
       .a5-paper{box-shadow:none!important;margin:0!important}
     }
     @media print { html, body { height: auto !important; } }
+
+
+
+    .action-btns .btn {
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
   </style>
   <!-- === /BHYT (A5 & Print styles) === -->
 
@@ -1743,60 +1750,121 @@
         document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
         document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || '—';
         const t=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
-        const qrWrap=document.getElementById('receipt-qr'); qrWrap.innerHTML="";
-        new QRCode(qrWrap, { text: `${bhyt_user.ma_truong}|${hs.so_dinh_danh}|${months}|${amount}`, width: 96, height: 96 });
+        const qrWrap = document.getElementById('receipt-qr'); 
+        qrWrap.innerHTML = "";
+        const schoolName = document.getElementById('schoolName').innerText.trim();
+        const classCode = hs.lop_hoc || "";
+        const studentName = hs.ho_ten_hoc_sinh || "";
+        const endText = exp;
+
+        
+        const primaryText = buildQRPayload(
+          bhyt_user.ma_truong,
+          schoolName,
+          classCode,
+          studentName,
+          months,
+          endText
+        );
+        try {
+          new QRCode(qrWrap, {
+            text: primaryText,
+            width: 96,
+            height: 96,
+            correctLevel: QRCode.CorrectLevel.L
+          });
+        } catch (e) {
+          console.warn(logPrefix, "QR overflow, fallback", e);
+          const fallbackText = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(studentName)};M=${months};E=${endText}`;
+          try {
+            new QRCode(qrWrap, {
+              text: fallbackText,
+              width: 96,
+              height: 96,
+              correctLevel: QRCode.CorrectLevel.L
+            });
+          } catch (e2) {
+            qrWrap.innerHTML = '<small>QR quá dài</small>';
+          }
+        }
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } finally{ hideLoading(); }
     }
 
+
+    function buildQRPayload(maTruong, school, lop, ten, thang, hanSuDung) {
+      return `MT=${maTruong};S=${stripVN(school)};L=${lop};N=${stripVN(ten)};M=${thang};E=${hanSuDung}`;
+    }
+
+    function stripVN(str) {
+      return String(str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    }
+
+    function initials(str) {
+      return String(str || "").trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase();
+    }
+
     /* In ngay trong trang hiện tại – KHÔNG vỡ giao diện, không nhân bản */
-    function printReceiptOnly(){
-      const src = document.getElementById('receiptA5'); if(!src) return;
+    function printReceiptOnly() {
+      const receipt = document.getElementById('receiptA5');
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.top = '-1000px';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      document.body.appendChild(iframe);
 
-      // Clone + thay QR bằng ảnh để in nét
-      const clone = src.cloneNode(true);
-      const live = src.querySelector('#receipt-qr canvas, #receipt-qr img');
-      if (live){
-        const tgt = clone.querySelector('#receipt-qr');
-        if (tgt){
-          tgt.innerHTML='';
-          const dataURL = (live.tagName.toLowerCase()==='canvas') ? live.toDataURL('image/png') : live.src;
-          const im = document.createElement('img'); im.src=dataURL; im.width=96; im.height=96;
-          tgt.appendChild(im);
-        }
-      }
-
-      // Holder in tạm
-      let holder = document.getElementById('__printArea'); if(holder) holder.remove();
-      holder = document.createElement('div'); holder.id='__printArea'; holder.appendChild(clone);
-      document.body.appendChild(holder);
-
-      // Style in: ẩn TẤT CẢ direct-child của body trừ __printArea (không đụng display con bên trong)
-      let style = document.getElementById('__printStyle'); if(style) style.remove();
-      style = document.createElement('style'); style.id='__printStyle';
-      style.textContent = `
-        @page { size: A5 portrait; margin: 10mm; }
-        @media print{
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body > *:not(#__printArea){ display:none !important; }  /* tránh nhân bản */
-          #__printArea{ display:block !important; }
-        }
-        #__printArea .a5-paper{
-          width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
-          color:#000; line-height:1.35; font-size:13px; background:#fff; page-break-inside: avoid;
-        }
+      const css = `
+        <style>
+          @page { size: A5 portrait; margin: 10mm; }
+          html,body{ background:#fff; margin:0; padding:0; height:auto !important; }
+          .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000;
+                    margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px;
+                    page-break-inside: avoid; }
+          .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
+          .receipt-sub{ font-style:italic; }
+          .receipt-meta{ font-size:13px; }
+          .receipt-line{ margin:2mm 0; }
+          .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+          .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
+          .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
+          .row{ display:flex; flex-wrap:nowrap; width:100%; }
+          .col{ flex:1 1 0; }
+          .text-center{ text-align:center; }
+        </style>
       `;
-      document.head.appendChild(style);
 
-      const cleanup = ()=>{
-        document.getElementById('__printArea')?.remove();
-        document.getElementById('__printStyle')?.remove();
-        setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
-        forceUnlockScroll();
+      const content = receipt.outerHTML;
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Phiếu thu</title>
+            ${css}
+          </head>
+          <body>${content}</body>
+        </html>
+      `);
+      doc.close();
+
+      // Đợi QR render xong
+      const check = () => {
+        if (iframe.contentDocument.querySelector('#receipt-qr img')?.complete) {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          }, 500);
+        } else {
+          setTimeout(check, 50);
+        }
       };
-      window.addEventListener('afterprint', cleanup, {once:true});
-      window.print();
-      setTimeout(cleanup, 800); // fallback
+      check();
     }
 
     async function downloadReceiptImage(){
