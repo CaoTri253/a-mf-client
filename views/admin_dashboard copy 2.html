@@ -1291,10 +1291,10 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.1) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
-    /* ===== Fallback Loading ===== */
+    /* ===== Fallback Loading (nếu trang chưa có showLoading/hideLoading) ===== */
     (function ensureLoading(){
       if (!document.getElementById('loadingSpinner')) {
         const div=document.createElement('div');
@@ -1327,25 +1327,19 @@
     function parseVNDate(str){ const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(!m) return null; const d=new Date(+m[3],+m[2]-1,+m[1]); return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1])?d:null; }
     function formatVNDate(d){ const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
     function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(),dateObj.getMonth(),dateObj.getDate(),12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function genSoHoSo(hs){ const t=new Date(); const tail=String(hs.so_dinh_danh||'').slice(-4)||'0000'; return `${bhyt_user.ma_truong||'TR'}-${hs.lop_hoc||'LH'}-${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}-${tail}-${String(t.getHours()).padStart(2,'0')}${String(t.getMinutes()).padStart(2,'0')}${String(t.getSeconds()).padStart(2,'0')}`; }
     function numberToVietnameseText(num){ num=Math.floor(Number(num)||0); if(num===0) return "không đồng"; const dv=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"], cs=[""," một"," hai"," ba"," bốn"," năm"," sáu"," bảy"," tám"," chín"]; function docBa(ba){ let s="", tram=Math.floor(ba/100), chuc=Math.floor((ba%100)/10), don=ba%10; if(tram) s+=" "+cs[tram]+" trăm"; else if(chuc||don) s+=" không trăm"; if(chuc>1){ s+=" "+cs[chuc]+" mươi"; if(don===1) s+=" mốt"; else if(don===5) s+=" lăm"; else if(don) s+=cs[don]; } else if(chuc===1){ s+=" mười"; if(don===5) s+=" lăm"; else if(don) s+=cs[don]; } else if(chuc===0&&don){ s+=" lẻ"+cs[don]; } return s; } let i=0,str=""; while(num>0){ const ba=num%1000; if(ba){ str=docBa(ba)+dv[i]+(str?" "+str:""); } num=Math.floor(num/1000); i++; } return str.trim()+" đồng"; }
 
-    /* ===== Giá BHYT & tính hạn/tiền/hoa hồng ===== */
+    /* ===== Giá BHYT & tính hạn/tiền ===== */
     async function getGiaBHYT(){ const r=await fetch(`${API_BASE}?func=GetGiaBHYT`); return r.json(); }
     async function ensureGiaBHYT(){ if(_cachedGiaBHYT) return _cachedGiaBHYT; const g=await getGiaBHYT(); _cachedGiaBHYT=g?.data?.[0]||null; return _cachedGiaBHYT; }
+    function hoaHongTheoThang(g, months){ const m=String(months); if(m==='3') return Number(g?.hoa_hong_3_thang||0); if(m==='6') return Number(g?.hoa_hong_6_thang||0); return Number(g?.hoa_hong_12_thang||0); }
     function computeAmountAndExp(oldEndStr, months, basePrice){
       const oldEnd=parseVNDate(oldEndStr), m=parseInt(months||0,10); let exp='—', note='';
       if(oldEnd && m>0){ const start=addDaysExact(oldEnd,1); const lastDay=new Date(start.getFullYear(), start.getMonth()+m, 0); exp=formatVNDate(lastDay); }
       else { exp='(không xác định)'; note='Không xác định do chưa nhập ngày hết hạn thẻ cũ trong DanhSach_Hocsinh.'; }
       const amount=(parseInt(basePrice||0,10)||0)*(m||0);
       return {exp, amount, note};
-    }
-    /* ---- FIX 1: hoa hồng = tỷ lệ × số tiền ---- */
-    function toRate(val){ let n=Number(String(val??'').replace(',','.')); if(!isFinite(n)||n<=0) return 0; return n>1 ? n/100 : n; }
-    function getRateByMonths(g, months){
-      const m=String(months);
-      if(m==='3') return toRate(g?.hoa_hong_3_thang);
-      if(m==='6') return toRate(g?.hoa_hong_6_thang);
-      return toRate(g?.hoa_hong_12_thang);
     }
 
     /* ===== API ===== */
@@ -1391,7 +1385,7 @@
       const q = String(document.getElementById('bhyt-search')?.value||"").trim().toLowerCase();
       bhyt_lastFiltered = !q ? bhyt_allData : bhyt_allData.filter(hs =>
         (String(hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q)) ||
-        (String(displayNgaySinh(hs.ngay_sinh||"")||"").toLowerCase().includes(q)) ||
+        (String(displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q)) ||
         (String(hs.so_dinh_danh||"").toLowerCase().includes(q))
       );
       bhyt_page=1; renderAllViewBHYT();
@@ -1428,7 +1422,7 @@
       add(bhyt_page+1, 'Sau', false, bhyt_page===totalPages);
     }
 
-    /* ===== Bảng danh sách ===== */
+    /* ===== Bảng danh sách (đúng thứ tự cột & nút) ===== */
     function sortIconBHYT(field){ if(bhyt_sortField!==field) return ''; return bhyt_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if(bhyt_sortField===field) bhyt_sortDir=-bhyt_sortDir; else { bhyt_sortField=field; bhyt_sortDir=1; } renderAllViewBHYT(); };
 
@@ -1495,8 +1489,8 @@
         const months = document.querySelector('input[name="nhs-thang"]:checked').value;
         const noikham = document.getElementById('nhs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, g?.gia_tien);
-        const rate = getRateByMonths(g, months);
-        const hh = Math.round(amount * rate);          // ✅ FIX 1: tỷ lệ × số tiền
+        const hh = hoaHongTheoThang(g, months);
+        const sohoso = genSoHoSo(_currentHS);
         const res = await nopHoSoBHYTApi({
           so_dinh_danh: _currentHS.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1505,7 +1499,7 @@
           noi_kham_bhyt: noikham,
           so_tien: amount,
           hoa_hong: hh,
-          so_ho_so: 'null',                             // ✅ FIX 3: để null theo logic gốc
+          so_ho_so: sohoso,
           han_su_dung_bhyt_moi: exp
         });
         if(res?.success){
@@ -1548,8 +1542,7 @@
         const months = document.querySelector('input[name="shs-thang"]:checked')?.value||'12';
         const noikham = document.getElementById('shs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
-        const rate = getRateByMonths(g, months);
-        const hh = Math.round(amount * rate);          // ✅ FIX 1
+        const hh = hoaHongTheoThang(g, months);
         const res = await suaHoSoBHYTApi({
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1595,10 +1588,9 @@
       showLoading();
       try{
         const g=await ensureGiaBHYT();
-        const rate=getRateByMonths(g, months);
         for (const hs of list){
           const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-          const hh = Math.round(amount * rate);        // ✅ FIX 1
+          const hh = hoaHongTheoThang(g, months);
           await nopHoSoBHYTApi({
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
@@ -1607,7 +1599,7 @@
             noi_kham_bhyt: noikham || hs.noi_kham_bhyt || "",
             so_tien: amount,
             hoa_hong: hh,
-            so_ho_so: 'null',                           // ✅ FIX 3
+            so_ho_so: genSoHoSo(hs),
             han_su_dung_bhyt_moi: exp
           });
         }
@@ -1652,7 +1644,7 @@
       try{
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
-        const months = '12';
+        const months = '12'; // xem trước mặc định 12 tháng
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
@@ -1672,25 +1664,25 @@
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
       } finally{ hideLoading(); }
     }
-    /* ---- FIX 2: In mở TAB MỚI & chỉ in khối A5 ---- */
-    function printReceiptOnly(){
-      const el = document.getElementById('receiptA5'); if(!el) return;
-      const css = `
-        @page { size: A5 portrait; margin: 10mm; }
-        html,body{background:#fff;margin:0;padding:0;}
-        .a5-paper{width:148mm;min-height:210mm;margin:0 auto;padding:10mm 12mm;color:#000;line-height:1.35;font-size:13px;}
-      `;
-      const w = window.open('', '_blank');
-      w.document.open();
-      w.document.write(`<html><head><meta charset="utf-8"><title>In phiếu thu</title><style>${css}</style></head><body><div class="a5-paper">${el.outerHTML}</div></body></html>`);
-      w.document.close();
-      w.focus();
-      setTimeout(()=>{ try{ w.print(); }catch(_){} }, 250);
-    }
     async function downloadReceiptImage(){
       const el = document.getElementById('receiptA5'); if(!el) return;
       const canvas = await html2canvas(el,{useCORS:true,scale:2});
       const link = document.createElement('a'); link.download='phieu_thu_a5.png'; link.href=canvas.toDataURL('image/png'); link.click();
+    }
+    /* In đúng khối A5: mở cửa sổ tạm chỉ chứa receiptA5 */
+    function printReceiptOnly(){
+      const el = document.getElementById('receiptA5'); if(!el) return;
+      const css=`
+        @page { size: A5 portrait; margin: 10mm; }
+        body { background:#fff !important; }
+        .a5-paper{width:148mm;min-height:210mm;margin:0 auto;padding:10mm 12mm;color:#000;}
+      `;
+      const w = window.open('', '_blank');
+      w.document.open();
+      w.document.write(`<html><head><title>In phiếu thu</title><style>${css}</style></head><body>${el.outerHTML}</body></html>`);
+      w.document.close();
+      w.focus();
+      setTimeout(()=>{ w.print(); w.close(); }, 200);
     }
 
     /* ===== Events + wire page ===== */
@@ -1698,19 +1690,19 @@
     document.getElementById('bhyt-search')?.addEventListener('input', doSearchBHYT);
     document.getElementById('btn-bulk-submit')?.addEventListener('click', showBulkNopHoSoModal);
 
-    /* Router gọi khi vào tab BHYT */
+    /* Khớp router của admin_dashboard: setActivePage sẽ gọi bhyt_wirePage nếu có */
     window.bhyt_wirePage = function(){
       if (window._bhytWired) return;
       window._bhytWired = true;
       if(!bhyt_user?.ma_truong){ console.warn('Thiếu thông tin trường'); }
       loadClassOptions();
-      // Nếu muốn auto load khi mở tab: fetchChuaThuHocsinh();
+      // Nếu muốn auto load khi mở tab:
+      // fetchChuaThuHocsinh();
     };
 
-    /* Init nhẹ */
+    /* Nếu không dùng router gọi bhyt_wirePage, vẫn có init nhẹ */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
-
 
 
 
