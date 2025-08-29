@@ -509,7 +509,10 @@
             <button id="bhyt-btn-reload" class="btn btn-primary">
               <i class="bi bi-arrow-repeat"></i> Tải danh sách
             </button>
-            <button id="bhyt-btn-bulk" class="btn btn-outline-primary" style="display:none">Nộp nhiều hồ sơ</button>
+            <button id="btn-bulk-submit" class="btn btn-outline-primary" style="display:none" onclick="showBulkNopHoSoModal()">
+              Nộp nhiều hồ sơ (0)
+            </button>
+
             <div class="ms-auto text-secondary">Tổng: <span id="bhyt-total">0</span> học sinh</div>
           </div>
         </div>
@@ -1288,13 +1291,27 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ====== BHYT (giáo viên -> admin tab) – tái sử dụng hàm/luồng từ trang nguồn ===== */
-    const bhytNOIKHAM_SUGGEST = ["TTYT huyện Châu Phú","BVĐK tỉnh An Giang","TTYT huyện Châu Thành","BV Nhi Đồng 2","BV Nhi Đồng 1"];
-    let bhyt_user = JSON.parse(localStorage.getItem("user")||"{}");
-    let bhyt_allData = [], bhyt_lastFiltered = [], bhyt_pageSize = 20, bhyt_page = 1, bhyt_total=0, bhyt_sortField="ho_ten_hoc_sinh", bhyt_sortDir=1;
-    let _currentHS = null, _currentHS_Sua = null, _cachedGiaBHYT = null;
+    /* ================== BHYT – Admin Tab (giống trang ds_hocsinh_chuathu_giaovien.html) ================== */
+    /* YÊU CẦU: đã có API_BASE và showLoading/hideLoading/toast trong trang */
+    /* Thư viện cần có (đặt trước </body>): qrcode.min.js, html2canvas.min.js */
 
-    /* === Utils ngày/tiền (giữ nguyên nguyên lý từ nguồn) === */
+    const bhytNOIKHAM_SUGGEST = [
+      "TTYT huyện Châu Phú","BVĐK tỉnh An Giang","TTYT huyện Châu Thành","BV Nhi Đồng 2","BV Nhi Đồng 1"
+    ];
+    let bhyt_user = JSON.parse(localStorage.getItem("user")||"{}");
+    let bhyt_allData = [];          // toàn bộ HS chưa thu sau khi hợp nhất nhiều lớp
+    let bhyt_lastFiltered = [];     // dữ liệu sau khi filter bằng ô tìm kiếm
+    let bhyt_pageSize = 20;         // 3 / 7 / 20 tùy độ rộng
+    let bhyt_page = 1;
+    let bhyt_total = 0;
+    let bhyt_sortField = "ho_ten_hoc_sinh";
+    let bhyt_sortDir = 1;           // 1 = asc, -1 = desc
+    let _currentHS = null;
+    let _currentHS_Sua = null;
+    let _cachedGiaBHYT = null;
+    let bulkSelected = [];          // danh sách STT đã chọn (nộp nhiều)
+
+    /* ================== Utils ngày/tiền ================== */
     function displayNgaySinh(raw){
       if(!raw) return "";
       if (typeof raw==="string" && /^\d{4}-\d{2}-\d{2}T/.test(raw)){ const d=new Date(raw); return d.toLocaleDateString("vi-VN"); }
@@ -1305,6 +1322,7 @@
     function parseVNDate(str){ const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(!m) return null; const d=new Date(+m[3],+m[2]-1,+m[1]); return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1])?d:null; }
     function formatVNDate(d){ const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
     function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(),dateObj.getMonth(),dateObj.getDate(),12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
     async function getGiaBHYT(){ const r=await fetch(`${API_BASE}?func=GetGiaBHYT`); return r.json(); }
     async function ensureGiaBHYT(){ if(_cachedGiaBHYT) return _cachedGiaBHYT; const g=await getGiaBHYT(); _cachedGiaBHYT=g?.data?.[0]||null; return _cachedGiaBHYT; }
     function computeAmountAndExp(oldEndStr, months, basePrice){
@@ -1315,61 +1333,93 @@
       return {exp, amount, note};
     }
 
-    /* === API giống nguồn === */
+    /* Viết số thành chữ (VN) – gọn đủ dùng cho phiếu thu */
+    function numberToVietnameseText(num){
+      num = Math.floor(Number(num)||0);
+      if (num===0) return "không đồng";
+      const dv=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"], cs=[""," một"," hai"," ba"," bốn"," năm"," sáu"," bảy"," tám"," chín"];
+      function docBa(ba){ let s="", tram=Math.floor(ba/100), chuc=Math.floor((ba%100)/10), don=ba%10;
+        if(tram) s+=" "+cs[tram]+" trăm"; else if(chuc||don) s+=" không trăm";
+        if(chuc>1){ s+=" "+cs[chuc]+" mươi"; if(don===1) s+=" mốt"; else if(don===5) s+=" lăm"; else if(don) s+=cs[don]; }
+        else if(chuc===1){ s+=" mười"; if(don===5) s+=" lăm"; else if(don) s+=cs[don]; }
+        else if(chuc===0 && don){ s+=" lẻ"+cs[don]; }
+        return s;
+      }
+      let i=0, str="";
+      while(num>0){
+        const ba = num%1000;
+        if(ba){ str = docBa(ba)+dv[i] + (str?" "+str:""); }
+        num = Math.floor(num/1000); i++;
+      }
+      return str.trim()+" đồng";
+    }
+
+    /* ================== API call giống trang mẫu ================== */
     async function getAllBHYT(ma_truong, lop){ const r=await fetch(`${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`); return r.json(); }
     async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop){ const r=await fetch(`${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop)}`); return r.json(); }
     async function getTenTruong(ma_truong){ try{ const r=await fetch(`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`); const j=await r.json(); return j?.ten_truong || j?.data?.ten_truong || bhyt_user.ten_truong || ma_truong || '—'; }catch(e){ return bhyt_user.ten_truong||ma_truong||'—'; } }
     async function getAllHocsinhByClass(ma_truong, lop){ const r=await fetch(`${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop||'')}`); return r.json(); }
     async function nopHoSoBHYTApi(payload){ const params=Object.entries(payload).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&'); const r=await fetch(`${API_BASE}?func=NopHoSoBHYT&${params}`); return r.json(); }
 
-    /* === Tải danh sách lớp cho select multiple (lấy từ dữ liệu học sinh toàn trường) === */
+    /* ================== Nạp danh sách lớp (multiple) ================== */
     async function loadClassOptions(){
       const res = await getAllHocsinhByClass(bhyt_user.ma_truong, ""); // "" = toàn trường
-      const el = document.getElementById('bhyt-classes'); el.innerHTML="";
+      const el = document.getElementById('bhyt-classes'); if(!el) return; el.innerHTML="";
       if(res?.success && Array.isArray(res.data)){
         const uniq = [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort();
         uniq.forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
       }
     }
 
-    /* === Lấy dữ liệu chưa thu BHYT (HỖ TRỢ NHIỀU LỚP) – giữ tên hàm & luồng như nguồn === */
+    /* ================== Lấy dữ liệu “chưa thu” (hợp nhất nhiều lớp) ================== */
     async function fetchChuaThuHocsinh(){
       try{
         showLoading();
-        // gom dữ liệu của nhiều lớp (nếu không chọn lớp => toàn trường)
         const el = document.getElementById('bhyt-classes');
-        const selected = [...el.querySelectorAll('option:checked')].map(o=>o.value);
+        const selected = el ? [...el.querySelectorAll('option:checked')].map(o=>o.value) : [];
         const classes = selected.length ? selected : [""];
         const allHS = [];
+        // Gom học sinh theo lớp
         for(const cls of classes){
           const hsRes = await getAllHocsinhByClass(bhyt_user.ma_truong, cls);
           if(hsRes?.success && Array.isArray(hsRes.data)) allHS.push(...hsRes.data);
         }
-        // Map trạng thái BHYT: hợp nhất theo từng lớp (gọi song song cho mỗi lớp)
+        // Map trạng thái BHYT theo lớp
         const statusMap = {};
         for(const cls of classes){
           const bhytRes = await getAllBHYT(bhyt_user.ma_truong, cls);
           const ds = Array.isArray(bhytRes?.data) ? bhytRes.data : [];
-          ds.forEach(row => { const key=String(row.so_dinh_danh).replace(/^'/,'').trim(); statusMap[key]=row.trang_thai; });
+          ds.forEach(row => { const key=String(row.so_dinh_danh).replace(/^'/,'').trim(); statusMap[key]=Number(row.trang_thai); });
         }
+        // Gắn trạng thái và lọc “chưa thu”
         bhyt_allData = (allHS||[]).map(hs=>{
           const k = String(hs.so_dinh_danh||"").replace(/^'/,'').trim();
           const tt = statusMap[k];
-          return {...hs, _bhyt_trangthai: tt===undefined?undefined:Number(tt), trang_thai:tt};
-        }).filter(hs=>hs._bhyt_trangthai !== 1);
-        bhyt_page = 1;
-        doSearchBHYT(); // cập nhật bảng & phân trang
+          return {...hs, _bhyt_trangthai: (tt===undefined?undefined:tt), trang_thai:tt};
+        }).filter(hs=>hs._bhyt_trangthai !== 1); // 1 = đã thu -> loại khỏi "chưa thu"
+
+        bhyt_page = 1; doSearchBHYT();
+        clearBulkSelection();
       } catch(e){
         console.error('[BHYT] fetchChuaThuHocsinh error', e);
       } finally{ hideLoading(); }
     }
 
-    /* === Render & phân trang (giữ cấu trúc đã chạy tốt) === */
-    function detectPageSizeBHYT(){ const w=window.innerWidth; bhyt_pageSize = (w<=600)?3:(w<=999)?7:20; }
-    window.addEventListener('resize', ()=>{ const prev=bhyt_pageSize; detectPageSizeBHYT(); if(prev!==bhyt_pageSize){ bhyt_page=1; renderAllViewBHYT(); } });
+    /* ================== Tìm kiếm – Sắp xếp – Phân trang ================== */
+    function detectPageSizeBHYT(){
+      const width = document.querySelector('#page-bhyt')?.offsetWidth || window.innerWidth;
+      if (width <= 767) bhyt_pageSize = 3;
+      else if (width <= 1023) bhyt_pageSize = 7;
+      else bhyt_pageSize = 20;
+    }
+    window.addEventListener('resize', () => {
+      const prev = bhyt_pageSize;
+      detectPageSizeBHYT();
+      if (bhyt_pageSize !== prev){ bhyt_page = 1; renderAllViewBHYT(); }
+    });
 
     function doSearchBHYT(){
-      const q = String(document.getElementById('bhyt-search').value||"").trim().toLowerCase();
+      const q = String(document.getElementById('bhyt-search')?.value||"").trim().toLowerCase();
       bhyt_lastFiltered = !q ? bhyt_allData : bhyt_allData.filter(hs =>
         (String(hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q)) ||
         (String(displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q)) ||
@@ -1377,6 +1427,7 @@
       );
       bhyt_page=1; renderAllViewBHYT();
     }
+
     function renderAllViewBHYT(){
       let data = bhyt_lastFiltered || bhyt_allData;
       if (bhyt_sortField){
@@ -1387,53 +1438,93 @@
           if(av<bv) return -bhyt_sortDir; if(av>bv) return bhyt_sortDir; return 0;
         });
       }
-      bhyt_total = data.length; document.getElementById('bhyt-total').innerText = bhyt_total;
+      bhyt_total = data.length; const elT=document.getElementById('bhyt-total'); if(elT) elT.innerText = bhyt_total;
       detectPageSizeBHYT();
       const start=(bhyt_page-1)*bhyt_pageSize, pageData=data.slice(start, start+bhyt_pageSize);
-      renderDanhSachHS(pageData); // GIỮ NGUYÊN TÊN HÀM từ nguồn
+      renderDanhSachHS(pageData);       // === GIỮ NGUYÊN TÊN HÀM như trang mẫu ===
       renderPaginationBHYT(data.length);
-    }
-    function renderPaginationBHYT(total){
-      const totalPages = Math.max(1, Math.ceil(total / bhyt_pageSize));
-      const ul = document.getElementById('bhyt-pagin'); ul.innerHTML="";
-      function li(p, active=false, label=p){ const li=document.createElement('li'); li.className='page-item'+(active?' active':''); const a=document.createElement('a'); a.className='page-link'; a.href='#'; a.textContent=label; a.onclick=(e)=>{e.preventDefault(); bhyt_page=p; renderAllViewBHYT();}; li.appendChild(a); ul.appendChild(li); }
-      li(Math.max(1,bhyt_page-1), false, '«'); for(let i=1;i<=totalPages;i++) li(i, i===bhyt_page); li(Math.min(totalPages,bhyt_page+1), false, '»');
+      updateBulkButton();
     }
 
-    /* === Bảng danh sách & nút hành động (y hệt nguồn) === */
+    /* Phân trang kiểu cửa sổ ±2 + ellipsis, có Trước/Sau */
+    function renderPaginationBHYT(total){
+      const totalPages = Math.max(1, Math.ceil(total / bhyt_pageSize));
+      const ul = document.getElementById('bhyt-pagin'); if(!ul) return; ul.innerHTML='';
+      if (totalPages <= 1) return;
+
+      const add = (p, label, active=false, disabled=false) => {
+        const li = document.createElement('li');
+        li.className = `page-item ${active?'active':''} ${disabled?'disabled':''}`;
+        const a = document.createElement('a');
+        a.className = 'page-link'; a.href = '#'; a.innerHTML = label;
+        a.onclick = (e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===bhyt_page) return; bhyt_page = p; renderAllViewBHYT(); };
+        li.appendChild(a); ul.appendChild(li);
+      };
+
+      add(bhyt_page-1, 'Trước', false, bhyt_page===1);
+      let minP = Math.max(1, bhyt_page-2), maxP = Math.min(totalPages, bhyt_page+2);
+      if (minP > 1) add(1, '1');
+      if (minP > 2) { const li = document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; ul.appendChild(li); }
+      for (let p=minP; p<=maxP; p++) add(p, String(p), p===bhyt_page, false);
+      if (maxP < totalPages-1) { const li = document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; ul.appendChild(li); }
+      if (maxP < totalPages) add(totalPages, String(totalPages));
+      add(bhyt_page+1, 'Sau', false, bhyt_page===totalPages);
+    }
+
+    /* ================== Bảng danh sách & nút thao tác (đúng thứ tự & logic mẫu) ================== */
     function sortIconBHYT(field){ if(bhyt_sortField!==field) return ''; return bhyt_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if(bhyt_sortField===field) bhyt_sortDir=-bhyt_sortDir; else { bhyt_sortField=field; bhyt_sortDir=1; } renderAllViewBHYT(); };
 
-    function renderDanhSachHS(rows){
-      const wrap = document.getElementById('bhyt-ds');
-      const th = (txt, key)=>`<th class="sortable" onclick="doSort('${key}')">${txt} ${sortIconBHYT(key)}</th>`;
-      const trs = rows.map(h=>`
+    function renderDanhSachHS(ds){
+      const wrap = document.getElementById('bhyt-ds'); if(!wrap) return;
+
+      if (!ds || ds.length === 0){
+        wrap.innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lựa chọn này.</div>`;
+        return;
+      }
+
+      let html = `<table class="table table-bordered table-hs align-middle"><thead>
         <tr>
-          <td>${h.stt||''}</td>
-          <td>${h.ho_ten_hoc_sinh||''}</td>
-          <td>${displayNgaySinh(h.ngay_sinh)||''}</td>
-          <td>${h.lop_hoc||''}</td>
-          <td>${h.so_dinh_danh||''}</td>
-          <td class="text-end">
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-primary" onclick="showNopHoSoModal('${h.stt}')">Nộp</button>
-              <button class="btn btn-outline-secondary" onclick="showSuaHoSoModal('${h.stt}')">Sửa</button>
-              <button class="btn btn-outline-dark" onclick="openPreviewReceipt('${h.stt}')">Phiếu</button>
+          <th style="width:42px;"><input type="checkbox" id="chk-bulk-all" onchange="toggleSelectAllBulk(this)"></th>
+          <th class="th-action">Thao tác</th>
+          <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh ${sortIconBHYT('ho_ten_hoc_sinh')}</th>
+          <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh ${sortIconBHYT('ngay_sinh')}</th>
+          <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân ${sortIconBHYT('so_dinh_danh')}</th>
+        </tr></thead><tbody>`;
+
+      ds.forEach((hs) => {
+        if (hs._bhyt_trangthai === 1) return; // đã thu -> không hiển thị ở trang "chưa thu"
+
+        const hasOld = !!parseVNDate(hs.ngay_het_han_bhyt);
+        const nopDisabled = (hs._bhyt_trangthai === 0) || !hasOld;
+        const nopLabel = (hs._bhyt_trangthai === 0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
+
+        html += `<tr>
+          <td>
+            <input type="checkbox" class="chk-bulk-row" data-stt="${hs.stt}"
+                  onchange="onSelectRowBulk('${hs.stt}', this)" ${hs._bhyt_trangthai===0 ? 'disabled' : ''}>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>
+              ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
+              ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
+                <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
+                <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
+              ` : ``}
             </div>
           </td>
-        </tr>
-      `).join('');
-      wrap.innerHTML = `
-        <table class="table table-hover align-middle mb-0">
-          <thead><tr>
-            ${th('STT','stt')}${th('Họ tên','ho_ten_hoc_sinh')}${th('Ngày sinh','ngay_sinh')}${th('Lớp','lop_hoc')}${th('Số định danh','so_dinh_danh')}
-            <th class="th-action" style="min-width:170px">Thao tác</th>
-          </tr></thead>
-          <tbody>${trs || ''}</tbody>
-        </table>`;
+          <td>${hs.ho_ten_hoc_sinh || ""}</td>
+          <td>${displayNgaySinh(hs.ngay_sinh) || ""}</td>
+          <td>${hs.so_dinh_danh || ""}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      wrap.innerHTML = html;
     }
 
-    /* === Nộp/Sửa (giữ nguyên tên hàm để đồng nhất với nguồn) === */
+    /* ================== Nộp/Sửa hồ sơ (giữ nguyên tên hàm theo mẫu) ================== */
     function showNopHoSoModal(stt){
       const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       _currentHS = hs;
@@ -1462,8 +1553,8 @@
         so_thang_dong: months,
         noi_kham_bhyt: noikham
       }).then(j=>{
-        if(j?.success){ showToast('Nộp hồ sơ thành công'); fetchChuaThuHocsinh(); }
-        else { document.getElementById('nhs-error').innerText = j?.message||'Lỗi nộp hồ sơ'; }
+        if(j?.success){ showToast && showToast('Nộp hồ sơ thành công'); fetchChuaThuHocsinh(); }
+        else { const el=document.getElementById('nhs-error'); if(el) el.innerText = j?.message||'Lỗi nộp hồ sơ'; }
       });
     }
 
@@ -1484,13 +1575,88 @@
       });
     }
     function submitSuaHoSoBHYT(){
-      // (tuỳ backend: nếu có endpoint SuaHoSoBHYT thì gọi tương tự nopHoSoBHYTApi)
-      // ví dụ:
-      // fetch(`${API_BASE}?func=SuaHoSoBHYT&...`)
-      // -> giữ nguyên luồng của trang nguồn
+      // Nếu backend đã có endpoint SuaHoSoBHYT, gọi tương tự submitNopHoSoBHYT
+      // fetch(`${API_BASE}?func=SuaHoSoBHYT&...`).then(...);
     }
 
-    /* === Phiếu thu (y hệt trang nguồn) === */
+    /* Alias để giữ nguyên các tên gọi ở giao diện mẫu */
+    window.suaHoSo = (stt)=>showSuaHoSoModal(stt);
+    window.inPhieuThu = (stt)=>openPreviewReceipt(stt);
+
+    /* ================== Nộp nhiều hồ sơ ================== */
+    function getSelectedRowsData(){
+      const map = {}; (bhyt_lastFiltered || bhyt_allData).forEach(h=>{ map[String(h.stt)] = h; });
+      return bulkSelected.map(stt => map[String(stt)]).filter(Boolean)
+        .filter(hs => !(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1));
+    }
+    function onSelectRowBulk(stt, el){
+      if (el.checked){ if (bulkSelected.indexOf(stt) === -1) bulkSelected.push(stt); }
+      else { bulkSelected = bulkSelected.filter(x => x !== stt); const allCb = document.getElementById('chk-bulk-all'); if (allCb) allCb.checked = false; }
+      updateBulkButton();
+    }
+    function toggleSelectAllBulk(el){
+      const cbs = document.querySelectorAll('.chk-bulk-row');
+      cbs.forEach(cb=>{
+        if (cb.disabled) return;
+        cb.checked = el.checked;
+        const stt = cb.getAttribute('data-stt');
+        if (el.checked){ if (bulkSelected.indexOf(stt) === -1) bulkSelected.push(stt); }
+        else { bulkSelected = bulkSelected.filter(x => x !== stt); }
+      });
+      updateBulkButton();
+    }
+    function updateBulkButton(){
+      const btn = document.getElementById('btn-bulk-submit');
+      const count = getSelectedRowsData().length;
+      if (!btn) return;
+      if (count > 0){ btn.style.display=''; btn.innerText = `Nộp nhiều hồ sơ (${count})`; }
+      else { btn.style.display='none'; btn.innerText = 'Nộp nhiều hồ sơ (0)'; }
+    }
+    function clearBulkSelection(){
+      bulkSelected = [];
+      document.querySelectorAll('.chk-bulk-row').forEach(cb => cb.checked = false);
+      const allCb = document.getElementById('chk-bulk-all'); if (allCb) allCb.checked = false;
+      updateBulkButton();
+    }
+    function showBulkNopHoSoModal(){
+      const list = getSelectedRowsData();
+      if (!list.length) return;
+      document.getElementById('bulk-count-label').innerText = list.length;
+      document.getElementById('bulk-exp-note').innerText = "";
+      new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
+      ensureGiaBHYT().then(g=>{
+        const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12';
+        const anyOld = parseVNDate(list[0]?.ngay_het_han_bhyt);
+        const {exp, amount, note} = computeAmountAndExp(anyOld?formatVNDate(anyOld):"", months, g?.gia_tien);
+        document.getElementById('bulk-exp-preview').innerText = exp;
+        document.getElementById('bulk-amount-preview').innerText = (amount||0).toLocaleString('vi-VN');
+        document.getElementById('bulk-exp-note').innerText = note||"";
+      });
+    }
+    async function submitBulkNopHoSo(){
+      const list = getSelectedRowsData(); if(!list.length) return;
+      const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12';
+      const noikham=document.getElementById('bulk-noikham').value.trim();
+      showLoading();
+      try{
+        for (const hs of list){
+          await nopHoSoBHYTApi({
+            so_dinh_danh: hs.so_dinh_danh,
+            ma_truong: bhyt_user.ma_truong,
+            lop_hoc: hs.lop_hoc||"",
+            so_thang_dong: months,
+            noi_kham_bhyt: noikham
+          });
+        }
+        showToast && showToast(`Đã nộp ${list.length} hồ sơ`);
+        bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSo'))?.hide();
+        fetchChuaThuHocsinh();
+      }catch(e){
+        console.error(e);
+      }finally{ hideLoading(); }
+    }
+
+    /* ================== Phiếu thu (Preview & In) ================== */
     function openPreviewReceipt(stt){
       const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       (async ()=>{
@@ -1499,17 +1665,15 @@
         document.getElementById('rec-class').innerText = hs.lop_hoc||'—';
         document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh||'—';
         document.getElementById('rec-address').innerText = hs.dia_chi||'—';
-        // months & range & amount (dùng 12 mặc định để xem trước)
-        const gia = await ensureGiaBHYT(); const months=12;
+        const gia = await ensureGiaBHYT(); const months=12; // xem trước mặc định 12 tháng
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, gia?.gia_tien);
         document.getElementById('rec-months').innerText = months;
-        document.getElementById('rec-range').innerText = `từ ngày ${formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1))} đến ngày ${exp}`;
+        const startDate = formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1));
+        document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
         document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
         document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
         document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || '—';
-        // date today
         const t=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
-        // QR
         const qrWrap=document.getElementById('receipt-qr'); qrWrap.innerHTML="";
         new QRCode(qrWrap, { text: `${bhyt_user.ma_truong}|${hs.so_dinh_danh}|${months}|${amount}`, width: 96, height: 96 });
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
@@ -1521,26 +1685,18 @@
       const link = document.createElement('a'); link.download='phieu_thu_a5.png'; link.href=canvas.toDataURL('image/png'); link.click();
     }
 
-    /* === Helpers khác === */
-    function showToast(msg){
-      const toastEl=document.getElementById('toastNoti'); const body=document.getElementById('toastNotiBody');
-      if(!toastEl||!body) return; body.textContent=msg||'Thành công';
-      new bootstrap.Toast(toastEl).show();
-    }
-
-    /* === Sự kiện === */
+    /* ================== Events & Init ================== */
     document.getElementById('bhyt-btn-reload')?.addEventListener('click', fetchChuaThuHocsinh);
     document.getElementById('bhyt-search')?.addEventListener('input', doSearchBHYT);
-
-    /* === Khởi tạo khi vào tab BHYT ===
-      (admin_dashboard đã có cơ chế chuyển tab; chỉ cần hook khi tab hiển thị) */
     (function initBHYT(){
       if(!bhyt_user?.ma_truong){ console.warn('Thiếu thông tin trường'); return; }
       loadClassOptions();
-      // nếu muốn auto-load khi mở tab:
-      // fetchChuaThuHocsinh();
+      // có thể auto load nếu muốn:
+      fetchChuaThuHocsinh();
     })();
   </script>
+
+
 
 
 
