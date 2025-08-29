@@ -1291,7 +1291,7 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.2) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2.3) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
     /* ===== Fallback Loading ===== */
@@ -1306,6 +1306,40 @@
       if (typeof window.showLoading!=='function') window.showLoading = ()=>{ const el=document.getElementById('loadingSpinner'); if(el) el.style.display='flex'; };
       if (typeof window.hideLoading!=='function') window.hideLoading = ()=>{ const el=document.getElementById('loadingSpinner'); if(el) el.style.display='none'; };
     })();
+
+    /* ===== Toast success (xanh lá) & Force unlock scroll ===== */
+    function toastSuccess(msg){
+      try {
+        if (typeof window.showToast === 'function') return window.showToast(msg, 'success');
+      } catch(_) {}
+      let cont = document.getElementById('toast-container');
+      if(!cont){
+        cont = document.createElement('div');
+        cont.id = 'toast-container';
+        cont.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:1060;';
+        document.body.appendChild(cont);
+      }
+      const el = document.createElement('div');
+      el.className = 'toast align-items-center text-white bg-success border-0 show';
+      el.setAttribute('role','alert');
+      el.style.minWidth='280px';
+      el.innerHTML =
+        '<div class="d-flex"><div class="toast-body">'
+        + (msg||'Thành công')
+        + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Close"></button></div>';
+      cont.appendChild(el);
+      el.querySelector('.btn-close').onclick=()=>el.remove();
+      setTimeout(()=>el.remove(), 2600);
+    }
+    function forceUnlockScroll(){
+      try{
+        document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+        document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.removeProperty('padding-right');
+      }catch(_){}
+    }
 
     /* ===== Biến trạng thái ===== */
     const bhytNOIKHAM_SUGGEST = ["TTYT huyện Châu Phú","BVĐK tỉnh An Giang","TTYT huyện Châu Thành","BV Nhi Đồng 2","BV Nhi Đồng 1"];
@@ -1339,7 +1373,6 @@
       const amount=(parseInt(basePrice||0,10)||0)*(m||0);
       return {exp, amount, note};
     }
-    /* Rate hoa hồng → số thập phân */
     function toRate(val){ let n=Number(String(val??'').replace(',','.')); if(!isFinite(n)||n<=0) return 0; return n>1 ? n/100 : n; }
     function getRateByMonths(g, months){
       const m=String(months);
@@ -1374,19 +1407,37 @@
         const selected = el ? [...el.querySelectorAll('option:checked')].map(o=>o.value) : [];
         const classes = selected.length ? selected : [""];
         const allHS = [];
-        for(const cls of classes){ const hsRes = await getAllHocsinhByClass(bhyt_user.ma_truong, cls); if(hsRes?.success && Array.isArray(hsRes.data)) allHS.push(...hsRes.data); }
+        for(const cls of classes){
+          const hsRes = await getAllHocsinhByClass(bhyt_user.ma_truong, cls);
+          if(hsRes?.success && Array.isArray(hsRes.data)) allHS.push(...hsRes.data);
+        }
         const statusMap = {};
-        for(const cls of classes){ const bhytRes = await getAllBHYT(bhyt_user.ma_truong, cls); const ds = Array.isArray(bhytRes?.data) ? bhytRes.data : []; ds.forEach(row => { const key=String(row.so_dinh_danh).replace(/^'/,'').trim(); statusMap[key]=Number(row.trang_thai); }); }
-        bhyt_allData = (allHS||[]).map(hs=>{ const k=String(hs.so_dinh_danh||"").replace(/^'/,'').trim(); const tt=statusMap[k]; return {...hs, _bhyt_trangthai:(tt===undefined?undefined:tt), trang_thai:tt}; }).filter(hs=>hs._bhyt_trangthai !== 1);
+        for(const cls of classes){
+          const bhytRes = await getAllBHYT(bhyt_user.ma_truong, cls);
+          const ds = Array.isArray(bhytRes?.data) ? bhytRes.data : [];
+          ds.forEach(row => { const key=String(row.so_dinh_danh).replace(/^'/,'').trim(); statusMap[key]=Number(row.trang_thai); });
+        }
+        bhyt_allData = (allHS||[]).map(hs=>{
+          const k=String(hs.so_dinh_danh||"").replace(/^'/,'').trim();
+          const tt=statusMap[k];
+          return {...hs, _bhyt_trangthai:(tt===undefined?undefined:tt), trang_thai:tt};
+        }).filter(hs=>hs._bhyt_trangthai !== 1);
         bhyt_page = 1; doSearchBHYT(); clearBulkSelection();
       } catch(e){ console.error('[BHYT] fetchChuaThuHocsinh error', e); }
       finally{ hideLoading(); }
     }
 
     /* ===== Tìm kiếm – Sắp xếp – Phân trang ===== */
-    function detectPageSizeBHYT(){ const width = document.querySelector('#page-bhyt')?.offsetWidth || window.innerWidth; if (width <= 767) bhyt_pageSize = 3; else if (width <= 1023) bhyt_pageSize = 7; else bhyt_pageSize = 20; }
-    window.addEventListener('resize', () => { const prev = bhyt_pageSize; detectPageSizeBHYT(); if (bhyt_pageSize !== prev){ bhyt_page = 1; renderAllViewBHYT(); } });
-
+    function detectPageSizeBHYT(){
+      const width = document.querySelector('#page-bhyt')?.offsetWidth || window.innerWidth;
+      if (width <= 767) bhyt_pageSize = 3;
+      else if (width <= 1023) bhyt_pageSize = 7;
+      else bhyt_pageSize = 20;
+    }
+    window.addEventListener('resize', () => {
+      const prev = bhyt_pageSize; detectPageSizeBHYT();
+      if (bhyt_pageSize !== prev){ bhyt_page = 1; renderAllViewBHYT(); }
+    });
     function doSearchBHYT(){
       const q = String(document.getElementById('bhyt-search')?.value||"").trim().toLowerCase();
       bhyt_lastFiltered = !q ? bhyt_allData : bhyt_allData.filter(hs =>
@@ -1417,7 +1468,13 @@
       const totalPages = Math.max(1, Math.ceil(total / bhyt_pageSize));
       const ul = document.getElementById('bhyt-pagin'); if(!ul) return; ul.innerHTML='';
       if (totalPages <= 1) return;
-      const add = (p, label, active=false, disabled=false) => { const li=document.createElement('li'); li.className=`page-item ${active?'active':''} ${disabled?'disabled':''}`; const a=document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label; a.onclick=(e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===bhyt_page) return; bhyt_page = p; renderAllViewBHYT(); }; li.appendChild(a); ul.appendChild(li); };
+      const add = (p, label, active=false, disabled=false) => {
+        const li=document.createElement('li');
+        li.className=`page-item ${active?'active':''} ${disabled?'disabled':''}`;
+        const a=document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label;
+        a.onclick=(e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===bhyt_page) return; bhyt_page = p; renderAllViewBHYT(); };
+        li.appendChild(a); ul.appendChild(li);
+      };
       add(bhyt_page-1, 'Trước', false, bhyt_page===1);
       let minP = Math.max(1, bhyt_page-2), maxP = Math.min(totalPages, bhyt_page+2);
       if (minP > 1) add(1, '1');
@@ -1431,10 +1488,12 @@
     /* ===== Bảng danh sách ===== */
     function sortIconBHYT(field){ if(bhyt_sortField!==field) return ''; return bhyt_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if(bhyt_sortField===field) bhyt_sortDir=-bhyt_sortDir; else { bhyt_sortField=field; bhyt_sortDir=1; } renderAllViewBHYT(); };
-
     function renderDanhSachHS(ds){
       const wrap = document.getElementById('bhyt-ds'); if(!wrap) return;
-      if (!ds || ds.length === 0){ wrap.innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lựa chọn này.</div>`; return; }
+      if (!ds || ds.length === 0){
+        wrap.innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa thu trong lựa chọn này.</div>`;
+        return;
+      }
       let html = `<table class="table table-bordered table-hs align-middle"><thead><tr>
           <th style="width:42px;"><input type="checkbox" id="chk-bulk-all" onchange="toggleSelectAllBulk(this)"></th>
           <th class="th-action">Thao tác</th>
@@ -1496,7 +1555,8 @@
         const noikham = document.getElementById('nhs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = parseFloat((amount * rate).toFixed(2));     // ❗ KHÔNG làm tròn về số nguyên
+        const hh = parseFloat((amount * rate).toFixed(2));
+
         const res = await nopHoSoBHYTApi({
           so_dinh_danh: _currentHS.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1505,12 +1565,14 @@
           noi_kham_bhyt: noikham,
           so_tien: amount,
           hoa_hong: hh,
-          so_ho_so: 'null',                                    // giữ null theo logic gốc
+          so_ho_so: 'null',
           han_su_dung_bhyt_moi: exp
         });
+
         if(res?.success){
           bootstrap.Modal.getInstance(document.getElementById('modalNopHoSoBHYT'))?.hide();
-          showToast && showToast('Nộp hồ sơ thành công');
+          forceUnlockScroll();
+          toastSuccess('Nộp hồ sơ thành công');
           await fetchChuaThuHocsinh();
         } else {
           document.getElementById('nhs-error').innerText = res?.message || 'Lỗi nộp hồ sơ';
@@ -1549,7 +1611,8 @@
         const noikham = document.getElementById('shs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = parseFloat((amount * rate).toFixed(2));     // ❗ không làm tròn integer
+        const hh = parseFloat((amount * rate).toFixed(2));
+
         const res = await suaHoSoBHYTApi({
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
           ma_truong: bhyt_user.ma_truong,
@@ -1560,9 +1623,11 @@
           hoa_hong: hh,
           han_su_dung_bhyt_moi: exp
         });
+
         if(res?.success){
           bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT'))?.hide();
-          showToast && showToast('Đã lưu thay đổi');
+          forceUnlockScroll();
+          toastSuccess('Đã lưu thay đổi');
           await fetchChuaThuHocsinh();
         } else {
           document.getElementById('shs-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
@@ -1576,12 +1641,6 @@
     window.inPhieuThu = (stt)=>openPreviewReceipt(stt);
 
     /* ===== Bulk ===== */
-    function getSelectedRowsData(){ const map={}; (bhyt_lastFiltered||bhyt_allData).forEach(h=>{ map[String(h.stt)]=h; }); return bulkSelected.map(stt=>map[String(stt)]).filter(Boolean).filter(hs => !(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1)); }
-    function onSelectRowBulk(stt, el){ if (el.checked){ if (!bulkSelected.includes(stt)) bulkSelected.push(stt); } else { bulkSelected = bulkSelected.filter(x => x !== stt); const allCb=document.getElementById('chk-bulk-all'); if(allCb) allCb.checked=false; } updateBulkButton(); }
-    function toggleSelectAllBulk(el){ document.querySelectorAll('.chk-bulk-row').forEach(cb=>{ if(cb.disabled) return; cb.checked=el.checked; const stt=cb.getAttribute('data-stt'); if(el.checked){ if(!bulkSelected.includes(stt)) bulkSelected.push(stt); } else { bulkSelected = bulkSelected.filter(x=>x!==stt); } }); updateBulkButton(); }
-    function updateBulkButton(){ const btn=document.getElementById('btn-bulk-submit'); const c=getSelectedRowsData().length; if(!btn) return; if(c>0){ btn.style.display=''; btn.innerText=`Nộp nhiều hồ sơ (${c})`; } else { btn.style.display='none'; btn.innerText='Nộp nhiều hồ sơ (0)'; } }
-    function clearBulkSelection(){ bulkSelected=[]; document.querySelectorAll('.chk-bulk-row').forEach(cb=>cb.checked=false); const allCb=document.getElementById('chk-bulk-all'); if(allCb) allCb.checked=false; updateBulkButton(); }
-
     function showBulkNopHoSoModal(){
       const list = getSelectedRowsData(); if (!list.length) return;
       document.getElementById('bulk-count-label').innerText = list.length;
@@ -1599,7 +1658,7 @@
         const rate=getRateByMonths(g, months);
         for (const hs of list){
           const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-          const hh = parseFloat((amount * rate).toFixed(2));   // ❗ không làm tròn integer
+          const hh = parseFloat((amount * rate).toFixed(2));
           await nopHoSoBHYTApi({
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
@@ -1612,15 +1671,10 @@
             han_su_dung_bhyt_moi: exp
           });
         }
-        showToast && showToast(`Đã nộp ${list.length} hồ sơ`);
+        toastSuccess(`Đã nộp ${list.length} hồ sơ`);
         const mm = bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSo'));
         if (mm) mm.hide();
-        // dọn backdrop nếu Bootstrap chưa kịp remove (fix dính mờ)
-        setTimeout(()=>{
-          document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
-          document.body.classList.remove('modal-open');
-          document.body.style.removeProperty('padding-right');
-        },150);
+        forceUnlockScroll();     // tránh kẹt cuộn
         await fetchChuaThuHocsinh();
       }catch(e){ console.error(e); }
       finally{ hideLoading(); }
@@ -1681,11 +1735,11 @@
       } finally{ hideLoading(); }
     }
 
-    /* In ngay trong trang hiện tại, chỉ khối A5, không mở tab mới */
+    /* In ngay trong trang hiện tại – không nhân bản trang */
     function printReceiptOnly(){
       const src = document.getElementById('receiptA5'); if(!src) return;
 
-      // clone & thay QR canvas bằng ảnh để bản in sắc nét
+      // Clone + thay QR bằng ảnh để in nét
       const clone = src.cloneNode(true);
       const live = src.querySelector('#receipt-qr canvas, #receipt-qr img');
       if (live){
@@ -1698,27 +1752,25 @@
         }
       }
 
-      // vùng in tạm
-      const holder = document.createElement('div');
-      holder.id='__printArea';
-      holder.style.background='#fff';
-      holder.innerHTML='';
-      holder.appendChild(clone);
+      // Holder in tạm
+      let holder = document.getElementById('__printArea'); if(holder) holder.remove();
+      holder = document.createElement('div'); holder.id='__printArea'; holder.appendChild(clone);
       document.body.appendChild(holder);
 
-      // style in: chỉ hiện A5
-      const style = document.createElement('style');
-      style.id='__printStyle';
+      // Style in: dùng display:none cho phần khác để tránh nhân bản
+      let style = document.getElementById('__printStyle'); if(style) style.remove();
+      style = document.createElement('style'); style.id='__printStyle';
       style.textContent = `
+        @page { size: A5 portrait; margin: 10mm; }
         @media print{
-          body *{ visibility: hidden !important; }
-          #__printArea, #__printArea *{ visibility: visible !important; }
-          #__printArea{ position: fixed; inset: 0 auto auto 0; width: 100%; background:#fff; }
-          @page { size: A5 portrait; margin: 10mm; }
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body * { display: none !important; }
+          #__printArea, #__printArea * { display: block !important; }
+          #__printArea { position: static !important; }
         }
         #__printArea .a5-paper{
           width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
-          color:#000; line-height:1.35; font-size:13px; background:#fff;
+          color:#000; line-height:1.35; font-size:13px; background:#fff; page-break-inside: avoid;
         }
       `;
       document.head.appendChild(style);
@@ -1726,17 +1778,11 @@
       const cleanup = ()=>{
         document.getElementById('__printArea')?.remove();
         document.getElementById('__printStyle')?.remove();
-      };
-
-      // gọi print & dọn dẹp
-      const after = ()=>{
-        cleanup();
         setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
       };
-      window.addEventListener('afterprint', after, {once:true});
+      window.addEventListener('afterprint', cleanup, {once:true});
       window.print();
-      // fallback dọn dẹp nếu trình duyệt không bắn afterprint
-      setTimeout(after, 800);
+      setTimeout(cleanup, 800); // fallback
     }
 
     async function downloadReceiptImage(){
@@ -1759,9 +1805,10 @@
       // Nếu muốn auto load khi mở tab: fetchChuaThuHocsinh();
     };
 
-    /* Init nhẹ */
+    /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
 
 
 
