@@ -1291,7 +1291,7 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.4) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2.4 – patched) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
     /* ===== Fallback Loading ===== */
@@ -1342,7 +1342,6 @@
     function hookModalUnlock(id){
       const el = document.getElementById(id);
       if(!el) return;
-      // khi đóng/hide modal (dù user bấm X hay backdrop), chắc chắn gỡ mờ & mở cuộn
       el.addEventListener('hidden.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
       el.addEventListener('hidePrevented.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
     }
@@ -1561,7 +1560,7 @@
         const noikham = document.getElementById('nhs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = parseFloat((amount * rate).toFixed(2));
+        const hh = amount * rate; // không làm tròn
 
         const res = await nopHoSoBHYTApi({
           so_dinh_danh: _currentHS.so_dinh_danh,
@@ -1617,7 +1616,7 @@
         const noikham = document.getElementById('shs-noikham').value.trim();
         const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
         const rate = getRateByMonths(g, months);
-        const hh = parseFloat((amount * rate).toFixed(2));
+        const hh = amount * rate; // không làm tròn
 
         const res = await suaHoSoBHYTApi({
           so_dinh_danh: _currentHS_Sua.so_dinh_danh,
@@ -1672,7 +1671,7 @@
         const rate=getRateByMonths(g, months);
         for (const hs of list){
           const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-          const hh = parseFloat((amount * rate).toFixed(2));
+          const hh = amount * rate; // không làm tròn
           await nopHoSoBHYTApi({
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
@@ -1749,39 +1748,45 @@
       } finally{ hideLoading(); }
     }
 
-    /* In ngay trong trang hiện tại – KHÔNG vỡ giao diện, không nhân bản */
+    /* In trong trang hiện tại – tránh trắng trang/nhân bản & không kẹt overlay */
     function printReceiptOnly(){
       const src = document.getElementById('receiptA5'); if(!src) return;
 
-      // Clone + thay QR bằng ảnh để in nét
+      // Đóng modal trước khi in để không kẹt backdrop
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalPhieuThu'));
+      modal?.hide();
+
+      // Clone + thay QR bằng IMG để in nét
       const clone = src.cloneNode(true);
-      const live = src.querySelector('#receipt-qr canvas, #receipt-qr img');
-      if (live){
-        const tgt = clone.querySelector('#receipt-qr');
-        if (tgt){
-          tgt.innerHTML='';
-          const dataURL = (live.tagName.toLowerCase()==='canvas') ? live.toDataURL('image/png') : live.src;
-          const im = document.createElement('img'); im.src=dataURL; im.width=96; im.height=96;
-          tgt.appendChild(im);
+      const liveQR = src.querySelector('#receipt-qr canvas, #receipt-qr img');
+      if (liveQR){
+        const qrSlot = clone.querySelector('#receipt-qr');
+        if (qrSlot){
+          qrSlot.innerHTML = '';
+          const dataURL = (liveQR.tagName.toLowerCase()==='canvas') ? liveQR.toDataURL('image/png') : liveQR.src;
+          const im = document.createElement('img'); im.src = dataURL; im.width=96; im.height=96;
+          qrSlot.appendChild(im);
         }
       }
 
-      // Holder in tạm
-      let holder = document.getElementById('__printArea'); if(holder) holder.remove();
-      holder = document.createElement('div'); holder.id='__printArea'; holder.appendChild(clone);
-      document.body.appendChild(holder);
+      // Đưa clone vào #_printArea (đã có sẵn trong HTML)
+      const holder = document.getElementById('_printArea');
+      holder.innerHTML = '';
+      holder.appendChild(clone);
 
-      // Style in: ẩn TẤT CẢ direct-child của body trừ __printArea (không đụng display con bên trong)
-      let style = document.getElementById('__printStyle'); if(style) style.remove();
-      style = document.createElement('style'); style.id='__printStyle';
+      // Style in: chỉ để lại #_printArea khi in (tránh nhân bản & tránh trắng trang)
+      let style = document.getElementById('_printStyle');
+      if (style) style.remove();
+      style = document.createElement('style');
+      style.id = '_printStyle';
       style.textContent = `
         @page { size: A5 portrait; margin: 10mm; }
         @media print{
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body > *:not(#__printArea){ display:none !important; }  /* tránh nhân bản */
-          #__printArea{ display:block !important; }
+          *{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body > *:not(#_printArea){ display:none !important; }
+          #_printArea{ display:block !important; }
         }
-        #__printArea .a5-paper{
+        #_printArea .a5-paper{
           width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
           color:#000; line-height:1.35; font-size:13px; background:#fff; page-break-inside: avoid;
         }
@@ -1789,14 +1794,24 @@
       document.head.appendChild(style);
 
       const cleanup = ()=>{
-        document.getElementById('__printArea')?.remove();
-        document.getElementById('__printStyle')?.remove();
-        setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
+        setTimeout(()=>{ document.getElementById('_printStyle')?.remove(); }, 50);
+        setTimeout(()=>{ holder.innerHTML=''; }, 80);
+        setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove()); }, 120);
         forceUnlockScroll();
       };
-      window.addEventListener('afterprint', cleanup, {once:true});
-      window.print();
-      setTimeout(cleanup, 800); // fallback
+
+      // Đợi QR IMG (nếu có) sẵn sàng rồi mới in
+      const img = holder.querySelector('#receipt-qr img');
+      const doPrint = ()=>{
+        window.addEventListener('afterprint', cleanup, {once:true});
+        requestAnimationFrame(()=>{ setTimeout(()=>{ window.print(); setTimeout(cleanup, 800); }, 60); });
+      };
+      if (img && !img.complete){
+        img.onload = ()=> doPrint();
+        img.onerror = ()=> doPrint();
+      } else {
+        doPrint();
+      }
     }
 
     async function downloadReceiptImage(){
@@ -1825,9 +1840,13 @@
       // Nếu muốn auto load khi mở tab: fetchChuaThuHocsinh();
     };
 
+    /* Cho router setActivePage() gọi */
+    window.bhyt_reload = fetchChuaThuHocsinh;
+
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
 
 
 
