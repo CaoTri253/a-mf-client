@@ -499,199 +499,234 @@
           <div class="h5 fw-bold">Bảo hiểm y tế</div>
         </div>
 
-        <!-- Sticky header + search + chọn nhiều lớp -->
-        <div class="table-box p-3 mb-2">
-          <div class="row g-2 align-items-center">
-            <div class="col-12 col-lg-6">
-              <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
-              <select id="bhyt-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
-              <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; để trống = toàn trường</small>
-            </div>
-            <div class="col-12 col-lg-6">
-              <label class="form-label fw-semibold">Tìm kiếm</label>
-              <input class="form-control" id="bhyt-search" placeholder="Tìm theo tên, ngày sinh, số định danh..." />
-            </div>
-          </div>
-          <div class="mt-2 d-flex gap-2">
-            <button id="bhyt-btn-reload" class="btn btn-primary">
-              <i class="bi bi-arrow-repeat"></i> Tải danh sách
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="bhytTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-unpaid-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-unpaid" type="button" role="tab"
+                    aria-controls="tab-unpaid" aria-selected="true">
+              Danh sách BHYT chưa thu
             </button>
-            <button id="btn-bulk-submit" class="btn btn-success" style="display:none" onclick="showBulkNopHoSoModal()">
-              Nộp nhiều hồ sơ (0)
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-other-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-other" type="button" role="tab"
+                    aria-controls="tab-other" aria-selected="false">
+              Danh sách BHYT Đã thu
             </button>
+          </li>
+        </ul>
 
-            <div class="ms-auto text-secondary">Tổng: <span id="bhyt-total">0</span> học sinh</div>
-          </div>
-        </div>
-
-        <!-- Danh sách -->
-        <div class="table-responsive table-box p-0" id="bhyt-ds"></div>
-        <nav class="mt-2">
-          <ul class="pagination justify-content-center" id="bhyt-pagin"></ul>
-        </nav>
-
-        <!-- === Các modal y nguyên từ trang nguồn === -->
-        <!-- Nộp hồ sơ BHYT -->
-        <div class="modal fade" id="modalNopHoSoBHYT" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog"><div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHYT</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="nhs-hoten" readonly></div>
-              <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="nhs-ngaysinh" readonly></div>
-              <div class="mb-2">
-                <label>Nơi khám BHYT:</label>
-                <input class="form-control" id="nhs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
-                <datalist id="noikham-list"></datalist>
-              </div>
-              <div class="mb-2">
-                <label>Số tháng đóng:</label>
-                <div>
-                  <input type="radio" name="nhs-thang" value="3" id="nhs-thang-3"> <label for="nhs-thang-3">3 tháng</label>
-                  <input type="radio" name="nhs-thang" value="6" id="nhs-thang-6" class="ms-3"> <label for="nhs-thang-6">6 tháng</label>
-                  <input type="radio" name="nhs-thang" value="12" id="nhs-thang-12" class="ms-3" checked> <label for="nhs-thang-12">12 tháng</label>
+        <div class="tab-content pt-3">
+          <!-- TAB 1: Gom toàn bộ chức năng DS BHYT vào đây -->
+          <div class="tab-pane fade show active" id="tab-unpaid" role="tabpanel" aria-labelledby="tab-unpaid-tab">
+            <!-- Sticky header + search + chọn nhiều lớp -->
+            <div class="table-box p-3 mb-2">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
+                  <select id="bhyt-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
+                  <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; <br> Bấm nút "Toàn trường" để xem toàn bộ lớp</small>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Tìm kiếm</label>
+                  <input class="form-control" id="bhyt-search" placeholder="Tìm theo tên, ngày sinh, số định danh..." />
                 </div>
               </div>
-              <div class="mt-2 small">
-                <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
-                <div id="nhs-exp-note" class="text-muted" style="min-height:18px"></div>
-                <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
-              </div>
-              <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-              <button class="btn btn-primary" id="btnNopHoSo" onclick="submitNopHoSoBHYT()">Nộp hồ sơ</button>
-            </div>
-          </div></div>
-        </div>
+              <div class="mt-2 d-flex gap-2">
+                <button id="bhyt-btn-reload" class="btn btn-primary">
+                  <i class="bi bi-arrow-repeat"></i> Tải danh sách
+                </button>
 
-        <!-- Sửa hồ sơ BHYT -->
-        <div class="modal fade" id="modalSuaHoSoBHYT" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog"><div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHYT</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="shs-hoten" readonly></div>
-              <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="shs-ngaysinh" readonly></div>
-              <div class="mb-2"><label>Nơi khám BHYT:</label><input class="form-control" id="shs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT"></div>
-              <div class="mb-2">
-                <label>Số tháng đóng:</label>
-                <div>
-                  <input type="radio" name="shs-thang" value="3" id="shs-thang-3"> <label for="shs-thang-3">3 tháng</label>
-                  <input type="radio" name="shs-thang" value="6" id="shs-thang-6" class="ms-3"> <label for="shs-thang-6">6 tháng</label>
-                  <input type="radio" name="shs-thang" value="12" id="shs-thang-12" class="ms-3"> <label for="shs-thang-12">12 tháng</label>
-                </div>
-              </div>
-              <div class="mt-2 small">
-                <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
-                <div id="shs-exp-note" class="text-muted" style="min-height:18px"></div>
-                <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
-              </div>
-              <div id="shs-error" class="text-danger" style="min-height:18px"></div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-              <button class="btn btn-primary" onclick="submitSuaHoSoBHYT()">Lưu thay đổi</button>
-            </div>
-          </div></div>
-        </div>
+                <!-- NEW: nút chọn toàn trường -->
+                <button id="bhyt-btn-all" class="btn btn-info">
+                  <i class="bi bi-building"></i> Toàn trường
+                </button>
 
-        <!-- Nộp nhiều hồ sơ -->
-        <div class="modal fade" id="modalBulkNopHoSo" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog"><div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Nộp nhiều hồ sơ BHYT</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-2"><b>Đã chọn:</b> <span id="bulk-count-label">0</span> học sinh</div>
-              <div class="mb-2"><label>Nơi khám BHYT (áp dụng chung):</label><input class="form-control" id="bulk-noikham" list="noikham-list" placeholder="Có thể để trống"></div>
-              <div class="mb-2">
-                <label>Số tháng đóng (áp dụng chung):</label>
-                <div>
-                  <input type="radio" name="bulk-thang" value="3" id="bulk-thang-3"> <label for="bulk-thang-3">3 tháng</label>
-                  <input type="radio" name="bulk-thang" value="6" id="bulk-thang-6" class="ms-3"> <label for="bulk-thang-6">6 tháng</label>
-                  <input type="radio" name="bulk-thang" value="12" id="bulk-thang-12" class="ms-3" checked> <label for="bulk-thang-12">12 tháng</label>
-                </div>
-              </div>
-              <div class="mt-2 small">
-                <div><strong class="text-danger">Hạn sử dụng dự kiến:</strong> <span id="bulk-exp-preview" class="fw-bold text-danger">—</span></div>
-                <div id="bulk-exp-note" class="text-muted" style="min-height:18px"></div>
-                <div><strong class="text-danger">Số tiền cần đóng (mỗi HS):</strong> <span id="bulk-amount-preview" class="fw-bold text-danger">—</span></div>
-              </div>
-              <div id="bulk-error" class="text-danger" style="min-height:18px"></div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-              <button class="btn btn-primary" id="btnBulkNop" onclick="submitBulkNopHoSo()">Nộp nhiều hồ sơ</button>
-            </div>
-          </div></div>
-        </div>
+                <button id="btn-bulk-submit" class="btn btn-success" style="display:none" onclick="showBulkNopHoSoModal()">
+                  Nộp nhiều hồ sơ (0)
+                </button>
 
-        <!-- Xem trước & in Phiếu thu A5 -->
-        <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
-                <div class="no-print d-flex gap-2">
-                  <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
-                  <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="ms-auto text-secondary">Tổng: <span id="bhyt-total">0</span> học sinh</div>
               </div>
-              <div class="modal-body" style="display:flex;justify-content:center;">
-                <div id="receiptA5" class="a5-paper">
-                  <div class="row">
-                    <div class="col">
-                      <div class="receipt-meta">
-                        <div><strong id="rec-school">Trường …</strong></div>
-                        <div>Lớp: <strong id="rec-class">—</strong></div>
+            </div>
+
+            <!-- Danh sách -->
+            <div class="table-responsive table-box p-0" id="bhyt-ds"></div>
+            <nav class="mt-2">
+              <ul class="pagination justify-content-center" id="bhyt-pagin"></ul>
+            </nav>
+
+            <!-- === Các modal y nguyên từ trang nguồn === -->
+            <!-- Nộp hồ sơ BHYT -->
+            <div class="modal fade" id="modalNopHoSoBHYT" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHYT</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="nhs-hoten" readonly></div>
+                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="nhs-ngaysinh" readonly></div>
+                  <div class="mb-2">
+                    <label>Nơi khám BHYT:</label>
+                    <input class="form-control" id="nhs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
+                    <datalist id="noikham-list"></datalist>
+                  </div>
+                  <div class="mb-2">
+                    <label>Số tháng đóng:</label>
+                    <div>
+                      <input type="radio" name="nhs-thang" value="3" id="nhs-thang-3"> <label for="nhs-thang-3">3 tháng</label>
+                      <input type="radio" name="nhs-thang" value="6" id="nhs-thang-6" class="ms-3"> <label for="nhs-thang-6">6 tháng</label>
+                      <input type="radio" name="nhs-thang" value="12" id="nhs-thang-12" class="ms-3" checked> <label for="nhs-thang-12">12 tháng</label>
+                    </div>
+                  </div>
+                  <div class="mt-2 small">
+                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="nhs-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="nhs-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong>Số tiền cần đóng:</strong> <span id="nhs-amount-preview" class="fw-bold text-danger">—</span></div>
+                  </div>
+                  <div id="nhs-error" class="text-danger" style="min-height:18px"></div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button class="btn btn-primary" id="btnNopHoSo" onclick="submitNopHoSoBHYT()">Nộp hồ sơ</button>
+                </div>
+              </div></div>
+            </div>
+
+            <!-- Sửa hồ sơ BHYT -->
+            <div class="modal fade" id="modalSuaHoSoBHYT" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHYT</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="shs-hoten" readonly></div>
+                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="shs-ngaysinh" readonly></div>
+                  <div class="mb-2"><label>Nơi khám BHYT:</label><input class="form-control" id="shs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT"></div>
+                  <div class="mb-2">
+                    <label>Số tháng đóng:</label>
+                    <div>
+                      <input type="radio" name="shs-thang" value="3" id="shs-thang-3"> <label for="shs-thang-3">3 tháng</label>
+                      <input type="radio" name="shs-thang" value="6" id="shs-thang-6" class="ms-3"> <label for="shs-thang-6">6 tháng</label>
+                      <input type="radio" name="shs-thang" value="12" id="shs-thang-12" class="ms-3"> <label for="shs-thang-12">12 tháng</label>
+                    </div>
+                  </div>
+                  <div class="mt-2 small">
+                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shs-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="shs-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong>Số tiền cần đóng:</strong> <span id="shs-amount-preview" class="fw-bold text-danger">—</span></div>
+                  </div>
+                  <div id="shs-error" class="text-danger" style="min-height:18px"></div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button class="btn btn-primary" onclick="submitSuaHoSoBHYT()">Lưu thay đổi</button>
+                </div>
+              </div></div>
+            </div>
+
+            <!-- Nộp nhiều hồ sơ -->
+            <div class="modal fade" id="modalBulkNopHoSo" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Nộp nhiều hồ sơ BHYT</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-2"><b>Đã chọn:</b> <span id="bulk-count-label">0</span> học sinh</div>
+                  <div class="mb-2"><label>Nơi khám BHYT (áp dụng chung):</label><input class="form-control" id="bulk-noikham" list="noikham-list" placeholder="Có thể để trống"></div>
+                  <div class="mb-2">
+                    <label>Số tháng đóng (áp dụng chung):</label>
+                    <div>
+                      <input type="radio" name="bulk-thang" value="3" id="bulk-thang-3"> <label for="bulk-thang-3">3 tháng</label>
+                      <input type="radio" name="bulk-thang" value="6" id="bulk-thang-6" class="ms-3"> <label for="bulk-thang-6">6 tháng</label>
+                      <input type="radio" name="bulk-thang" value="12" id="bulk-thang-12" class="ms-3" checked> <label for="bulk-thang-12">12 tháng</label>
+                    </div>
+                  </div>
+                  <div class="mt-2 small">
+                    <div><strong class="text-danger">Hạn sử dụng dự kiến:</strong> <span id="bulk-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="bulk-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong class="text-danger">Số tiền cần đóng (mỗi HS):</strong> <span id="bulk-amount-preview" class="fw-bold text-danger">—</span></div>
+                  </div>
+                  <div id="bulk-error" class="text-danger" style="min-height:18px"></div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button class="btn btn-primary" id="btnBulkNop" onclick="submitBulkNopHoSo()">Nộp nhiều hồ sơ</button>
+                </div>
+              </div></div>
+            </div>
+
+            <!-- Xem trước & in Phiếu thu A5 -->
+            <div class="modal fade" id="modalPhieuThu" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
+                    <div class="no-print d-flex gap-2">
+                      <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
+                      <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body" style="display:flex;justify-content:center;">
+                    <div id="receiptA5" class="a5-paper">
+                      <div class="row">
+                        <div class="col">
+                          <div class="receipt-meta">
+                            <div><strong id="rec-school">Trường …</strong></div>
+                            <div>Lớp: <strong id="rec-class">—</strong></div>
+                          </div>
+                        </div>
+                        <div class="col text-center">
+                          <div class="receipt-meta">
+                            <div><strong>Mẫu số:</strong> C45-BB</div>
+                            <div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div>
+                            <div>ngày 10/10/2017 của Bộ Tài Chính</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row align-items-center mt-3">
+                        <div class="col-4" style="max-width:36mm"><div class="qr-box"><div id="receipt-qr"></div></div></div>
+                        <div class="col text-center">
+                          <div class="receipt-title">BIÊN LAI THU TIỀN</div>
+                          <div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div>
+                        </div>
+                      </div>
+                      <div class="mt-3">
+                        <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name">—</strong></div>
+                        <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
+                        <div class="receipt-line">Nội dung thu: <span id="rec-content">—</span></div>
+                        <div class="receipt-line">Số tháng đóng: <span id="rec-months">—</span> tháng (<span id="rec-range">từ ngày … đến ngày …</span>)</div>
+                        <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
+                        <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
+                      </div>
+                      <div class="row">
+                        <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
+                        <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small><div class="sign-name" id="rec-teacher-name">—</div></div>
                       </div>
                     </div>
-                    <div class="col text-center">
-                      <div class="receipt-meta">
-                        <div><strong>Mẫu số:</strong> C45-BB</div>
-                        <div>Ban hành kèm Thông tư số 107/2017/TT-BTC</div>
-                        <div>ngày 10/10/2017 của Bộ Tài Chính</div>
-                      </div>
-                    </div>
                   </div>
-                  <div class="row align-items-center mt-3">
-                    <div class="col-4" style="max-width:36mm"><div class="qr-box"><div id="receipt-qr"></div></div></div>
-                    <div class="col text-center">
-                      <div class="receipt-title">BIÊN LAI THU TIỀN</div>
-                      <div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div>
-                    </div>
-                  </div>
-                  <div class="mt-3">
-                    <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name">—</strong></div>
-                    <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
-                    <div class="receipt-line">Nội dung thu: <span id="rec-content">—</span></div>
-                    <div class="receipt-line">Số tháng đóng: <span id="rec-months">—</span> tháng (<span id="rec-range">từ ngày … đến ngày …</span>)</div>
-                    <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
-                    <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
-                  </div>
-                  <div class="row">
-                    <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
-                    <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small><div class="sign-name" id="rec-teacher-name">—</div></div>
+                  <div class="modal-footer no-print">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
+                    <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
                   </div>
                 </div>
               </div>
-              <div class="modal-footer no-print">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
-                <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
-              </div>
             </div>
+          </div>
+
+          <!-- TAB 2: Tab trống -->
+          <div class="tab-pane fade" id="tab-other" role="tabpanel" aria-labelledby="tab-other-tab">
+            <div class="panel p-4 text-secondary">Chưa có nội dung.</div>
           </div>
         </div>
 
         <div id="_printArea"></div>
       </section>
+
       <!-- BẢO HIỂM Y TẾ (embedded, for admin) -->
 
 
@@ -1878,6 +1913,15 @@
     document.getElementById('bhyt-search')?.addEventListener('input', doSearchBHYT);
     document.getElementById('btn-bulk-submit')?.addEventListener('click', showBulkNopHoSoModal);
 
+
+    /* NEW: nút chọn toàn trường – bỏ chọn tất cả lớp và tải toàn trường */
+    document.getElementById('bhyt-btn-all')?.addEventListener('click', ()=>{
+      const sel = document.getElementById('bhyt-classes');
+      if (!sel) return;
+      [...sel.options].forEach(o => o.selected = false);
+      fetchChuaThuHocsinh();
+    });
+
     /* Hook modal để tránh kẹt màn mờ khi đóng mà chưa nộp */
     hookModalUnlock('modalBulkNopHoSo');
     hookModalUnlock('modalNopHoSoBHYT');
@@ -1892,6 +1936,9 @@
       loadClassOptions();
       fetchChuaThuHocsinh();
     };
+
+    /* NEW: map reload → fetch danh sách */
+    window.bhyt_reload = fetchChuaThuHocsinh;
 
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
