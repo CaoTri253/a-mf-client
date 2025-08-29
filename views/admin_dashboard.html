@@ -1291,7 +1291,7 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <script>
-    /* ================== BHYT – Admin Tab (fixed v2.3) ================== */
+    /* ================== BHYT – Admin Tab (fixed v2.4) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
 
     /* ===== Fallback Loading ===== */
@@ -1309,9 +1309,7 @@
 
     /* ===== Toast success (xanh lá) & Force unlock scroll ===== */
     function toastSuccess(msg){
-      try {
-        if (typeof window.showToast === 'function') return window.showToast(msg, 'success');
-      } catch(_) {}
+      try { if (typeof window.showToast === 'function') return window.showToast(msg, 'success'); } catch(_) {}
       let cont = document.getElementById('toast-container');
       if(!cont){
         cont = document.createElement('div');
@@ -1338,7 +1336,15 @@
         document.body.classList.remove('modal-open');
         document.body.style.overflow = '';
         document.body.style.removeProperty('padding-right');
+        document.documentElement.style.overflow = '';
       }catch(_){}
+    }
+    function hookModalUnlock(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      // khi đóng/hide modal (dù user bấm X hay backdrop), chắc chắn gỡ mờ & mở cuộn
+      el.addEventListener('hidden.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
+      el.addEventListener('hidePrevented.bs.modal', ()=>{ forceUnlockScroll(); }, {once:false});
     }
 
     /* ===== Biến trạng thái ===== */
@@ -1646,7 +1652,15 @@
       document.getElementById('bulk-count-label').innerText = list.length;
       document.getElementById('bulk-exp-note').innerText = "";
       new bootstrap.Modal(document.getElementById('modalBulkNopHoSo')).show();
-      (async ()=>{ const g=await ensureGiaBHYT(); const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12'; const anyOld=parseVNDate(list[0]?.ngay_het_han_bhyt); const {exp,amount,note}=computeAmountAndExp(anyOld?formatVNDate(anyOld):"", months, g?.gia_tien); document.getElementById('bulk-exp-preview').innerText=exp; document.getElementById('bulk-amount-preview').innerText=(amount||0).toLocaleString('vi-VN'); document.getElementById('bulk-exp-note').innerText=note||""; })();
+      (async ()=>{
+        const g=await ensureGiaBHYT();
+        const months=document.querySelector('input[name="bulk-thang"]:checked')?.value||'12';
+        const anyOld=parseVNDate(list[0]?.ngay_het_han_bhyt);
+        const {exp,amount,note}=computeAmountAndExp(anyOld?formatVNDate(anyOld):"", months, g?.gia_tien);
+        document.getElementById('bulk-exp-preview').innerText=exp;
+        document.getElementById('bulk-amount-preview').innerText=(amount||0).toLocaleString('vi-VN');
+        document.getElementById('bulk-exp-note').innerText=note||"";
+      })();
     }
     async function submitBulkNopHoSo(){
       const list = getSelectedRowsData(); if(!list.length) return;
@@ -1674,7 +1688,7 @@
         toastSuccess(`Đã nộp ${list.length} hồ sơ`);
         const mm = bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSo'));
         if (mm) mm.hide();
-        forceUnlockScroll();     // tránh kẹt cuộn
+        forceUnlockScroll();     // tránh kẹt cuộn/overlay
         await fetchChuaThuHocsinh();
       }catch(e){ console.error(e); }
       finally{ hideLoading(); }
@@ -1735,7 +1749,7 @@
       } finally{ hideLoading(); }
     }
 
-    /* In ngay trong trang hiện tại – không nhân bản trang */
+    /* In ngay trong trang hiện tại – KHÔNG vỡ giao diện, không nhân bản */
     function printReceiptOnly(){
       const src = document.getElementById('receiptA5'); if(!src) return;
 
@@ -1757,16 +1771,15 @@
       holder = document.createElement('div'); holder.id='__printArea'; holder.appendChild(clone);
       document.body.appendChild(holder);
 
-      // Style in: dùng display:none cho phần khác để tránh nhân bản
+      // Style in: ẩn TẤT CẢ direct-child của body trừ __printArea (không đụng display con bên trong)
       let style = document.getElementById('__printStyle'); if(style) style.remove();
       style = document.createElement('style'); style.id='__printStyle';
       style.textContent = `
         @page { size: A5 portrait; margin: 10mm; }
         @media print{
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body * { display: none !important; }
-          #__printArea, #__printArea * { display: block !important; }
-          #__printArea { position: static !important; }
+          body > *:not(#__printArea){ display:none !important; }  /* tránh nhân bản */
+          #__printArea{ display:block !important; }
         }
         #__printArea .a5-paper{
           width:148mm; min-height:210mm; margin:0 auto; padding:10mm 12mm;
@@ -1779,6 +1792,7 @@
         document.getElementById('__printArea')?.remove();
         document.getElementById('__printStyle')?.remove();
         setTimeout(()=>{ document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove()); }, 50);
+        forceUnlockScroll();
       };
       window.addEventListener('afterprint', cleanup, {once:true});
       window.print();
@@ -1796,6 +1810,12 @@
     document.getElementById('bhyt-search')?.addEventListener('input', doSearchBHYT);
     document.getElementById('btn-bulk-submit')?.addEventListener('click', showBulkNopHoSoModal);
 
+    /* Hook modal để tránh kẹt màn mờ khi đóng mà chưa nộp */
+    hookModalUnlock('modalBulkNopHoSo');
+    hookModalUnlock('modalNopHoSoBHYT');
+    hookModalUnlock('modalSuaHoSoBHYT');
+    hookModalUnlock('modalPhieuThu');
+
     /* Router gọi khi vào tab BHYT */
     window.bhyt_wirePage = function(){
       if (window._bhytWired) return;
@@ -1808,6 +1828,7 @@
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
 
 
 
