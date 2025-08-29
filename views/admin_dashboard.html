@@ -1817,6 +1817,26 @@
       iframe.style.height = '100%';
       document.body.appendChild(iframe);
 
+      const css = `
+        <style>
+          @page { size: A5 portrait; margin: 10mm; }
+          html,body{ background:#fff; margin:0; padding:0; height:auto !important; }
+          .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000;
+                    margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px;
+                    page-break-inside: avoid; }
+          .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
+          .receipt-sub{ font-style:italic; }
+          .receipt-meta{ font-size:13px; }
+          .receipt-line{ margin:2mm 0; }
+          .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+          .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
+          .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
+          .row{ display:flex; flex-wrap:nowrap; width:100%; }
+          .col{ flex:1 1 0; }
+          .text-center{ text-align:center; }
+        </style>
+      `;
+
       const content = receipt.outerHTML;
       const doc = iframe.contentDocument || iframe.contentWindow.document;
       doc.open();
@@ -1825,11 +1845,7 @@
         <html>
           <head>
             <title>Phiếu thu</title>
-            <style>
-              @page { margin: 0.5cm; }
-              body { margin: 0; font-family: sans-serif; }
-              #receiptA5 { width: 14.8cm; height: 21cm; margin: 0 auto; padding: 1.5cm; box-sizing: border-box; }
-            </style>
+            ${css}
           </head>
           <body>${content}</body>
         </html>
