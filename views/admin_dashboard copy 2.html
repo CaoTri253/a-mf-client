@@ -1964,7 +1964,10 @@
             qrWrap.innerHTML = '<small>QR quá dài</small>';
           }
         }
-        new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+        const _mEl = document.getElementById('modalPhieuThu');
+        if (_mEl && _mEl.parentElement !== document.body) document.body.appendChild(_mEl);
+        new bootstrap.Modal(_mEl).show();
+
       } finally{ hideLoading(); }
     }
 
@@ -2361,7 +2364,10 @@
             try{ new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR quá dài</small>'; }
           }
 
-          new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+          const _mEl = document.getElementById('modalPhieuThu');
+          if (_mEl && _mEl.parentElement !== document.body) document.body.appendChild(_mEl);
+          new bootstrap.Modal(_mEl).show();
+
           hideLoading();
         }).catch(()=> hideLoading());
       }
