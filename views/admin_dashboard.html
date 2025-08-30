@@ -2348,7 +2348,10 @@
           document.getElementById('rec-months').innerText = String(months);
           document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
           document.getElementById('rec-amount').innerText = Number(amount).toLocaleString('vi-VN');
-          document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount || 0);
+          
+          const moneyText = (window.numberToVietnameseText || window.numberToVietnamese || ((x)=>`${Number(x||0).toLocaleString('vi-VN')} đồng`));
+          document.getElementById('rec-amount-text').innerText = moneyText(amount || 0);
+
           document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || "(Cán bộ)";
 
           const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
