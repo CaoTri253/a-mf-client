@@ -403,6 +403,7 @@
             <button id="adm-btn-reload" class="btn btn-primary">Tải lại</button>
             <button id="adm-btn-add" class="btn btn-success">Thêm học sinh</button>
             <button id="adm-btn-import" class="btn btn-outline-primary">Nhập Excel</button>
+            <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
             <button id="adm-btn-delmany" class="btn btn-danger d-none">Xóa đã chọn</button>
           </div>
 
@@ -2757,6 +2758,12 @@
         hideLoading();
       }
     })();
+  </script>
+
+
+
+  <script>
+    function downloadMauHS() { window.open("../mau_nhap_hocsinh.xlsx", "_blank"); }
   </script>
 </body>
 </html>

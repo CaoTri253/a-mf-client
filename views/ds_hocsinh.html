@@ -986,29 +986,47 @@
         { key: 'ten_cha_me', label: "Tên cha/mẹ" },
         { key: 'ma_truong', label: "Mã trường" }
       ];
+
+      // Kiểm tra các trường bắt buộc không được để trống
       for (let f of required) {
         if (!row[f.key] || String(row[f.key]).trim() === "") {
           return `Dòng ${rowNum}: Trường "${f.label}" không được để trống.`;
         }
       }
+
+      // Kiểm tra định dạng ngày
       if (!isValidDateVN(row.ngay_sinh)) return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không đúng định dạng dd/mm/yyyy.`;
       if (!isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không đúng định dạng dd/mm/yyyy.`;
       if (!isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không đúng định dạng dd/mm/yyyy.`;
 
-      if (!isValidPhoneNumber(row.sdt_lienhe)) return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+      // Kiểm tra định dạng số điện thoại
+      if (row.sdt_lienhe && !isValidPhoneNumber(row.sdt_lienhe)) {
+        return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+      }
+
+      // Kiểm tra số định danh
       if (!isValidSoDinhDanh(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ.`;
 
+      // Kiểm tra số định danh và mã BHXH trùng
       if (soDinhDanhSet.has(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" bị trùng trong file import.`;
       if (maSoBHXHSet.has(row.ma_so_bhxh)) return `Dòng ${rowNum}: Mã số BHXH "${row.ma_so_bhxh}" bị trùng trong file import.`;
       soDinhDanhSet.add(row.so_dinh_danh);
       maSoBHXHSet.add(row.ma_so_bhxh);
 
+      // Kiểm tra số định danh và mã BHXH đã tồn tại trên hệ thống
       if (existedSoDinhDanhSet.has(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" đã tồn tại trên hệ thống.`;
       if (existedMaSoBHXHSet.has(row.ma_so_bhxh)) return `Dòng ${rowNum}: Mã số BHXH "${row.ma_so_bhxh}" đã tồn tại trên hệ thống.`;
 
+      // Kiểm tra lớp học của học sinh phải trùng với lớp mà user đang quản lý
+      if (String(row.lop_hoc).trim() !== String(user.lop_hoc).trim()) {
+        return `Dòng ${rowNum}: Lớp học "${row.lop_hoc}" trong file không khớp với lớp học bạn đang quản lý (${user.lop_hoc}).`;
+      }
+
+      // Kiểm tra mã trường phải trùng với mã trường của người dùng
       if (String(row.ma_truong).trim() !== String(user.ma_truong).trim()) {
         return `Dòng ${rowNum}: Mã trường trong file (${row.ma_truong}) không khớp với tài khoản hiện tại (${user.ma_truong}).`;
       }
+
       return null;
     }
 
