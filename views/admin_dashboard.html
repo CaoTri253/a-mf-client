@@ -2331,40 +2331,94 @@
       function bhytp_todayText(){ const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`; }
       function bhytp_onPrintReceipt(row){
         getTenTruong(bhyt_user.ma_truong).then(truong=>{
-          const lop = row.lop_hoc || "—";
-          const months = parseInt(row.so_thang_dong||"12",10);
-          const amount = parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
+          const lop    = row.lop_hoc || "—";
+          const months = parseInt(row.so_thang_dong || "12", 10);
+          const amount = parseInt((row.so_tien || "0").toString().replace(/[^\d]/g,''), 10) || 0;
+
           const end = row.han_su_dung_bhyt_moi || row.ngay_het_han_bhyt_moi || "";
-          const e = bhytp_parseDate(end);
-          let startText="—",endText="(không xác định)";
-          if(e && months>0){ const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1); startText=bhytp_formatVN(s); endText=bhytp_formatVN(e); }
-
-          document.getElementById('rec-school').innerText = truong;
-          document.getElementById('rec-class').innerText = lop;
-          document.getElementById('rec-date-today').innerText = bhytp_todayText();
-          document.getElementById('rec-student-name').innerText = row.ho_ten_hoc_sinh || "";
-          document.getElementById('rec-address').innerText = row.dia_chi || "";
-          document.getElementById('rec-content').innerText = `Thu tiền BHYT - ${lop}`;
-          document.getElementById('rec-months').innerText = String(months);
-          document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
-          document.getElementById('rec-amount').innerText = Number(amount).toLocaleString('vi-VN');
-          document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount || 0);
-          document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || "(Cán bộ)";
-
-          const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
-          try{
-            const text = buildQRPayload(bhyt_user.ma_truong, truong, lop, row.ho_ten_hoc_sinh || "", months, endText);
-            new QRCode(qrBox,{text, width:90, height:90, correctLevel: QRCode.CorrectLevel.L});
-          }catch(e2){
-            const initials = (str)=>String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase();
-            const fb=`MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
-            try{ new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR quá dài</small>'; }
+          const e   = bhytp_parseDate(end);
+          let startText = "—", endText = "(không xác định)";
+          if (e && months > 0){
+            const s = new Date(e.getFullYear(), e.getMonth()-months, e.getDate()+1);
+            startText = bhytp_formatVN(s);
+            endText   = bhytp_formatVN(e);
           }
 
+          // Gán dữ liệu cho phiếu
+          document.getElementById('rec-school').innerText       = truong;
+          document.getElementById('rec-class').innerText        = lop;
+          document.getElementById('rec-date-today').innerText   = bhytp_todayText();
+          document.getElementById('rec-student-name').innerText = row.ho_ten_hoc_sinh || "";
+          document.getElementById('rec-address').innerText      = row.dia_chi || "";
+          document.getElementById('rec-content').innerText      = `Thu tiền BHYT - ${lop}`;
+          document.getElementById('rec-months').innerText       = String(months);
+          document.getElementById('rec-range').innerText        = `từ ngày ${startText} đến ngày ${endText}`;
+          document.getElementById('rec-amount').innerText       = Number(amount).toLocaleString('vi-VN');
+          document.getElementById('rec-amount-text').innerText  = numberToVietnameseText(amount || 0);
+          document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || "(Cán bộ)";
+
+          const qrBox = document.getElementById('receipt-qr');
+          qrBox.innerHTML = "";
+
+          // Ảnh rỗng 1x1 dùng khi QR quá dài/không render được nhưng vẫn cần <img> cho hàm in
+          const BLANK_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8/5+hHgAH+wKTfVQZqQAAAABJRU5ErkJggg==';
+
+          // Helper: vẽ QR -> đổi <canvas> thành <img dataURL>
+          function renderQRAsImage(text){
+            // vẽ QR (qrcodejs thường render sync)
+            new QRCode(qrBox, { text, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.L });
+
+            // đổi canvas -> img để printReceiptOnly() phát hiện được
+            const cv = qrBox.querySelector('canvas');
+            if (cv) {
+              try {
+                const img = new Image();
+                img.src   = cv.toDataURL('image/png');
+                img.alt   = 'QR';
+                img.style.display   = 'block';
+                img.style.maxWidth  = '100%';
+                img.style.maxHeight = '100%';
+                qrBox.innerHTML = '';
+                qrBox.appendChild(img);
+                return;
+              } catch (_) { /* fallthrough */ }
+            }
+            // Nếu không có canvas (hoặc toDataURL lỗi), vẫn đặt 1 ảnh rỗng để tránh treo
+            const img = new Image();
+            img.src = BLANK_PNG;
+            img.alt = 'QR error';
+            qrBox.innerHTML = '';
+            qrBox.appendChild(img);
+          }
+
+          // Tạo nội dung QR
+          try {
+            const text = buildQRPayload(
+              bhyt_user.ma_truong, truong, lop,
+              row.ho_ten_hoc_sinh || "", months, endText
+            );
+            renderQRAsImage(text);
+          } catch (e1){
+            // Nếu payload dài quá, rút gọn và thử lại
+            const initials = (str)=> String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase();
+            const fb = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(lop).slice(0,12)};N=${initials(row.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
+            try { renderQRAsImage(fb); }
+            catch (e2) {
+              // Cuối cùng vẫn đảm bảo có <img>
+              const img = new Image();
+              img.src = BLANK_PNG;
+              img.alt = 'QR error';
+              qrBox.innerHTML = '';
+              qrBox.appendChild(img);
+            }
+          }
+
+          // Hiện modal xem trước
           new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
           hideLoading();
         }).catch(()=> hideLoading());
       }
+
 
       /* Xuất ảnh thẻ (clone node, scale cao) */
       window.bhytp_downloadCardImage = async function(){
