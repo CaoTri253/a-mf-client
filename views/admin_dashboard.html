@@ -983,7 +983,7 @@
   function adm_isValidPhone(s){ return /^0\d{9}$/.test(String(s||'').trim()); }
   function adm_isValidSdd(s){ return /^\d{12}$/.test(String(s||'').trim()); }
 
-  // Validate từng dòng import (tham khảo validateImportRowNew bên ds_hocsinh.html)
+  // Validate từng dòng import
   function adm_validateImportRowNew(
     row, rowNum,
     soDinhDanhSet, maSoBHXHSet,
@@ -1005,15 +1005,28 @@
       ['ten_cha_me', 'Tên cha/mẹ'],
       ['ma_truong', 'Mã trường']
     ];
-    for (const [k,label] of required){
+    // Kiểm tra các trường bắt buộc
+    for (const [k, label] of required){
       if (!row[k] || String(row[k]).trim()===''){
         return `Dòng ${rowNum}: Trường "${label}" không được để trống.`;
       }
     }
+
+    // Kiểm tra lớp
+    if (!row.lop_hoc || String(row.lop_hoc).trim() === '') {
+      return `Dòng ${rowNum}: Trường "Lớp" không được để trống.`;
+    }
+
+    // Kiểm tra số điện thoại hợp lệ
+    if (!adm_isValidPhone(row.sdt_lienhe)) {
+      return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+    }
+
+    // Kiểm tra định dạng ngày hợp lệ
     if (!adm_isValidDateVN(row.ngay_sinh)) return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không hợp lệ.`;
     if (!adm_isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không hợp lệ.`;
     if (!adm_isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không hợp lệ.`;
-    if (!adm_isValidPhone(row.sdt_lienhe)) return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+
     if (!adm_isValidSdd(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ. Số định danh phải gồm 12 số!`;
 
     if (requiredMaTruong && String(row.ma_truong).trim() !== String(requiredMaTruong).trim()){
@@ -1032,7 +1045,8 @@
     maSoBHXHSet.add(ms);
     soDinhDanhSet.add(sdd);
     return "";
-  }
+}
+
 
 
 
@@ -1463,7 +1477,12 @@
           showToast(msg, 'danger');
         }
 
-      } finally { hideLoading(); }
+      } catch (err) {
+        hideLoading();
+        console.error(err);
+        err.textContent = 'Đã có lỗi xảy ra khi xử lý tệp!';
+        showToast('Đã có lỗi xảy ra khi xử lý tệp!', 'danger');
+      }
     });
   }
   </script>

@@ -915,6 +915,7 @@
         }
       } catch (err) {
         hideLoading();
+        console.error(err);
         errorDiv.innerText = "Lỗi đọc file hoặc dữ liệu không đúng định dạng!\nChi tiết: " + (err.message || err);
       }
     }
