@@ -1474,16 +1474,9 @@
 
   <!-- ====== KHỐI BHYT CHO ADMIN ===== -->
   <!-- ====== KHỐI BHYT CHƯA THU ===== -->
-
   <script>
     /* ================== BHYT – CHƯA THU (fixed v2.4) ================== */
     /* YÊU CẦU: đã có API_BASE và nạp qrcode.min.js + html2canvas.min.js */
-
-
-    // Alias để tương thích tên hàm đọc số tiền
-    if (typeof window.numberToVietnameseText !== 'function' && typeof window.numberToVietnamese === 'function') {
-      window.numberToVietnameseText = window.numberToVietnamese;
-    }
 
     /* ===== Fallback Loading ===== */
     (function ensureLoading(){
@@ -1914,9 +1907,7 @@
 
     /* ===== Phiếu thu (Preview & In TRONG TRANG) ===== */
     async function openPreviewReceipt(stt){
-      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt));
-      if(!hs) return;
-
+      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       showLoading();
       try{
         const school = await getTenTruong(bhyt_user.ma_truong);
@@ -1924,56 +1915,58 @@
         const months = '12';
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
-        // Điền dữ liệu phiếu
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
         document.getElementById('rec-class').innerText = hs.lop_hoc||'—';
         document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh||'—';
         document.getElementById('rec-address').innerText = hs.dia_chi||'—';
         document.getElementById('rec-content').innerText = 'Thu Bảo hiểm y tế (BHYT) học sinh';
         document.getElementById('rec-months').innerText = months;
-
         const startDate = formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1));
         document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
         document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
-
-        // Đảm bảo hàm đọc tiền có sẵn (alias để tránh thiếu tên hàm)
-        const moneyText = (window.numberToVietnameseText || window.numberToVietnamese || ((x)=>`${Number(x||0).toLocaleString('vi-VN')} đồng`));
-        document.getElementById('rec-amount-text').innerText = moneyText(amount||0);
-
+        document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
         document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || '—';
-        const t=new Date();
-        document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
-
-        // QR (bọc try/catch riêng, KHÔNG được throw)
-        const qrWrap = document.getElementById('receipt-qr');
+        const t=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
+        const qrWrap = document.getElementById('receipt-qr'); 
         qrWrap.innerHTML = "";
+        const schoolName = document.getElementById('schoolName').innerText.trim();
+        const classCode = hs.lop_hoc || "";
+        const studentName = hs.ho_ten_hoc_sinh || "";
+        const endText = exp;
+
+        
+        const primaryText = buildQRPayload(
+          bhyt_user.ma_truong,
+          schoolName,
+          classCode,
+          studentName,
+          months,
+          endText
+        );
         try {
-          const primaryText = buildQRPayload(
-            bhyt_user.ma_truong,
-            document.getElementById('schoolName').innerText.trim(),
-            hs.lop_hoc || "",
-            hs.ho_ten_hoc_sinh || "",
-            months,
-            exp
-          );
-          new QRCode(qrWrap, { text: primaryText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.L });
+          new QRCode(qrWrap, {
+            text: primaryText,
+            width: 96,
+            height: 96,
+            correctLevel: QRCode.CorrectLevel.L
+          });
         } catch (e) {
-          console.warn('[BHYT] QR overflow, dùng fallback', e); // <-- bỏ logPrefix
-          try{
-            const fallbackText = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(hs.lop_hoc||"").slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${exp}`;
-            new QRCode(qrWrap, { text: fallbackText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.L });
-          }catch(e2){
+          console.warn(logPrefix, "QR overflow, fallback", e);
+          const fallbackText = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(studentName)};M=${months};E=${endText}`;
+          try {
+            new QRCode(qrWrap, {
+              text: fallbackText,
+              width: 96,
+              height: 96,
+              correctLevel: QRCode.CorrectLevel.L
+            });
+          } catch (e2) {
             qrWrap.innerHTML = '<small>QR quá dài</small>';
           }
         }
-
-        // LUÔN mở modal, kể cả khi QR lỗi
         new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
-      } finally {
-        hideLoading();
-      }
+      } finally{ hideLoading(); }
     }
-
 
 
     function buildQRPayload(maTruong, school, lop, ten, thang, hanSuDung) {
@@ -2355,10 +2348,7 @@
           document.getElementById('rec-months').innerText = String(months);
           document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
           document.getElementById('rec-amount').innerText = Number(amount).toLocaleString('vi-VN');
-          
-          const moneyText = (window.numberToVietnameseText || window.numberToVietnamese || ((x)=>`${Number(x||0).toLocaleString('vi-VN')} đồng`));
-          document.getElementById('rec-amount-text').innerText = moneyText(amount || 0);
-
+          document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount || 0);
           document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || "(Cán bộ)";
 
           const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
