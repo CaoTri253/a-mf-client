@@ -1,80 +1,40 @@
-/* Anti-DevTools v1.8 – client-side hardening (best-effort, non-intrusive) */
+/* Anti-DevTools v1.9 – relaxed (low false-positive) */
 (function () {
   'use strict';
 
-  // ⛔️ Do NOT run anti-devtools on the anti_spam page itself
-  if (/\/views\/anti_spam\.html$/i.test(location.pathname)) {
-    return;
-  }
+  // Do not run on anti_spam page itself
+  if (/\/views\/anti_spam\.html$/i.test(location.pathname)) return;
 
-  // Use absolute redirect to avoid duplicate /views/views when current page is under /views/
+  // Absolute redirect to avoid /views/views duplication
   var REDIRECT = new URL('/views/anti_spam.html', location.origin).href;
 
-  var OBFUSCATE_INTERVAL = 600;
-  var CHECK_INTERVAL = 400;
-  var SIZE_THRESHOLD = 160;
-  var DRIFT_THRESHOLD = 120;
-  var obfTimer = null, chkTimer = null, lastTick = Date.now();
+  // Relaxed thresholds / checks
+  var CHECK_INTERVAL = 600;   // check less frequently
+  var SIZE_THRESHOLD = 300;   // larger threshold to reduce false positives
+
+  var chkTimer = null;
 
   function hardRedirect() {
     try { window.stop && window.stop(); } catch (_) {}
     try { location.replace(REDIRECT); } catch (_) { location.href = REDIRECT; }
   }
 
-  function startObfuscation() {
-    if (obfTimer) return;
-    try {
-      var junk = function () {
-        try {
-          console.clear && console.clear();
-          var s = '';
-          for (var i = 0; i < 128; i++) {
-            s += String.fromCharCode(0x2580 + Math.floor(Math.random() * 128));
-          }
-          var box = '%c' + s + '\\n' + s.split('').reverse().join('');
-          console.log(box, 'font-size:1px; line-height:1px;');
-        } catch (_) {}
-      };
-      var methods = ['log','info','warn','error','debug','table','dir'];
-      methods.forEach(function (m) {
-        if (!console[m]) return;
-        Object.defineProperty(console, m, {
-          configurable: false, enumerable: true, writable: false, value: function () { return; }
-        });
-      });
-      obfTimer = setInterval(junk, OBFUSCATE_INTERVAL);
-    } catch (_) {}
-  }
-
+  // Keep only the size-based heuristic and resize trigger
   function sizeHeuristicOpen() {
-    var w = window.outerWidth - window.innerWidth;
-    var h = window.outerHeight - window.innerHeight;
+    var w = Math.abs(window.outerWidth - window.innerWidth);
+    var h = Math.abs(window.outerHeight - window.innerHeight);
     return (w > SIZE_THRESHOLD) || (h > SIZE_THRESHOLD);
   }
 
-  function driftHeuristicOpen() {
-    var now = Date.now();
-    var drift = now - lastTick - CHECK_INTERVAL;
-    lastTick = now;
-    return drift > DRIFT_THRESHOLD;
-  }
-
-  function breakpointHeuristicOpen() {
-    var t0 = performance.now();
-    debugger;
-    var t1 = performance.now();
-    return (t1 - t0) > 20;
-  }
-
+  // Disable breakpoint & drift heuristics to avoid incidental triggers
   function isDevtoolsLikelyOpen() {
     try {
       if (sizeHeuristicOpen()) return true;
-      if (driftHeuristicOpen()) return true;
-      if (breakpointHeuristicOpen()) return true;
     } catch (_) {}
     return false;
   }
 
+  // Block common devtools hotkeys (best-effort)
   function blockHotkeys(e) {
     if (e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
     var ctrl = e.ctrlKey || e.metaKey;
@@ -85,24 +45,19 @@
   window.addEventListener('keypress', blockHotkeys, {capture:true, passive:false});
   window.addEventListener('keyup', blockHotkeys, {capture:true, passive:false});
 
+  // React immediately on large layout change (dock devtools)
   window.addEventListener('resize', function () {
-    if (sizeHeuristicOpen()) {
-      try { clearInterval(chkTimer); } catch(_) {}
-      hardRedirect();
-      startObfuscation();
-    }
+    if (sizeHeuristicOpen()) hardRedirect();
   }, {passive:true});
 
+  // Periodic check (relaxed)
   function tick() {
     if (isDevtoolsLikelyOpen()) {
       hardRedirect();
-      startObfuscation();
     }
   }
-  lastTick = Date.now();
   chkTimer = setInterval(tick, CHECK_INTERVAL);
   try { tick(); } catch (_) {}
 
-  // IMPORTANT: Removed previous window.API_BASE getter hook to avoid breaking app API calls.
-  // Your app should define window.API_BASE normally in js/api.js (e.g., window.API_BASE = 'https://abt-medu.com/api';)
+  // Note: does not touch window.API_BASE or any app globals.
 })();
