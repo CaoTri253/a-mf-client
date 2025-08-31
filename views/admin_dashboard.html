@@ -31,13 +31,70 @@
     .nav-item.active{ background:rgba(59,130,246,.35); color:#fff; }
     .nav-item .bi{ font-size:18px; width:22px; text-align:center; }
 
+    @supports (height: 100svh){
+      .sidebar{ height:100svh; }
+    }
+
+    /* Chỉ phần menu cuộn, tránh “kẹt” chiều cao trong flex */
+    .sidebar-scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+
+
+    /* Đáy sidebar luôn thấy được, thêm safe-area cho mobile */
+    .sidebar-bottom{
+      position: sticky; bottom: 0;
+      padding-top: 8px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,.35) 40%, rgba(15,23,42,.6) 100%);
+    }
 
     /* Phân cách menu và logout */
     .sidebar hr{ border:none; border-top:1px solid rgba(255,255,255,.2); margin:12px 0; }
     .logout{ margin-top:8px; }
 
-    /* Footer nhỏ ở dưới cùng */
-    .sidebar footer{ text-align:center; font-size:16px; color:#d1d5db; margin-top:12px; }
+    /* Nút đăng xuất ở đáy: kích thước gọn, rõ hover */
+    .sidebar-bottom .nav-item{
+      margin: 0;                 /* gọn sát đáy */
+      padding: 10px 12px;
+    }
+    .sidebar-bottom .nav-item:hover{
+      background: rgba(255,255,255,.10);
+    }
+
+    /* Footer bản quyền nhỏ, cân màu */
+    .sidebar footer{
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.2;
+      color: #d1d5db;
+      margin-top: 8px;
+      opacity: .9;
+    }
+
+    /* ===== Tối ưu cho màn hình thấp (laptop 13" hoặc cửa sổ nhỏ) ===== */
+    @media (max-height: 720px){
+      .brand{ padding-bottom: 10px; margin-bottom: 6px; }
+      .nav-item{ padding: 8px 10px; }
+      .nav-section{ margin-top: 6px; }
+    }
+
+    /* ===== Cuộn mượt và đẹp (tùy chọn) ===== */
+    .sidebar-scroll{ scroll-behavior: smooth; }
+    .sidebar-scroll::-webkit-scrollbar{ width: 8px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.25);
+      border-radius: 8px;
+    }
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover{
+      background: rgba(255,255,255,.35);
+    }
+
+    /* Tôn trọng người dùng giảm chuyển động (tùy chọn) */
+    @media (prefers-reduced-motion: reduce){
+      .sidebar{ scroll-behavior: auto; }
+      .sidebar-scroll{ scroll-behavior: auto; }
+    }
+
+
 
 
     /* ===== Content ===== */
@@ -213,14 +270,12 @@
         <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
         <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
         <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
+      </div>
+
+      <div class="sidebar-bottom">
         <hr>
-        <div class="logout">
-          <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
-        </div>
-        
-        <footer>
-          Copyright &copy; ABT Medu 2025
-        </footer>
+        <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
+        <footer>Copyright &copy; ABT Medu 2025</footer>
       </div>
     </aside>
 
