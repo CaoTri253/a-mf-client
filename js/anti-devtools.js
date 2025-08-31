@@ -2,7 +2,13 @@
 (function () {
   'use strict';
 
-  var REDIRECT = 'anti_spam.html';
+  /* đặt ngay sau 'use strict'; */
+  if (/\/views\/anti_spam\.html$/i.test(location.pathname)) {
+    // Không chạy cơ chế anti-devtools trên chính trang cảnh báo
+    return;
+  }
+
+  var REDIRECT = new URL('/views/anti_spam.html', location.origin).href;
   var OBFUSCATE_INTERVAL = 600;
   var CHECK_INTERVAL = 400;
   var SIZE_THRESHOLD = 160;
