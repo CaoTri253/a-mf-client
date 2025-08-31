@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>😈 Anti‑Spam | Bắt quả tang đang soi DevTools!</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    :root{
+      --bg1:#0f0c29; --bg2:#302b63; --bg3:#24243e;
+      --card:#11131aee; --txt:#f2f5ff; --muted:#aab2d5;
+      --accent:#00e5ff; --accent2:#ff00e6; --warning:#ffd500;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--txt);
+      background: linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+      background-size: 300% 300%;
+      animation: bgshift 22s ease infinite;
+      overflow:hidden;
+    }
+    @keyframes bgshift{
+      0%,100%{background-position: 0% 50%}
+      50%{background-position: 100% 50%}
+    }
+    .wrap{
+      position:relative;
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .card{
+      width:min(920px,92vw);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid #2a2f42;
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      padding: clamp(18px, 3vw, 32px);
+      position:relative;
+      overflow:hidden;
+    }
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: conic-gradient(from 210deg at 50% 50%, transparent 0 30%, rgba(0,229,255,.15) 40% 42%, transparent 52% 100%);
+      filter: blur(20px);
+      z-index:0;
+      pointer-events:none;
+    }
+    .row{display:flex; gap:22px; align-items:center; flex-wrap:wrap;}
+    .hero{
+      flex:1 1 420px;
+      z-index:1;
+    }
+    .hero h1{
+      font-size: clamp(28px, 4.6vw, 52px);
+      line-height:1.05;
+      margin:0 0 12px 0;
+      letter-spacing:.5px;
+      font-weight:900;
+    }
+    .glitch{
+      position:relative; display:inline-block;
+      text-shadow: 2px 0 var(--accent), -2px 0 var(--accent2);
+      animation: jolt 1.2s infinite steps(2);
+    }
+    .glitch:before, .glitch:after{
+      content: attr(data-text);
+      position:absolute; left:0; top:0;
+      clip-path: inset(0 0 0 0);
+      mix-blend-mode:screen;
+      opacity:.8;
+    }
+    .glitch:before{ transform: translate(2px,-1px); color:var(--accent); }
+    .glitch:after{ transform: translate(-2px,1px); color:var(--accent2); }
+    @keyframes jolt{
+      0%,100%{ transform: translate(0,0) }
+      50%{ transform: translate(1px,-1px) }
+    }
+    .hero p{
+      margin:.2rem 0 1rem 0;
+      color:var(--muted);
+      font-size: clamp(14px, 2vw, 18px);
+    }
+    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; }
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      padding: 12px 18px; border-radius:14px; font-weight:700;
+      background:linear-gradient(90deg, var(--accent), var(--accent2));
+      color:#111;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn.secondary{
+      background:#1c2030; color:#e7e9ff; border:1px solid #323958;
+    }
+    .btn:hover{ transform: translateY(-1px) scale(1.01); filter:saturate(1.2) }
+    .btn:active{ transform: translateY(0) scale(.99) }
+    .troll{
+      flex: 0 1 260px;
+      background: radial-gradient(120px 80px at 60% 40%, rgba(255,255,255,.15), rgba(255,255,255,0));
+      border-radius: 22px;
+      padding:12px;
+      z-index:1;
+    }
+    .troll svg{ width:min(320px, 70vw); height:auto; display:block; margin:auto; filter: drop-shadow(0 10px 30px rgba(0,0,0,.55)); }
+    .ticker{
+      margin-top:16px;
+      font-size:14px; color:#c4c9ff;
+      white-space:nowrap; overflow:hidden; border-top:1px dashed #2f3553;
+      padding-top:10px;
+      position:relative;
+    }
+    .ticker span{ display:inline-block; padding-left:100%; animation: marquee 14s linear infinite; }
+    @keyframes marquee{
+      0%{ transform: translateX(0) }
+      100%{ transform: translateX(-100%) }
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      background:#211f3a; border:1px solid #3b3a64; color:#cbd0ff;
+      padding:8px 12px; border-radius:999px; font-size:12px; font-weight:700;
+    }
+    .emoji-pop{ animation: pop .9s ease forwards; transform: scale(.7); opacity:0; }
+    @keyframes pop{ to{ transform:scale(1); opacity:1 } }
+    .footer{
+      margin-top:12px; font-size:12px; color:#94a1ff; opacity:.85;
+    }
+    .warn{
+      display:inline-flex; align-items:center; gap:8px; font-weight:800; color:var(--warning);
+      text-shadow: 0 0 8px rgba(255,213,0,.25);
+    }
+    /* Small confetti */
+    .confetti{ position:fixed; inset:0; pointer-events:none; z-index:2; }
+    .piece{
+      position:absolute; width:8px; height:8px; background:#fff; opacity:.8;
+      border-radius:2px; animation: fall 1200ms linear forwards;
+    }
+    @keyframes fall{
+      to{ transform: translateY(100vh) rotate(360deg); opacity:0 }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="confetti" id="confetti"></div>
+    <div class="card">
+      <div class="row">
+        <div class="hero">
+          <div class="badge"><span class="emoji-pop">🕵️</span> BẮT QUẢ TANG ĐANG SOI</div>
+          <h1 class="glitch" aria-label="Bắt quả tang!" data-text="Bắt quả tang!">Bắt quả tang!</h1>
+          <p><span class="warn">⚠️ Này thám tử:</span> Bạn vừa mở DevTools. <br>Ở đây không có kho báu đâu. Chỉ có <em>đống code</em> lộn xộn và một đống bẫy dành cho người tò mò 🫠.</p>
+          <p><strong>Tip:</strong> Muốn học web? Hỏi mình đàng hoàng, đừng lén lút. Còn muốn hack? Ờm… <em>404 kỹ năng</em> 😜</p>
+
+          <div class="actions">
+            <button class="btn" id="btnBack">⬅️ Quay về trang trước</button>
+            <button class="btn secondary" id="btnClose">🧹 Đóng DevTools giùm cái</button>
+          </div>
+
+          <div class="ticker">
+            <span>Hé lô đồ tò mò • Mã xịn ở server nha • Đừng xem trộm, coi chừng lộ bí mật ™ •
+              Nếu bạn còn mở DevTools, chúng tôi còn meme • Kiểm tra quyền hạn trước khi nghịch • Chúc một ngày <em>ít tò mò</em> hơn! 🚫🔧</span>
+          </div>
+
+          <div class="footer">Nếu bạn là QA/Dev hợp pháp: hãy liên hệ quản trị để whitelisting. Còn không thì… quay xe ngay nhé 🚗💨</div>
+        </div>
+
+        <div class="troll" aria-hidden="true">
+          <!-- Inline SVG “troll-ish” face (no external image needed) -->
+          <svg viewBox="0 0 340 300" role="img">
+            <defs>
+              <radialGradient id="g1" cx="50%" cy="40%" r="70%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#d1d1d1"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="170" cy="150" rx="150" ry="120" fill="url(#g1)" />
+            <ellipse cx="120" cy="130" rx="30" ry="22" fill="#fff"/>
+            <ellipse cx="220" cy="130" rx="30" ry="22" fill="#fff"/>
+            <circle cx="115" cy="132" r="8" fill="#111"/>
+            <circle cx="215" cy="132" r="8" fill="#111"/>
+            <path d="M70 95 Q170 40 270 95" stroke="#111" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <path d="M70 205 Q170 270 270 205" stroke="#111" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M85 195 Q170 240 255 195" stroke="#ff2b70" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <rect x="40" y="230" width="260" height="18" rx="9" fill="#111" opacity=".18"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Vibe & small troll behaviors */
+    (function(){
+      // Nổ confetti mini khi vào trang
+      function popConfetti(){
+        var el = document.getElementById('confetti');
+        if(!el) return;
+        for(var i=0;i<42;i++){
+          var p = document.createElement('div');
+          p.className='piece';
+          p.style.left = Math.random()*100 + 'vw';
+          p.style.top = (-10 - Math.random()*30) + 'px';
+          p.style.background = ['#00e5ff','#ff00e6','#ffd500','#ffffff'][Math.floor(Math.random()*4)];
+          p.style.animationDelay = (Math.random()*500)+'ms';
+          el.appendChild(p);
+          setTimeout((function(n){ return function(){ n.remove(); } })(p), 1600);
+        }
+      }
+      popConfetti();
+
+      // Nút quay lại
+      document.getElementById('btnBack').addEventListener('click', function(){
+        if(document.referrer){ history.back(); }
+        else{ location.href = '/'; }
+      });
+
+      // Nút “đóng DevTools giùm cái” — chỉ là meme :))
+      document.getElementById('btnClose').addEventListener('click', function(){
+        alert('DevTools đóng chưa? Nếu chưa thì… đóng đi rồi quay lại 😎');
+        popConfetti();
+      });
+
+      // Khoá một số thao tác tiếp tục “soi”
+      function block(e){
+        if(e.key === 'F12'){ e.preventDefault(); e.stopPropagation(); return false; }
+        var ctrl = e.ctrlKey || e.metaKey;
+        if(ctrl && e.shiftKey && ['I','J','C'].indexOf(e.key.toUpperCase())>=0){ e.preventDefault(); e.stopPropagation(); return false; }
+        if(ctrl && e.key.toUpperCase()==='U'){ e.preventDefault(); e.stopPropagation(); return false; }
+      }
+      window.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+      window.addEventListener('keydown', block, {capture:true});
+      window.addEventListener('keypress', block, {capture:true});
+      window.addEventListener('keyup', block, {capture:true});
+
+      // Một chút auto-redirect nếu DevTools vẫn mở (tuỳ chọn)
+      try{
+        var t=0;
+        setInterval(function(){
+          // heuristic nhẹ nhàng
+          var w = window.outerWidth - window.innerWidth;
+          var h = window.outerHeight - window.innerHeight;
+          if(w>160 || h>160) t++; else t=0;
+          if(t>4){ location.href='/'; } // quay về trang chủ sau vài lần phát hiện
+        }, 500);
+      }catch(_){}
+    })();
+  </script>
+</body>
+</html>
