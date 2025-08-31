@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var REDIRECT = 'views/anti_spam.html';
+  var REDIRECT = 'anti_spam.html';
   var OBFUSCATE_INTERVAL = 600;
   var CHECK_INTERVAL = 400;
   var SIZE_THRESHOLD = 160;
