@@ -187,6 +187,25 @@
     </script>
 
 
+
+    <script>
+      // Cho phép nhấn Enter để đăng nhập
+      document.getElementById("login-password").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+          event.preventDefault(); // tránh reload trang
+          handleLogin();
+        }
+      });
+
+      document.getElementById("login-sdt").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleLogin();
+        }
+      });
+    </script>
+
+
     <!-- Loading Spinner -->
     <div id="loadingSpinner" style="
       display:none;
