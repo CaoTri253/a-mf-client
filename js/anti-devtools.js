@@ -1,19 +1,20 @@
-/* Anti-DevTools v1.7 – client-side hardening (best-effort) */
+/* Anti-DevTools v1.8 – client-side hardening (best-effort, non-intrusive) */
 (function () {
   'use strict';
 
-  /* đặt ngay sau 'use strict'; */
+  // ⛔️ Do NOT run anti-devtools on the anti_spam page itself
   if (/\/views\/anti_spam\.html$/i.test(location.pathname)) {
-    // Không chạy cơ chế anti-devtools trên chính trang cảnh báo
     return;
   }
 
+  // Use absolute redirect to avoid duplicate /views/views when current page is under /views/
   var REDIRECT = new URL('/views/anti_spam.html', location.origin).href;
+
   var OBFUSCATE_INTERVAL = 600;
   var CHECK_INTERVAL = 400;
   var SIZE_THRESHOLD = 160;
   var DRIFT_THRESHOLD = 120;
-  var devtoolsOpen = false, obfTimer = null, chkTimer = null, lastTick = Date.now();
+  var obfTimer = null, chkTimer = null, lastTick = Date.now();
 
   function hardRedirect() {
     try { window.stop && window.stop(); } catch (_) {}
@@ -37,14 +38,9 @@
       var methods = ['log','info','warn','error','debug','table','dir'];
       methods.forEach(function (m) {
         if (!console[m]) return;
-        var orig = console[m];
         Object.defineProperty(console, m, {
-          configurable: false,
-          enumerable: true,
-          writable: false,
-          value: function () { return; }
+          configurable: false, enumerable: true, writable: false, value: function () { return; }
         });
-        window['__c_' + m] = orig;
       });
       obfTimer = setInterval(junk, OBFUSCATE_INTERVAL);
     } catch (_) {}
@@ -91,7 +87,6 @@
 
   window.addEventListener('resize', function () {
     if (sizeHeuristicOpen()) {
-      devtoolsOpen = true;
       try { clearInterval(chkTimer); } catch(_) {}
       hardRedirect();
       startObfuscation();
@@ -100,7 +95,6 @@
 
   function tick() {
     if (isDevtoolsLikelyOpen()) {
-      devtoolsOpen = true;
       hardRedirect();
       startObfuscation();
     }
@@ -109,10 +103,6 @@
   chkTimer = setInterval(tick, CHECK_INTERVAL);
   try { tick(); } catch (_) {}
 
-  try {
-    Object.defineProperty(window, 'API_BASE', {
-      get: function () { hardRedirect(); return undefined; },
-      configurable: false
-    });
-  } catch (_) {}
+  // IMPORTANT: Removed previous window.API_BASE getter hook to avoid breaking app API calls.
+  // Your app should define window.API_BASE normally in js/api.js (e.g., window.API_BASE = 'https://abt-medu.com/api';)
 })();
