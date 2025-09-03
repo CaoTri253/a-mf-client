@@ -219,7 +219,7 @@
           <div class="ggrid">
             <div class="gitem">
               <label class="form-label" for="sua-ma-so-bhxh">Mã số BHXH</label>
-              <input class="form-control" id="sua-ma-so-bhxh" placeholder="Mã số BHXH"/>
+              <input class="form-control" id="sua-ma-so-bhxh" placeholder="Mã số BHXH" disabled/>
             </div>
             <div class="gitem">
               <label class="form-label" for="sua-ho-ten-hs">Họ tên học sinh</label>
@@ -259,7 +259,7 @@
 
             <div class="gitem">
               <label class="form-label" for="sua-so-dinh-danh">Số định danh</label>
-              <input class="form-control" id="sua-so-dinh-danh" placeholder="Số định danh"/>
+              <input class="form-control" id="sua-so-dinh-danh" placeholder="Số định danh" disabled/>
             </div>
             <div class="gitem">
               <label class="form-label" for="sua-ten-cha-me">Tên cha/mẹ học sinh</label>
@@ -792,7 +792,7 @@
       let tenChaMe = document.getElementById('sua-ten-cha-me').value.trim();
       let maSoBHXH = document.getElementById('sua-ma-so-bhxh').value.trim();
 
-      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop || !sdtLienHe || !soDinhDanh || !tenChaMe || !maSoBHXH) {
+      if (!hoTen || !ngaySinh || !gioiTinh || !diaChi || !lop || !sdtLienHe || !tenChaMe) {
         showError('suahs-error', "Vui lòng nhập đầy đủ tất cả các trường!");
         return;
       }
