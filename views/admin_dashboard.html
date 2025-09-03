@@ -1918,6 +1918,12 @@
           forceUnlockScroll();
           toastSuccess('Đã lưu thay đổi');
           await fetchChuaThuHocsinh();
+
+          // cũng reload danh sách ĐÃ THU nếu hàm reload có tồn tại
+          if (window.bhyt_paid_reload) {
+            await window.bhyt_paid_reload();
+          }
+
         } else {
           document.getElementById('shs-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
         }
@@ -2320,11 +2326,13 @@
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===1 && shs){
           return `<div class="action-btns">
+            <button class="btn btn-sm btn-warning" onclick="bhytp_onEditIdx(${i})">Sửa hồ sơ</button>
             <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button>
             <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
           </div>`;
         }
         return `<div class="action-btns">
+          <button class="btn btn-sm btn-warning" onclick="bhytp_onEditIdx(${i})">Sửa hồ sơ</button>
           <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
         </div>`;
       }
@@ -2390,6 +2398,61 @@
 
       window.bhytp_onViewCardIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onViewCard(row), 50); };
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
+
+
+
+
+      // === Sửa hồ sơ (ĐÃ THU) dùng lại modal & luồng của "Chưa thu"
+      window.bhytp_onEditIdx = async (i) => {
+        const row = window._bhytpView && window._bhytpView[i];
+        if (!row) return;
+        try {
+          showLoading();
+
+          // dùng lại biến toàn cục đang phục vụ submitSuaHoSoBHYT()
+          window._currentHS_Sua = row;
+
+          // điền sẵn dữ liệu
+          const hotenEl = document.getElementById('shs-hoten');
+          const nsEl = document.getElementById('shs-ngaysinh');
+          const nkEl = document.getElementById('shs-noikham');
+          if (hotenEl) hotenEl.value = row.ho_ten_hoc_sinh || "";
+          if (nsEl) nsEl.value = (typeof displayNgaySinh === 'function'
+            ? displayNgaySinh(row.ngay_sinh || "")
+            : (row.ngay_sinh || ""));
+          if (nkEl) nkEl.value = row.noi_kham_bhyt || "";
+
+          // lấy số tháng hiện tại nếu có
+          let months = '12';
+          try {
+            const info = await getHosoBHYTByHS(row.so_dinh_danh, bhyt_user.ma_truong, row.lop_hoc || "");
+            months = String(info?.data?.so_thang_dong || '12');
+          } catch(e) { /* ignore */ }
+
+          const rSel = document.querySelector(`input[name="shs-thang"][value="${months}"]`);
+          if (rSel) rSel.checked = true;
+
+          // tính trước hạn/tiền xem trước
+          try {
+            const g = await ensureGiaBHYT();
+            const calc = computeAmountAndExp(row.ngay_het_han_bhyt, months, g?.gia_tien);
+            const expEl = document.getElementById('shs-exp-preview');
+            const amtEl = document.getElementById('shs-amount-preview');
+            const noteEl = document.getElementById('shs-exp-note');
+            if (expEl) expEl.innerText = calc.exp;
+            if (amtEl) amtEl.innerText = (calc.amount || 0).toLocaleString('vi-VN');
+            if (noteEl) noteEl.innerText = calc.note || "";
+          } catch(e2) { /* ignore */ }
+
+          // mở modal sửa hồ sơ
+          const mEl = document.getElementById('modalSuaHoSoBHYT');
+          if (mEl) new bootstrap.Modal(mEl).show();
+        } finally {
+          hideLoading();
+        }
+      };
+
+
 
       function bhytp_onViewCard(row){
         const LOGO_BHXH = "../assets/image/bhxh-logo.png";
