@@ -943,59 +943,42 @@
             </div>
 
 
-            <!-- Modal Sửa hồ sơ - TAB ĐÃ THU -->
+            <!-- Modal Sửa hồ sơ - TAB ĐÃ THU (đồng bộ với bản gốc) -->
             <div class="modal fade" id="modalSuaHoSoBHYT_Paid" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title">Sửa hồ sơ BHYT (ĐÃ THU)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+              <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Sửa hồ sơ BHYT</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="bhytp-shs-hoten" readonly></div>
+                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="bhytp-shs-ngaysinh" readonly></div>
+                  <div class="mb-2">
+                    <label>Nơi khám BHYT:</label>
+                    <input class="form-control" id="bhytp-shs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
                   </div>
-                  <div class="modal-body">
-                    <div id="bhytp-shs-error" class="text-danger small mb-2"></div>
-                    <div class="row g-3">
-                      <div class="col-md-6">
-                        <label class="form-label">Họ tên</label>
-                        <input id="bhytp-shs-hoten" class="form-control" />
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label">Ngày sinh</label>
-                        <input id="bhytp-shs-ngaysinh" class="form-control" />
-                      </div>
-                      <div class="col-md-12">
-                        <label class="form-label">Nơi khám BHYT</label>
-                        <input id="bhytp-shs-noikham" class="form-control" />
-                      </div>
-
-                      <div class="col-md-12">
-                        <label class="form-label me-3">Số tháng đóng</label>
-                        <div>
-                          <label class="me-3"><input type="radio" name="bhytp-shs-thang" value="3"> 3 tháng</label>
-                          <label class="me-3"><input type="radio" name="bhytp-shs-thang" value="6"> 6 tháng</label>
-                          <label class="me-3"><input type="radio" name="bhytp-shs-thang" value="9"> 9 tháng</label>
-                          <label class="me-3"><input type="radio" name="bhytp-shs-thang" value="12" checked> 12 tháng</label>
-                        </div>
-                      </div>
-
-                      <div class="col-md-6">
-                        <div class="form-text">Hạn thẻ dự kiến:</div>
-                        <div id="bhytp-shs-exp-preview" class="fw-semibold"></div>
-                        <div id="bhytp-shs-exp-note" class="small text-muted"></div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="form-text">Số tiền dự kiến:</div>
-                        <div id="bhytp-shs-amount-preview" class="fw-semibold"></div>
-                      </div>
+                  <div class="mb-2">
+                    <label>Số tháng đóng:</label>
+                    <div>
+                      <input type="radio" name="bhytp-shs-thang" value="3" id="bhytp-shs-thang-3"> <label for="bhytp-shs-thang-3">3 tháng</label>
+                      <input type="radio" name="bhytp-shs-thang" value="6" id="bhytp-shs-thang-6" class="ms-3"> <label for="bhytp-shs-thang-6">6 tháng</label>
+                      <input type="radio" name="bhytp-shs-thang" value="12" id="bhytp-shs-thang-12" class="ms-3"> <label for="bhytp-shs-thang-12">12 tháng</label>
                     </div>
                   </div>
-
-                  <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button class="btn btn-primary" onclick="bhytp_submitSuaHoSoBHYT_Paid()">Lưu thay đổi</button>
+                  <div class="mt-2 small">
+                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="bhytp-shs-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="bhytp-shs-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong>Số tiền cần đóng:</strong> <span id="bhytp-shs-amount-preview" class="fw-bold text-danger">—</span></div>
                   </div>
+                  <div id="bhytp-shs-error" class="text-danger" style="min-height:18px"></div>
                 </div>
-              </div>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button class="btn btn-primary" onclick="bhytp_submitSuaHoSoBHYT_Paid()">Lưu thay đổi</button>
+                </div>
+              </div></div>
             </div>
+
 
           </div>
 
@@ -2533,55 +2516,60 @@
         if (!row) return;
         try {
           showLoading();
-          window._currentHS_Sua = row; // dùng lại biến hiện có để giữ ngữ cảnh
 
-          // Điền dữ liệu vào modal PAID
-          const hotenEl = document.getElementById('bhytp-shs-hoten');
-          const nsEl   = document.getElementById('bhytp-shs-ngaysinh');
-          const nkEl   = document.getElementById('bhytp-shs-noikham');
-          if (hotenEl) hotenEl.value = row.ho_ten_hoc_sinh || "";
-          if (nsEl)    nsEl.value    = (typeof displayNgaySinh === 'function' ? displayNgaySinh(row.ngay_sinh || "") : (row.ngay_sinh || ""));
-          if (nkEl)    nkEl.value    = row.noi_kham_bhyt || "";
+          // dùng biến chung để submit
+          window._currentHS_Sua = row;
 
-          // Lấy số tháng hiện tại từ backend (nếu có)
+          // điền dữ liệu readonly + nơi khám
+          const hoten = row.ho_ten_hoc_sinh || "";
+          const ngaysinh = (typeof displayNgaySinh === 'function')
+            ? displayNgaySinh(row.ngay_sinh || "")
+            : (row.ngay_sinh || "");
+          document.getElementById('bhytp-shs-hoten').value = hoten;
+          document.getElementById('bhytp-shs-ngaysinh').value = ngaysinh;
+          document.getElementById('bhytp-shs-noikham').value = row.noi_kham_bhyt || "";
+
+          // đổ datalist nơi khám (dùng chung 'noikham-list' như bản gốc)
+          const dl = document.getElementById('noikham-list');
+          if (dl && Array.isArray(window.bhytNOIKHAM_SUGGEST)) {
+            dl.innerHTML = bhytNOIKHAM_SUGGEST.map(x => `<option value="${x}"></option>`).join('');
+          }
+
+          // chọn sẵn số tháng (3/6/12)
           let months = '12';
           try {
             const info = await getHosoBHYTByHS(row.so_dinh_danh, bhyt_user.ma_truong, row.lop_hoc || "");
             months = String(info?.data?.so_thang_dong || '12');
-          } catch(e) {}
-          const rSel = document.querySelector(`input[name="bhytp-shs-thang"][value="${months}"]`);
-          if (rSel) rSel.checked = true;
+          } catch (e) { /* ignore */ }
+          const sel = document.querySelector(`input[name="bhytp-shs-thang"][value="${months}"]`);
+          if (sel) sel.checked = true;
 
-          // Preview hạn / tiền
-          try {
-            const g = await ensureGiaBHYT();
-            const calc = computeAmountAndExp(row.ngay_het_han_bhyt, months, g?.gia_tien);
-            document.getElementById('bhytp-shs-exp-preview').innerText    = calc.exp || "";
-            document.getElementById('bhytp-shs-amount-preview').innerText = (calc.amount||0).toLocaleString('vi-VN');
-            document.getElementById('bhytp-shs-exp-note').innerText       = calc.note || "";
-          } catch(e2) {}
+          // tính preview hạn & tiền như modal gốc
+          const g = await ensureGiaBHYT();
+          const { exp, amount, note } = computeAmountAndExp(row.ngay_het_han_bhyt, months, g?.gia_tien);
+          document.getElementById('bhytp-shs-exp-preview').innerText = exp;
+          document.getElementById('bhytp-shs-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+          document.getElementById('bhytp-shs-exp-note').innerText = note || "";
 
-          // Bind 1 lần: đổi tháng -> cập nhật preview
-          if (!window.__bhytp_paid_month_listener_bound){
-            window.__bhytp_paid_month_listener_bound = true;
-            document.querySelectorAll('input[name="bhytp-shs-thang"]').forEach(r => {
-              r.addEventListener('change', async () => {
-                try{
-                  const months = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || '12';
-                  const g = await ensureGiaBHYT();
-                  const calc = computeAmountAndExp(window._currentHS_Sua?.ngay_het_han_bhyt, months, g?.gia_tien);
-                  document.getElementById('bhytp-shs-exp-preview').innerText    = calc.exp || "";
-                  document.getElementById('bhytp-shs-amount-preview').innerText = (calc.amount||0).toLocaleString('vi-VN');
-                  document.getElementById('bhytp-shs-exp-note').innerText       = calc.note || "";
-                }catch(_){}
-              });
-            });
-          }
+          // mở đúng modal ĐÃ THU
+          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_Paid')).show();
 
-          // Mở modal PAID
-          const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
-          if (mEl) new bootstrap.Modal(mEl).show();
-        } finally { hideLoading(); }
+          // gắn events đổi tháng để cập nhật preview (giống cách làm bên gốc)
+          const recalc = async () => {
+            const m = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || '12';
+            const g2 = await ensureGiaBHYT();
+            const { exp: e2, amount: a2, note: n2 } = computeAmountAndExp(row.ngay_het_han_bhyt, m, g2?.gia_tien);
+            document.getElementById('bhytp-shs-exp-preview').innerText = e2;
+            document.getElementById('bhytp-shs-amount-preview').innerText = (a2 || 0).toLocaleString('vi-VN');
+            document.getElementById('bhytp-shs-exp-note').innerText = n2 || "";
+          };
+          ['bhytp-shs-thang-3','bhytp-shs-thang-6','bhytp-shs-thang-12'].forEach(id=>{
+            document.getElementById(id)?.addEventListener('change', recalc);
+          });
+
+        } finally {
+          hideLoading();
+        }
       };
 
 
