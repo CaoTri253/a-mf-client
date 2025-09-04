@@ -170,6 +170,23 @@
   }
 
 
+
+
+  /* Ẩn phân trang trên mobile & tablet */
+  @media (max-width: 999px) {
+    nav .pagination { display: none !important; }
+  }
+
+
+
+  /* Cột họ tên: không xuống dòng, có độ rộng tối thiểu, không giới hạn max-width */
+  th.th-hoten, td.td-hoten {
+    white-space: nowrap;
+    min-width: 220px;   /* chỉnh lớn/nhỏ tùy nhu cầu */
+    max-width: none;
+  }
+
+
   
   </style>
 </head>
@@ -330,7 +347,22 @@
     function showLoading(){document.getElementById('loadingSpinner').style.display='flex'}
     function hideLoading(){document.getElementById('loadingSpinner').style.display='none'}
     function goBack(){showLoading();location.href="bhyt_giaovien.html"}
-    function detectPageSize(){const w=innerWidth;if(w<=600)pageSize=5;else if(w<=999)pageSize=10;else pageSize=20}
+
+    // <= Thêm ngay phía trên detectPageSize()
+    const NO_PAGING_MAX_WIDTH = 999;
+    function isNoPagingDevice() {
+      return window.innerWidth <= NO_PAGING_MAX_WIDTH; // mobile + tablet
+    }
+
+    function detectPageSize() {
+      if (isNoPagingDevice()) {
+        pageSize = Number.MAX_SAFE_INTEGER; // gom toàn bộ vào 1 trang
+      } else {
+        pageSize = 20; // desktop giữ nguyên
+      }
+    }
+
+    // function detectPageSize(){const w=innerWidth;if(w<=600)pageSize=5;else if(w<=999)pageSize=10;else pageSize=20}
     addEventListener('resize',()=>{const old=pageSize;detectPageSize();if(old!==pageSize){currentPage=1;renderAllView()}});
 
     /* ====== API ====== */
@@ -373,7 +405,7 @@
           <tr>
             <th class="th-action">Thao tác</th>
             <th>Trạng thái</th>
-            <th class="sortable" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
+            <th class="sortable th-hoten" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
             <th class="sortable" data-field="ngay_sinh">Ngày sinh ${sortIcon('ngay_sinh')}</th>
             <th class="sortable" data-field="so_dinh_danh">Số định danh ${sortIcon('so_dinh_danh')}</th>
             <th>Nơi khám</th>
@@ -402,7 +434,7 @@
         return `<tr>
           <td>${actionsCell(iView,r)}</td>
           <td>${statusCell(r)}</td>
-          <td>${escapeHtml(r.ho_ten_hoc_sinh||"")}</td>
+          <td class="td-hoten">${escapeHtml(r.ho_ten_hoc_sinh||"")}</td>
           <td>${escapeHtml(displayDate(r.ngay_sinh)||"")}</td>
           <td>${escapeHtml(r.so_dinh_danh||"")}</td>
           <td>${escapeHtml(r.noi_kham_bhyt||"")}</td>
@@ -415,7 +447,17 @@
     }
 
     function renderPagination(){
-      const el=document.getElementById('pagination');let html='';if(totalPages<=1){el.innerHTML='';return}
+      const el=document.getElementById('pagination');
+      if (!el) return;
+
+      // Mobile/tablet: không phân trang
+      if (isNoPagingDevice()) {
+        el.innerHTML = '';
+        return;
+      }
+
+
+      let html='';if(totalPages<=1){el.innerHTML='';return}
       const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="gotoPage(${p})">${lab}</a></li>`;
       html+=add(Math.max(1,currentPage-1),'&laquo;',false,currentPage===1);
       for(let i=1;i<=totalPages;i++) html+=add(i,i,i===currentPage,false);
@@ -424,7 +466,56 @@
     }
     function gotoPage(p){if(p<1||p>totalPages) return; currentPage=p; renderAllView()}
     function doSearch(){const q=document.getElementById('search-box').value.trim().toLowerCase();lastFiltered=!q?allData:allData.filter(h=> (h.ho_ten_hoc_sinh||"").toLowerCase().includes(q)||(displayDate(h.ngay_sinh)||"").toLowerCase().includes(q)||(h.so_dinh_danh||"").toLowerCase().includes(q)||(h.noi_kham_bhyt||"").toLowerCase().includes(q));currentPage=1;renderAllView()}
-    function renderAllView(){let data=lastFiltered||allData;if(sortField){data=[...data].sort((a,b)=>{let av=(a[sortField]??"").toString().toLowerCase(),bv=(b[sortField]??"").toString().toLowerCase();if(!isNaN(+av)&&!isNaN(+bv)){av=+av;bv=+bv}return av<bv?-sortDir:av>bv?sortDir:0})}window._viewData=data;totalRecords=data.length;totalPages=Math.max(1,Math.ceil(totalRecords/pageSize));document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;const start=(currentPage-1)*pageSize;renderDanhSachHS(data.slice(start,start+pageSize),start);renderPagination()}
+    // function renderAllView(){let data=lastFiltered||allData;if(sortField){data=[...data].sort((a,b)=>{let av=(a[sortField]??"").toString().toLowerCase(),bv=(b[sortField]??"").toString().toLowerCase();if(!isNaN(+av)&&!isNaN(+bv)){av=+av;bv=+bv}return av<bv?-sortDir:av>bv?sortDir:0})}window._viewData=data;totalRecords=data.length;totalPages=Math.max(1,Math.ceil(totalRecords/pageSize));document.getElementById('total-hs').innerText=`(${totalRecords} hồ sơ)`;const start=(currentPage-1)*pageSize;renderDanhSachHS(data.slice(start,start+pageSize),start);renderPagination()}
+    function renderAllView(){
+      try{
+        let data = lastFiltered || allData;
+
+        if (sortField) {
+          data = [...data].sort((a,b) => {
+            if (sortField === 'ho_ten_hoc_sinh') {
+              // ✅ Sort theo TÊN (given name), bỏ dấu + không phân biệt hoa/thường
+              const av = toSortKeyVN(getTen(a.ho_ten_hoc_sinh));
+              const bv = toSortKeyVN(getTen(b.ho_ten_hoc_sinh));
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+
+              // Tie-breaker: nếu trùng tên, so theo họ tên đầy đủ (không dấu)
+              const af = toSortKeyVN(a.ho_ten_hoc_sinh || '');
+              const bf = toSortKeyVN(b.ho_ten_hoc_sinh || '');
+              if (af < bf) return -sortDir;
+              if (af > bf) return  sortDir;
+              return 0;
+            }
+
+            // Các cột khác: giữ logic cũ (ưu tiên số, rồi chuỗi)
+            let av = (a[sortField] ?? '');
+            let bv = (b[sortField] ?? '');
+            const aNum = typeof av === 'number' || (typeof av === 'string' && av.trim() !== '' && !isNaN(+av));
+            const bNum = typeof bv === 'number' || (typeof bv === 'string' && bv.trim() !== '' && !isNaN(+bv));
+            if (aNum && bNum) { av = +av; bv = +bv; }
+            else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+
+            if (av < bv) return -sortDir;
+            if (av > bv) return  sortDir;
+            return 0;
+          });
+        }
+
+        window._viewData = data;
+        totalRecords = data.length;
+        totalPages   = Math.max(1, Math.ceil(totalRecords / pageSize));
+        document.getElementById('total-hs').innerText = `(${totalRecords} hồ sơ)`;
+
+        const start = (currentPage - 1) * pageSize;
+        renderDanhSachHS(data.slice(start, start + pageSize), start);
+        renderPagination();
+      }catch(e){
+        console.error('[DaThamGia] renderAllView error', e);
+      }
+    }
+
+
 
     /* ====== Actions (Xem thẻ / In) – kèm loading ====== */
     function onViewCardIdx(i){const row=window._viewData[i]; if(!row) return; showLoading(); setTimeout(()=>onViewCard(row), 50);}
@@ -632,6 +723,24 @@
     function escapeHtml(s){return (s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 
     (async function(){ await fetchDaThuBHYT(); })();
+
+
+
+
+
+
+    // === SẮP XẾP CỘT HỌ TÊN THEO ALPHABET ===
+    function getTen(fullname){
+      const s = String(fullname || '').trim().replace(/\s+/g, ' ');
+      if (!s) return '';
+      const parts = s.split(' ');
+      return parts[parts.length - 1]; // lấy TÊN (từ cuối)
+    }
+    function toSortKeyVN(s){
+      const base = (typeof stripVN === 'function') ? stripVN(s) : String(s);
+      return String(base).toLowerCase();
+    }
+
   </script>
 </body>
 </html>
