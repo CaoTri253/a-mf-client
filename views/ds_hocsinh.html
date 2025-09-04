@@ -96,6 +96,23 @@
       background: #fff; border: 2px solid #eee; color: #2563eb; transition: box-shadow 0.12s;
     }
     .btn-back:hover { box-shadow: 0 4px 24px #2563eb33; color: #fff; background: #2563eb; }
+
+
+
+    /* Ẩn phân trang khi màn hình ≤ 999px */
+    @media (max-width: 999px){
+      nav .pagination { display: none !important; }
+    }
+
+
+    /* Cột Họ tên: không wrap, rộng tối thiểu để không gãy dòng */
+    th.th-hoten, td.td-hoten{
+      white-space: nowrap;
+      min-width: 220px;  /* có thể chỉnh */
+      max-width: none;
+    }
+
+
   </style>
 
   <!-- Flatpickr -->
@@ -400,7 +417,8 @@
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
 
     let pageSize = 20, currentPage = 1, totalPages = 1, totalRecords = 0;
-    let sortField = "", sortDir = 1, selectedRows = [], allData = [], lastPageData = [];
+    let sortField = "ho_ten_hoc_sinh", sortDir = 1, selectedRows = [], allData = [], lastPageData = [];
+
 
     // ==== HÀM XỬ LÝ NGÀY ====
     function parseDDMMYYYY(str) {
@@ -465,20 +483,57 @@
       new bootstrap.Modal(document.getElementById('modalConfirm')).show();
     }
 
-    // ==== PHÂN TRANG, SẮP XẾP, SEARCH ====
-    function detectPageSize() {
-      const width = window.innerWidth;
-      if (width <= 600) pageSize = 2;
-      else if (width <= 999) pageSize = 5;
-      else pageSize = 20;
+
+    // ===== No-paging khi màn hình ≤ 999px
+    const NO_PAGING_MAX_WIDTH = 999;
+    function isNoPagingDevice(){ return window.innerWidth <= NO_PAGING_MAX_WIDTH; }
+
+    // THAY TOÀN BỘ detectPageSize cũ:
+    function detectPageSize(){
+      if (isNoPagingDevice()){
+        pageSize = Number.MAX_SAFE_INTEGER;   // gom hết vào 1 trang
+      } else {
+        pageSize = 20;                        // desktop giữ 20
+      }
     }
+
+    // // ==== PHÂN TRANG, SẮP XẾP, SEARCH ====
+    // function detectPageSize() {
+    //   const width = window.innerWidth;
+    //   if (width <= 600) pageSize = 2;
+    //   else if (width <= 999) pageSize = 5;
+    //   else pageSize = 20;
+    // }
+
+
     window.addEventListener('resize', function () {
       const prevPageSize = pageSize;
       detectPageSize();
       if (pageSize !== prevPageSize) { currentPage = 1; renderAllView(); }
     });
+
+
+
+    // ==== HỖ TRỢ XỬ LÝ DỮ LIỆU, SẮP XẾP, LỌC CỘT TÊN THEO ALPHABET ====
+    function stripVN(s){
+      return String(s||"").normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'')
+        .replace(/đ/g,'d').replace(/Đ/g,'D');
+    }
+    function getTen(fullname){
+      const s = String(fullname||'').trim().replace(/\s+/g,' ');
+      if (!s) return '';
+      const parts = s.split(' ');
+      return parts[parts.length - 1]; // lấy TÊN (given name)
+    }
+    function keyVN(s){ return stripVN(String(s||'')).toLowerCase(); }
+
+
+
+
     function getFilteredSortedData() {
-      let q = document.getElementById('search-box').value.trim().toLowerCase();
+      const q = document.getElementById('search-box').value.trim().toLowerCase();
+
       let filtered = allData.filter(hs =>
         !q ||
         (hs.ho_ten_hoc_sinh || "").toLowerCase().includes(q) ||
@@ -487,18 +542,53 @@
         (hs.so_dinh_danh || "").toLowerCase().includes(q) ||
         (hs.ten_cha_me || "").toLowerCase().includes(q)
       );
+
       if (sortField) {
-        filtered.sort(function (a, b) {
-          let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+        filtered.sort((a,b)=>{
+          if (sortField === 'ho_ten_hoc_sinh'){
+            // ✅ Sort theo TÊN, không dấu
+            const av = keyVN(getTen(a.ho_ten_hoc_sinh));
+            const bv = keyVN(getTen(b.ho_ten_hoc_sinh));
+            if (av < bv) return -sortDir;
+            if (av > bv) return  sortDir;
+
+            // tie-breaker: full name (không dấu)
+            const af = keyVN(a.ho_ten_hoc_sinh);
+            const bf = keyVN(b.ho_ten_hoc_sinh);
+            if (af < bf) return -sortDir;
+            if (af > bf) return  sortDir;
+            return 0;
+          }
+
+          // Các cột khác giữ nguyên
+          let av = (a[sortField] || "").toString().toLowerCase();
+          let bv = (b[sortField] || "").toString().toLowerCase();
           if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
-          if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+          if (av < bv) return -sortDir;
+          if (av > bv) return  sortDir;
+          return 0;
         });
       }
       return filtered;
     }
+
+
+
+
+
     function doSort(field) { if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; } renderAllView(); }
     function renderPagination() {
       const pagin = document.getElementById('pagination');
+
+      if (!pagin) return;
+
+      // Màn hình nhỏ: không hiển thị phân trang
+      if (isNoPagingDevice()){
+        pagin.innerHTML = '';
+        return;
+      }
+
+
       pagin.innerHTML = '';
       if (totalPages <= 1) return;
       pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
@@ -552,7 +642,7 @@
           <th><input type="checkbox" id="chk-all" onclick="toggleSelectAll(this)"></th>
           <th class="th-action">Thao tác</th>
           <th class="sortable" onclick="doSort('ma_so_bhxh')">Mã số BHXH${sortIcon('ma_so_bhxh')}</th>
-          <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên${sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable th-hoten" onclick="doSort('ho_ten_hoc_sinh')">Họ tên${sortIcon('ho_ten_hoc_sinh')}</th>
           <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
           <th class="sortable" onclick="doSort('gioi_tinh')">Giới tính${sortIcon('gioi_tinh')}</th>
           <th class="sortable" onclick="doSort('dia_chi')">Địa chỉ${sortIcon('dia_chi')}</th>
@@ -575,7 +665,7 @@
             </div>
           </td>
           <td>${hs.ma_so_bhxh||""}</td>
-          <td>${hs.ho_ten_hoc_sinh||""}</td>
+          <td class="td-hoten">${hs.ho_ten_hoc_sinh||""}</td>
           <td>${displayNgay(hs.ngay_sinh)}</td>
           <td>${hs.gioi_tinh||""}</td>
           <td>${hs.dia_chi||""}</td>
