@@ -2503,7 +2503,9 @@
           const recalc = async () => {
             const m = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || '12';
             const g2 = await ensureGiaBHYT();
-            const { exp: e2, amount: a2, note: n2 } = computeAmountAndExp(row.ngay_het_han_bhyt, m, g2?.gia_tien);
+            const oldEnd = displayNgaySinh(row.ngay_het_han_bhyt || "");
+            const { exp:e2, amount:a2, note:n2 } = computeAmountAndExp(oldEnd, m, g2?.gia_tien);
+
             document.getElementById('bhytp-shs-exp-preview').innerText = e2;
             document.getElementById('bhytp-shs-amount-preview').innerText = (a2 || 0).toLocaleString('vi-VN');
             document.getElementById('bhytp-shs-exp-note').innerText = n2 || "";
@@ -2557,7 +2559,9 @@
 
           // 2) Tính tiền & hạn sử dụng (y như “Chưa thu”)
           const gia = await ensureGiaBHYT();
-          const { exp, amount } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
+          const oldEnd = displayNgaySinh(_currentHS_Sua.ngay_het_han_bhyt || "");
+          const { exp, amount } = computeAmountAndExp(oldEnd, months, gia?.gia_tien);
+
           const rate = (typeof getRateByMonths === "function") ? getRateByMonths(gia, months) : 0;
           const hoa_hong = parseFloat((amount * (rate || 0)).toFixed(2));
 
