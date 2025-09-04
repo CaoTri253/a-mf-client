@@ -8,6 +8,9 @@
   <script src="/js/anti-devtools.js"></script>
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+
+
   <style>
     body{background:#f8f9fa;min-height:100vh;padding:20px}
     .sticky-header-box{position:sticky;top:0;z-index:999;background:#f8f9fa;padding-bottom:2px}
@@ -293,17 +296,27 @@
       return `<span class="status-badge status-pending">Đang xử lý</span>`;
     }
     function actionsCell(i,row){
-      const st=toTrangThai(row.trang_thai),shs=getSoHoSo(row);
-      if (st===1 && shs){
+      const st = toTrangThai(row.trang_thai);
+      const shs = getSoHoSo(row);
+
+      if (st === 1 && shs){
+        // ĐÃ KÍCH HOẠT: giữ nút Xem thẻ, đổi nút In sang icon printer
         return `<div class="action-btns">
                   <button class="btn btn-sm btn-info" onclick="onViewCardIdx(${i})">Xem thẻ</button>
-                  <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button>
+                  <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})" title="In phiếu thu">
+                    <i class="bi bi-printer"></i>
+                  </button>
                 </div>`;
       }
+
+      // Các trạng thái khác: chỉ cho in phiếu thu (icon printer)
       return `<div class="action-btns">
-                <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})">In phiếu thu</button>
+                <button class="btn btn-sm btn-primary" onclick="onPrintReceiptIdx(${i})" title="In phiếu thu">
+                  <i class="bi bi-printer"></i>
+                </button>
               </div>`;
     }
+
     function buildTableHead(){
       return `<thead><tr>
         <th class="th-action">Thao tác</th>
