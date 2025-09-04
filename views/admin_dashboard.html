@@ -1975,66 +1975,6 @@
 
 
 
-
-    // Sửa hồ sơ từ modal PAID (dùng lại submitSuaHoSoBHYT)
-    // Submit riêng cho modal ĐÃ THU: gọi thẳng API SuaHoSoBHYT
-    async function bhytp_submitSuaHoSoBHYT_Paid(){
-      const err = (msg)=>{ const el=document.getElementById('bhytp-shs-error'); if(el) el.textContent=msg||""; };
-      err("");
-      try{
-        showLoading();
-
-        if(!window._currentHS_Sua){ err('Thiếu thông tin hồ sơ hiện tại.'); return; }
-
-        // Lấy input từ modal PAID
-        const noikham = document.getElementById('bhytp-shs-noikham')?.value?.trim() || "";
-        const months  = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || '12';
-
-        // Tính hạn, tiền, hoa hồng (tận dụng hàm sẵn có)
-        const g = await ensureGiaBHYT();
-        const {exp, amount} = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
-        const rate = getRateByMonths(g, months);
-        const hh   = parseFloat((amount * rate).toFixed(2));
-
-        // Gọi API sửa hồ sơ
-        const res = await suaHoSoBHYTApi({
-          so_dinh_danh: _currentHS_Sua.so_dinh_danh,
-          ma_truong:    bhyt_user.ma_truong,
-          lop_hoc:      _currentHS_Sua.lop_hoc || "",
-          so_thang_dong: months,
-          noi_kham_bhyt: noikham,
-          so_tien:       amount,
-          hoa_hong:      hh,
-          han_su_dung_bhyt_moi: exp
-        });
-
-        if(res?.success){
-          // Đóng modal PAID
-          const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
-          if (mEl){ (bootstrap.Modal.getInstance(mEl) || new bootstrap.Modal(mEl)).hide(); }
-          forceUnlockScroll?.();
-          toastSuccess('Đã lưu thay đổi');
-
-          // Reload danh sách ĐÃ THU
-          if (window.bhyt_paid_reload) {
-            await window.bhyt_paid_reload();
-          } else if (typeof fetchBHYTDaThu === 'function'){
-            await fetchBHYTDaThu();
-          }
-        } else {
-          err(res?.message || 'Lỗi lưu hồ sơ');
-        }
-      } catch(e){
-        console.error(e);
-        err('Đã xảy ra lỗi khi lưu hồ sơ');
-      } finally { hideLoading(); }
-    }
-
-
-
-
-
-
     /* ===== Alias tên hàm theo mẫu ===== */
     window.suaHoSo = (stt)=>showSuaHoSoModal(stt);
     window.inPhieuThu = (stt)=>openPreviewReceipt(stt);
@@ -2509,6 +2449,9 @@
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
 
 
+
+
+
       // === Sửa hồ sơ (ĐÃ THU) ===
       // Mở modal Sửa hồ sơ dành riêng cho TAB ĐÃ THU (không dùng modal cũ)
       window.bhytp_onEditIdx = async (i) => {
@@ -2571,6 +2514,102 @@
           hideLoading();
         }
       };
+
+
+
+
+      // Submit riêng cho modal Sửa hồ sơ (TAB ĐÃ THU) — hành vi giống submitSuaHoSoBHYT bên "Chưa thu"
+      let __bhytp_paid_submitting = false;
+      async function bhytp_submitSuaHoSoBHYT_Paid(){
+        if (__bhytp_paid_submitting) return; // tránh double-click
+        __bhytp_paid_submitting = true;
+
+        const setErr = (msg) => {
+          const el = document.getElementById('bhytp-shs-error');
+          if (el) el.textContent = msg || "";
+        };
+        setErr("");
+
+        try{
+          showLoading();
+
+          // 1) Validate giống mẫu gốc
+          if (!window._currentHS_Sua) {
+            setErr("Thiếu thông tin hồ sơ hiện tại.");
+            toastError("Thiếu thông tin hồ sơ.");
+            return;
+          }
+          const noikham = document.getElementById('bhytp-shs-noikham')?.value?.trim() || "";
+          if (!noikham) {
+            setErr("Vui lòng nhập Nơi khám BHYT.");
+            toastError("Chưa nhập Nơi khám BHYT");
+            document.getElementById('bhytp-shs-noikham')?.focus();
+            return;
+          }
+          const months = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || "";
+          if (!["3","6","12"].includes(months)) {
+            setErr("Vui lòng chọn số tháng đóng (3 / 6 / 12).");
+            toastError("Chưa chọn số tháng đóng");
+            return;
+          }
+
+          // 2) Tính tiền & hạn sử dụng (tận dụng các helper giống mẫu gốc)
+          const gia = await ensureGiaBHYT(); // {gia_tien, ...}
+          const { exp, amount, note } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
+          if (!amount || !exp) {
+            setErr("Không tính được phí hoặc hạn sử dụng. Vui lòng thử lại.");
+            toastError("Không tính được số tiền/hạn thẻ");
+            return;
+          }
+          // Tính hoa hồng nếu mẫu gốc có
+          const rate = (typeof getRateByMonths === "function") ? getRateByMonths(gia, months) : 0;
+          const hoa_hong = parseFloat((amount * (rate || 0)).toFixed(2));
+
+          // 3) Gọi API sửa hồ sơ (cùng payload trường nghĩa như bên gốc)
+          const payload = {
+            so_dinh_danh: _currentHS_Sua.so_dinh_danh,
+            ma_truong:    bhyt_user.ma_truong,
+            lop_hoc:      _currentHS_Sua.lop_hoc || "",
+            so_thang_dong: months,
+            noi_kham_bhyt: noikham,
+            so_tien:       amount,
+            hoa_hong:      hoa_hong,
+            han_su_dung_bhyt_moi: exp
+          };
+
+          // Hàm API đặt tên theo dự án gốc (đổi tên nếu backend bạn khác)
+          const res = await suaHoSoBHYTApi(payload);
+
+          // 4) Xử lý kết quả (toast + reload) giống mẫu gốc
+          if (res?.success) {
+            toastSuccess("Đã lưu thay đổi");
+            // Reload danh sách ĐÃ THU
+            if (typeof window.bhyt_paid_reload === "function") {
+              await window.bhyt_paid_reload();
+            } else if (typeof fetchBHYTDaThu === "function") {
+              await fetchBHYTDaThu();
+            }
+            // Đóng modal
+            const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
+            if (mEl) {
+              (bootstrap.Modal.getInstance(mEl) || new bootstrap.Modal(mEl)).hide();
+            }
+            // (tuỳ chọn) xóa lỗi hiển thị
+            setErr("");
+          } else {
+            const msg = res?.message || "Lỗi lưu hồ sơ";
+            setErr(msg);
+            toastError(msg);
+          }
+        } catch (e) {
+          console.error(e);
+          setErr("Đã xảy ra lỗi khi lưu hồ sơ");
+          toastError("Đã xảy ra lỗi khi lưu hồ sơ");
+        } finally {
+          hideLoading();
+          __bhytp_paid_submitting = false;
+        }
+      }
 
 
 
