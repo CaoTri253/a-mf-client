@@ -2456,68 +2456,41 @@
 
       // === Sửa hồ sơ (ĐÃ THU) ===
       // Mở modal Sửa hồ sơ dành riêng cho TAB ĐÃ THU (không dùng modal cũ)
-      window.bhytp_onEditIdx = async (i) => {
-        const row = window._bhytpView && window._bhytpView[i];
-        if (!row) return;
+      // Dùng cùng cấu trúc như showSuaHoSoModal(stt) bên "Chưa thu"
+      async function bhytp_showSuaHoSoModal(stt){
+        const hs = (bhyt_lastFiltered || bhyt_allData).find(h => String(h.stt) === String(stt));
+        if (!hs) return;
+
+        _currentHS_Sua = hs;           // giống hệt mẫu gốc
+        showLoading();
         try {
-          showLoading();
+          // Điền dữ liệu vào modal ĐÃ THU (id field khác, còn lại y chang luồng)
+          document.getElementById('bhytp-shs-hoten').value    = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('bhytp-shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+          document.getElementById('bhytp-shs-noikham').value  = hs.noi_kham_bhyt || "";
 
-          // dùng biến chung để submit
-          window._currentHS_Sua = row;
+          // Lấy số tháng đang dùng
+          const info   = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
+          const months = String(info?.data?.so_thang_dong || "12");
+          const rSel   = document.querySelector(`input[name="bhytp-shs-thang"][value="${months}"]`);
+          if (rSel) rSel.checked = true;
 
-          // điền dữ liệu readonly + nơi khám
-          const hoten = row.ho_ten_hoc_sinh || "";
-          const ngaysinh = (typeof displayNgaySinh === 'function')
-            ? displayNgaySinh(row.ngay_sinh || "")
-            : (row.ngay_sinh || "");
-          document.getElementById('bhytp-shs-hoten').value = hoten;
-          document.getElementById('bhytp-shs-ngaysinh').value = ngaysinh;
-          document.getElementById('bhytp-shs-noikham').value = row.noi_kham_bhyt || "";
-
-          // đổ datalist nơi khám (dùng chung 'noikham-list' như bản gốc)
-          const dl = document.getElementById('noikham-list');
-          if (dl && Array.isArray(window.bhytNOIKHAM_SUGGEST)) {
-            dl.innerHTML = bhytNOIKHAM_SUGGEST.map(x => `<option value="${x}"></option>`).join('');
-          }
-
-          // chọn sẵn số tháng (3/6/12)
-          let months = '12';
-          try {
-            const info = await getHosoBHYTByHS(row.so_dinh_danh, bhyt_user.ma_truong, row.lop_hoc || "");
-            months = String(info?.data?.so_thang_dong || '12');
-          } catch (e) { /* ignore */ }
-          const sel = document.querySelector(`input[name="bhytp-shs-thang"][value="${months}"]`);
-          if (sel) sel.checked = true;
-
-          // tính preview hạn & tiền như modal gốc
+          // Tính preview hạn & tiền
           const g = await ensureGiaBHYT();
-          const { exp, amount, note } = computeAmountAndExp(row.ngay_het_han_bhyt, months, g?.gia_tien);
-          document.getElementById('bhytp-shs-exp-preview').innerText = exp;
+          const { exp, amount, note } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+          document.getElementById('bhytp-shs-exp-preview').innerText    = exp;
           document.getElementById('bhytp-shs-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
-          document.getElementById('bhytp-shs-exp-note').innerText = note || "";
+          document.getElementById('bhytp-shs-exp-note').innerText       = note || "";
 
-          // mở đúng modal ĐÃ THU
+          // Mở đúng modal của tab ĐÃ THU
           new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_Paid')).show();
-
-          // gắn events đổi tháng để cập nhật preview (giống cách làm bên gốc)
-          const recalc = async () => {
-            const m = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || '12';
-            const g2 = await ensureGiaBHYT();
-            const oldEnd = displayNgaySinh(row.ngay_het_han_bhyt || "");
-            const { exp:e2, amount:a2, note:n2 } = computeAmountAndExp(oldEnd, m, g2?.gia_tien);
-
-            document.getElementById('bhytp-shs-exp-preview').innerText = e2;
-            document.getElementById('bhytp-shs-amount-preview').innerText = (a2 || 0).toLocaleString('vi-VN');
-            document.getElementById('bhytp-shs-exp-note').innerText = n2 || "";
-          };
-          ['bhytp-shs-thang-3','bhytp-shs-thang-6','bhytp-shs-thang-12'].forEach(id=>{
-            document.getElementById(id)?.addEventListener('change', recalc);
-          });
-
+        } catch(e){
+          console.error(e);
         } finally {
           hideLoading();
         }
-      };
+      }
+
 
 
 
