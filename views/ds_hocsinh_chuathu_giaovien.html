@@ -94,6 +94,15 @@
     @media (max-width: 999px) {
       nav .pagination { display: none !important; }
     }
+
+
+    /* Cột họ tên học sinh: không xuống dòng, dãn rộng */
+    td.td-hoten, th.th-hoten {
+      white-space: nowrap;
+      min-width: 220px;   /* bạn có thể tăng lên nếu tên dài hơn */
+      max-width: none;
+    }
+
     
   </style>
 </head>
@@ -1029,7 +1038,7 @@
       <tr>
         <th style="width:42px;"><input type="checkbox" id="chk-bulk-all" onchange="toggleSelectAllBulk(this)"></th>
         <th class="th-action">Thao tác</th>
-        <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
+        <th class="sortable th-hoten" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
         <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
         <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
       </tr></thead><tbody>`;
@@ -1056,7 +1065,7 @@
               ` : ``}
             </div>
           </td>
-          <td>${hs.ho_ten_hoc_sinh || ""}</td>
+          <td class="td-hoten">${hs.ho_ten_hoc_sinh || ""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
           <td>${hs.so_dinh_danh || ""}</td>
         </tr>`;
