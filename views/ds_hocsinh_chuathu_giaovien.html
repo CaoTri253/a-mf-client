@@ -88,6 +88,12 @@
 
     @media print { html, body { height: auto !important; } }
 
+
+
+    /* Ẩn phân trang trên mobile & tablet */
+    @media (max-width: 999px) {
+      nav .pagination { display: none !important; }
+    }
     
   </style>
 </head>
@@ -379,12 +385,31 @@
       return raw;
     }
 
-    function detectPageSize() {
-      const width = window.innerWidth;
-      if (width <= 600) pageSize = 3;
-      else if (width <= 999) pageSize = 7;
-      else pageSize = 20;
+
+    // Phân trang & render danh sách
+    const NO_PAGING_MAX_WIDTH = 999;
+    function isNoPagingDevice() {
+      return window.innerWidth <= NO_PAGING_MAX_WIDTH; // mobile + tablet
     }
+
+
+    // function detectPageSize() {
+    //   const width = window.innerWidth;
+    //   if (width <= 600) pageSize = 3;
+    //   else if (width <= 999) pageSize = 7;
+    //   else pageSize = 20;
+    // }
+
+    function detectPageSize() {
+      if (isNoPagingDevice()) {
+        // “Vô hiệu hóa” phân trang: lấy thật lớn để gom hết vào 1 trang
+        pageSize = Number.MAX_SAFE_INTEGER;
+      } else {
+        // Desktop: giữ phân trang như cũ
+        pageSize = 20;
+      }
+    }
+
 
     window.addEventListener('resize', function() {
       const prevPageSize = pageSize;
@@ -1050,6 +1075,15 @@
 
     function renderPagination() {
       const pagin = document.getElementById('pagination');
+
+      if (!pagin) return;
+
+      // Mobile/tablet: không phân trang
+      if (isNoPagingDevice()) {
+        pagin.innerHTML = '';
+        return;
+      }
+
       pagin.innerHTML = '';
       if (totalPages <= 1) return;
       pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
