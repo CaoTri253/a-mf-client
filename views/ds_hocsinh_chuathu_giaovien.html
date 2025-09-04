@@ -88,7 +88,10 @@
 
     @media print { html, body { height: auto !important; } }
 
-    
+    /* Ẩn thanh phân trang trên mobile & tablet */
+    @media (max-width: 999px) {
+      nav .pagination { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -361,7 +364,7 @@
     let user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user.sdt || user.phan_quyen !== "giao_vien") window.location.href = "../index.html";
     document.getElementById("lop-hoc").innerText = user.lop_hoc || "(chưa xác định)";
-    let pageSize = 20, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [];
+    let pageSize = 20, currentPage = 1, totalRecords = 0, totalPages = 1, sortField = "ho_ten_hoc_sinh", sortDir = 1, allData = [], lastFiltered = [], noPaging = false;
 
     function showLoading() { document.getElementById('loadingSpinner').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingSpinner').style.display = 'none'; }
@@ -381,9 +384,9 @@
 
     function detectPageSize() {
       const width = window.innerWidth;
-      if (width <= 600) pageSize = 3;
-      else if (width <= 999) pageSize = 7;
-      else pageSize = 20;
+      noPaging = width <= 999;                      // <=999px: mobile/tablet => không phân trang
+      pageSize = noPaging ? Number.MAX_SAFE_INTEGER // đủ lớn để lấy hết
+                          : 20;                     // desktop: giữ 20 như cũ
     }
 
     window.addEventListener('resize', function() {
@@ -396,31 +399,75 @@
     });
 
     // ===== GÁN HÀM GLOBAL TRƯỚC doSearch() (fix ReferenceError) =====
+    // window.renderAllView = function renderAllView() {
+    //   try {
+    //     let dataToShow = lastFiltered || allData;
+    //     if (sortField) {
+    //       dataToShow = [...dataToShow].sort(function(a, b) {
+    //         let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+    //         if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+    //         if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+    //       });
+    //     }
+    //     totalRecords = dataToShow.length;
+    //     totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+    //     document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+    //     let start = (currentPage - 1) * pageSize;
+    //     let ds = dataToShow.slice(start, start + pageSize);
+    //     renderDanhSachHS(ds);
+    //     renderPagination();
+    //   } catch (e) {
+    //     console.error(logPrefix, 'renderAllView error', e);
+    //   }
+    // };
+
+
     window.renderAllView = function renderAllView() {
       try {
-        let dataToShow = lastFiltered || allData;
-        if (sortField) {
-          dataToShow = [...dataToShow].sort(function(a, b) {
-            let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
-            if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
-            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
-          });
+        detectPageSize();
+
+        // dữ liệu sau lọc nếu có; nếu không dùng lọc, thay bằng allData trực tiếp
+        let dataToShow = (lastFiltered && lastFiltered.length) ? lastFiltered : allData;
+
+        // LUÔN sort theo họ tên (chuẩn tiếng Việt)
+        const sorted = [...dataToShow].sort((a, b) => 
+          String(a[sortField] ?? "").localeCompare(String(b[sortField] ?? ""), "vi", { sensitivity: "base" })
+        );
+
+        totalRecords = sorted.length;
+        document.getElementById('total-hs')?.innerText = `(${totalRecords} học sinh)`;
+
+        if (noPaging) {
+          totalPages = 1;
+          renderDanhSachHS(sorted);   // không cắt trang
+          renderPagination();         // sẽ tự ẩn theo logic bên dưới
+          return;
         }
-        totalRecords = dataToShow.length;
+
+        // DESKTOP: phân trang như cũ
         totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-        document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
-        let start = (currentPage - 1) * pageSize;
-        let ds = dataToShow.slice(start, start + pageSize);
-        renderDanhSachHS(ds);
+        currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+        const start = (currentPage - 1) * pageSize;
+        const pageSlice = sorted.slice(start, start + pageSize);
+
+        renderDanhSachHS(pageSlice);
         renderPagination();
       } catch (e) {
-        console.error(logPrefix, 'renderAllView error', e);
+        console.error('renderAllView error', e);
       }
     };
 
-    window.doSort = function doSort(field) {
-      if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
-      window.renderAllView();
+
+
+    // window.doSort = function doSort(field) {
+    //   if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
+    //   window.renderAllView();
+    // };
+
+    window.doSort = function doSort(/* field */) {
+      sortField = 'ho_ten_hoc_sinh';
+      sortDir = 1; // cố định A→Z
+      renderAllView();
     };
 
     function doSearch() {
@@ -501,10 +548,17 @@
       }
     }
 
+    // function sortIcon(field) {
+    //   if (sortField !== field) return '';
+    //   return sortDir === 1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>';
+    // }
+
+
     function sortIcon(field) {
-      if (sortField !== field) return '';
-      return sortDir === 1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>';
+      if (field !== 'ho_ten_hoc_sinh') return '';
+      return '<span class="sort-icon" aria-hidden="true">▲</span>';
     }
+
 
     // Gợi ý nơi khám
     const NOIKHAM_SUGGEST = [
@@ -1048,21 +1102,82 @@
       updateBulkButton();
     }
 
+    // function renderPagination() {
+    //   const pagin = document.getElementById('pagination');
+    //   pagin.innerHTML = '';
+    //   if (totalPages <= 1) return;
+    //   pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
+    //   let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
+    //   if (minP > 1) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
+    //   if (minP > 2) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    //   for (let p = minP; p <= maxP; p++) {
+    //     pagin.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`;
+    //   }
+    //   if (maxP < totalPages-1) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    //   if (maxP < totalPages) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
+    //   pagin.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
+    // }
+
+
+
     function renderPagination() {
       const pagin = document.getElementById('pagination');
+      if (!pagin) return;
+
+      // reset
       pagin.innerHTML = '';
-      if (totalPages <= 1) return;
-      pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
-      let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
-      if (minP > 1) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(1);return false;">1</a></li>`;
-      if (minP > 2) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-      for (let p = minP; p <= maxP; p++) {
-        pagin.innerHTML += `<li class="page-item${p===currentPage?' active':''}"><a class="page-link" href="#" onclick="gotoPage(${p});return false;">${p}</a></li>`;
+
+      // MOBILE/TABLET hoặc chỉ có 1 trang => ẩn phân trang
+      if (noPaging || totalPages <= 1) {
+        return;
       }
-      if (maxP < totalPages-1) pagin.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-      if (maxP < totalPages) pagin.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="gotoPage(${totalPages});return false;">${totalPages}</a></li>`;
-      pagin.innerHTML += `<li class="page-item${currentPage===totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1});return false;">Sau</a></li>`;
+
+      // === Nút PREV ===
+      const prev = document.createElement('button');
+      prev.textContent = '‹';
+      prev.className = 'page-btn prev';
+      prev.disabled = currentPage === 1;
+      prev.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderAllView();
+        }
+      };
+      pagin.appendChild(prev);
+
+      // === Các nút số trang ===
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = String(i);
+        btn.className = 'page-btn';
+        if (i === currentPage) {
+          btn.classList.add('active');
+          btn.disabled = true;
+        }
+        btn.onclick = () => {
+          currentPage = i;
+          renderAllView();
+        };
+        pagin.appendChild(btn);
+      }
+
+      // === Nút NEXT ===
+      const next = document.createElement('button');
+      next.textContent = '›';
+      next.className = 'page-btn next';
+      next.disabled = currentPage === totalPages;
+      next.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderAllView();
+        }
+      };
+      pagin.appendChild(next);
     }
+
+
+
+
     window.gotoPage = function(p) { if (p<1||p>totalPages||p===currentPage) return; currentPage = p; window.renderAllView(); };
 
     function goBack() { showLoading(); window.location.href = "bhyt_giaovien.html"; }
@@ -1338,6 +1453,29 @@
         setTimeout(doPrint, 50);
       }
     }
+
+
+
+
+
+
+
+
+
+    // Debounce đơn giản để tránh render quá dày
+    let _rszTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(_rszTimer);
+      _rszTimer = setTimeout(() => {
+        renderAllView();
+      }, 150);
+    });
+
+    // Gọi lần đầu sau khi dữ liệu đã nạp xong:
+    document.addEventListener('DOMContentLoaded', () => {
+      detectPageSize();
+      renderAllView();
+    });
   </script>
 </body>
 </html>
