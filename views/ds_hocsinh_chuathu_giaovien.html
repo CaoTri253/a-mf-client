@@ -430,27 +430,84 @@
     });
 
     // ===== GÁN HÀM GLOBAL TRƯỚC doSearch() (fix ReferenceError) =====
+    // window.renderAllView = function renderAllView() {
+    //   try {
+    //     let dataToShow = lastFiltered || allData;
+    //     if (sortField) {
+    //       dataToShow = [...dataToShow].sort(function(a, b) {
+    //         let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+    //         if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+    //         if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+    //       });
+    //     }
+    //     totalRecords = dataToShow.length;
+    //     totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+    //     document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+    //     let start = (currentPage - 1) * pageSize;
+    //     let ds = dataToShow.slice(start, start + pageSize);
+    //     renderDanhSachHS(ds);
+    //     renderPagination();
+    //   } catch (e) {
+    //     console.error(logPrefix, 'renderAllView error', e);
+    //   }s
+    // };
+
+
     window.renderAllView = function renderAllView() {
       try {
-        let dataToShow = lastFiltered || allData;
+        let dataToShow = (lastFiltered && lastFiltered.length) ? lastFiltered : allData;
+
         if (sortField) {
-          dataToShow = [...dataToShow].sort(function(a, b) {
-            let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
-            if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
-            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+          dataToShow = [...dataToShow].sort(function (a, b) {
+            if (sortField === 'ho_ten_hoc_sinh') {
+              // ✅ Sort theo TÊN (given name), bỏ dấu + không phân biệt hoa/thường
+              const av = toSortKeyVN(getTen(a.ho_ten_hoc_sinh));
+              const bv = toSortKeyVN(getTen(b.ho_ten_hoc_sinh));
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+
+              // Tie-breaker: nếu trùng TÊN, so tiếp theo họ tên đầy đủ (không dấu)
+              const af = toSortKeyVN(a.ho_ten_hoc_sinh || '');
+              const bf = toSortKeyVN(b.ho_ten_hoc_sinh || '');
+              if (af < bf) return -sortDir;
+              if (af > bf) return  sortDir;
+              return 0;
+            } else {
+              // Các cột khác: giữ logic cũ (ưu tiên số, rồi đến chuỗi thường)
+              let av = a[sortField];
+              let bv = b[sortField];
+
+              const aNum = typeof av === 'number' || (typeof av === 'string' && av.trim() !== '' && !isNaN(+av));
+              const bNum = typeof bv === 'number' || (typeof bv === 'string' && bv.trim() !== '' && !isNaN(+bv));
+
+              if (aNum && bNum) {
+                av = +av; bv = +bv;
+              } else {
+                av = String(av ?? '').toLowerCase();
+                bv = String(bv ?? '').toLowerCase();
+              }
+
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+              return 0;
+            }
           });
         }
+
         totalRecords = dataToShow.length;
-        totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+        totalPages   = Math.max(1, Math.ceil(totalRecords / pageSize));
         document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
-        let start = (currentPage - 1) * pageSize;
-        let ds = dataToShow.slice(start, start + pageSize);
+
+        const start = (currentPage - 1) * pageSize;
+        const ds    = dataToShow.slice(start, start + pageSize);
+
         renderDanhSachHS(ds);
         renderPagination();
       } catch (e) {
         console.error(logPrefix, 'renderAllView error', e);
       }
     };
+
 
     window.doSort = function doSort(field) {
       if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
@@ -1381,6 +1438,23 @@
         setTimeout(doPrint, 50);
       }
     }
+
+
+
+
+    // === SẮP XẾP ===
+    function getTen(fullname){
+      const s = String(fullname || '').trim().replace(/\s+/g, ' ');
+      if (!s) return '';
+      const parts = s.split(' ');
+      return parts[parts.length - 1]; // lấy TÊN (từ cuối)
+    }
+    function toSortKeyVN(s){
+      // so sánh không dấu + không phân biệt hoa/thường
+      const base = (typeof stripVN === 'function' ? stripVN(s) : String(s));
+      return String(base).toLowerCase();
+    }
+
   </script>
 </body>
 </html>
