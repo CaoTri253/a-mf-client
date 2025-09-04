@@ -86,6 +86,22 @@
       .text-center{ text-align:center; }
     }
 
+
+    /* Ẩn phân trang trên mobile & tablet */
+    @media (max-width: 999px) {
+      nav .pagination { display: none !important; }
+    }
+
+
+
+    /* Cột Họ tên: không xuống dòng, rộng tối thiểu */
+    th.th-hoten, td.td-hoten {
+      white-space: nowrap;
+      min-width: 220px;   /* chỉnh theo ý bạn */
+      max-width: none;
+    }
+
+
   </style>
 </head>
 <body>
@@ -333,12 +349,28 @@
     function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
     function todayText(){ const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`; }
 
+
+    // ==== NO PAGING on mobile/tablet ====
+    const NO_PAGING_MAX_WIDTH = 999;
+    function isNoPagingDevice(){ return window.innerWidth <= NO_PAGING_MAX_WIDTH; }
+
+
+    // Thay toàn bộ detectPageSize cũ:
     function detectPageSize(){
-      const width = window.innerWidth;
-      if (width <= 600) pageSize = 3;
-      else if (width <= 999) pageSize = 7;
-      else pageSize = 20;
+      if (isNoPagingDevice()){
+        pageSize = Number.MAX_SAFE_INTEGER; // gom hết vào 1 trang
+      } else {
+        pageSize = 20; // desktop giữ nguyên
+      }
     }
+
+
+    // function detectPageSize(){
+    //   const width = window.innerWidth;
+    //   if (width <= 600) pageSize = 3;
+    //   else if (width <= 999) pageSize = 7;
+    //   else pageSize = 20;
+    // }
     window.addEventListener('resize', () => {
       const prev = pageSize; detectPageSize();
       if (pageSize !== prev) { currentPage = 1; window.renderAllView(); }
@@ -397,27 +429,82 @@
     function sortIcon(field){ if (sortField !== field) return ''; return sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if (sortField===field) sortDir=-sortDir; else { sortField=field; sortDir=1; } window.renderAllView(); };
 
+    // window.renderAllView = function(){
+    //   try{
+    //     let dataToShow = lastFiltered || allData;
+    //     if (sortField){
+    //       dataToShow = [...dataToShow].sort((a,b) => {
+    //         let av = (a[sortField]||"").toString().toLowerCase(), bv=(b[sortField]||"").toString().toLowerCase();
+    //         if (!isNaN(av) && !isNaN(bv)) { av=Number(av); bv=Number(bv); }
+    //         if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+    //       });
+    //     }
+    //     totalRecords = dataToShow.length;
+    //     totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+    //     document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+    //     const start = (currentPage-1)*pageSize;
+    //     renderDanhSachHS(dataToShow.slice(start, start+pageSize));
+    //     renderPagination();
+    //   }catch(e){ console.error(logPrefix, 'renderAllView error', e); }
+    // };
+
+
     window.renderAllView = function(){
       try{
         let dataToShow = lastFiltered || allData;
+
         if (sortField){
           dataToShow = [...dataToShow].sort((a,b) => {
-            let av = (a[sortField]||"").toString().toLowerCase(), bv=(b[sortField]||"").toString().toLowerCase();
-            if (!isNaN(av) && !isNaN(bv)) { av=Number(av); bv=Number(bv); }
-            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+            if (sortField === 'ho_ten_hoc_sinh'){
+              // ✅ sort theo TÊN (given name), bỏ dấu + không phân biệt hoa/thường
+              const av = toSortKeyVN(getTen(a.ho_ten_hoc_sinh));
+              const bv = toSortKeyVN(getTen(b.ho_ten_hoc_sinh));
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+
+              // tie-breaker: nếu trùng tên thì so theo họ tên đầy đủ (không dấu)
+              const af = toSortKeyVN(a.ho_ten_hoc_sinh || '');
+              const bf = toSortKeyVN(b.ho_ten_hoc_sinh || '');
+              if (af < bf) return -sortDir;
+              if (af > bf) return  sortDir;
+              return 0;
+            }
+
+            // các cột khác: giữ logic cũ
+            let av = (a[sortField]||"").toString().toLowerCase();
+            let bv = (b[sortField]||"").toString().toLowerCase();
+            if (!isNaN(av) && !isNaN(bv)){ av = Number(av); bv = Number(bv); }
+            if (av < bv) return -sortDir;
+            if (av > bv) return  sortDir;
+            return 0;
           });
         }
+
         totalRecords = dataToShow.length;
         totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
         document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+
         const start = (currentPage-1)*pageSize;
         renderDanhSachHS(dataToShow.slice(start, start+pageSize));
         renderPagination();
-      }catch(e){ console.error(logPrefix, 'renderAllView error', e); }
+      } catch(e){
+        console.error(logPrefix, 'renderAllView error', e);
+      }
     };
 
+
     function renderPagination(){
-      const el = document.getElementById('pagination'); el.innerHTML='';
+      const el = document.getElementById('pagination'); 
+      if (!el) return;
+
+      // Mobile/tablet: không phân trang
+      if (isNoPagingDevice()){
+        el.innerHTML = '';
+        return;
+      }
+
+      
+      el.innerHTML='';
       if (totalPages<=1) return;
       el.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
       let minP = Math.max(1, currentPage-2), maxP = Math.min(totalPages, currentPage+2);
@@ -440,7 +527,7 @@
         <tr>
           <th style="width:42px;"><input type="checkbox" id="chk-bulk-all" onchange="toggleSelectAllBulk(this)"></th>
           <th class="th-action">Thao tác</th>
-          <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable th-hoten" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
           <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
           <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
         </tr>
@@ -461,7 +548,7 @@
               ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn cũ (BHTN)</div>' : ''}
             </div>
           </td>
-          <td>${hs.ho_ten_hoc_sinh||""}</td>
+          <td class="td-hoten">${hs.ho_ten_hoc_sinh||""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
           <td>${hs.so_dinh_danh||""}</td>
         </tr>`;
@@ -968,6 +1055,23 @@
 
     /* ====== Boot ====== */
     window.onload = fetchChuaThuHocsinh;
+
+
+
+
+
+    // === SẮP XẾP CỘT HỌ TÊN THEO ALPHABET ===
+    function getTen(fullname){
+      const s = String(fullname || '').trim().replace(/\s+/g,' ');
+      if (!s) return '';
+      const parts = s.split(' ');
+      return parts[parts.length - 1]; // lấy TÊN
+    }
+    function toSortKeyVN(s){
+      const base = (typeof stripVN === 'function') ? stripVN(s) : String(s);
+      return String(base).toLowerCase();
+    }
+
   </script>
 </body>
 </html>
