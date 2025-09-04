@@ -2226,6 +2226,8 @@
     hookModalUnlock('modalNopHoSoBHYT');
     hookModalUnlock('modalSuaHoSoBHYT');
     hookModalUnlock('modalPhieuThu');
+    hookModalUnlock('modalSuaHoSoBHYT_Paid');
+
 
     /* Router gọi khi vào tab BHYT */
     window.bhyt_wirePage = function(){
@@ -2533,7 +2535,7 @@
         try{
           showLoading();
 
-          // 1) Validate giống mẫu gốc
+          // 1) Validate giống bản gốc
           if (!window._currentHS_Sua) {
             setErr("Thiếu thông tin hồ sơ hiện tại.");
             toastError("Thiếu thông tin hồ sơ.");
@@ -2553,20 +2555,14 @@
             return;
           }
 
-          // 2) Tính tiền & hạn sử dụng (tận dụng các helper giống mẫu gốc)
-          const gia = await ensureGiaBHYT(); // {gia_tien, ...}
-          const { exp, amount, note } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
-          if (!amount || !exp) {
-            setErr("Không tính được phí hoặc hạn sử dụng. Vui lòng thử lại.");
-            toastError("Không tính được số tiền/hạn thẻ");
-            return;
-          }
-          // Tính hoa hồng nếu mẫu gốc có
+          // 2) Tính tiền & hạn sử dụng (y như “Chưa thu”)
+          const gia = await ensureGiaBHYT();
+          const { exp, amount } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, gia?.gia_tien);
           const rate = (typeof getRateByMonths === "function") ? getRateByMonths(gia, months) : 0;
           const hoa_hong = parseFloat((amount * (rate || 0)).toFixed(2));
 
-          // 3) Gọi API sửa hồ sơ (cùng payload trường nghĩa như bên gốc)
-          const payload = {
+          // 3) Gọi API với payload trùng khớp
+          const res = await suaHoSoBHYTApi({
             so_dinh_danh: _currentHS_Sua.so_dinh_danh,
             ma_truong:    bhyt_user.ma_truong,
             lop_hoc:      _currentHS_Sua.lop_hoc || "",
@@ -2575,27 +2571,28 @@
             so_tien:       amount,
             hoa_hong:      hoa_hong,
             han_su_dung_bhyt_moi: exp
-          };
+          });
 
-          // Hàm API đặt tên theo dự án gốc (đổi tên nếu backend bạn khác)
-          const res = await suaHoSoBHYTApi(payload);
-
-          // 4) Xử lý kết quả (toast + reload) giống mẫu gốc
+          // 4) Xử lý kết quả — THỨ TỰ Y HỆT BÊN “CHƯA THU”
           if (res?.success) {
+            const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
+            if (mEl) (bootstrap.Modal.getInstance(mEl) || new bootstrap.Modal(mEl)).hide();
+            // giống bản gốc: unlock trước, toast sau, rồi reload
+            forceUnlockScroll();
             toastSuccess("Đã lưu thay đổi");
-            // Reload danh sách ĐÃ THU
+
+            // reload danh sách CHƯA THU (giống bản gốc)
+            if (typeof fetchChuaThuHocsinh === "function") {
+              await fetchChuaThuHocsinh();
+            }
+            // cũng reload luôn danh sách ĐÃ THU (nếu có hàm tiện ích)
             if (typeof window.bhyt_paid_reload === "function") {
               await window.bhyt_paid_reload();
             } else if (typeof fetchBHYTDaThu === "function") {
               await fetchBHYTDaThu();
             }
-            // Đóng modal
-            const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
-            if (mEl) {
-              (bootstrap.Modal.getInstance(mEl) || new bootstrap.Modal(mEl)).hide();
-            }
-            // (tuỳ chọn) xóa lỗi hiển thị
-            setErr("");
+
+            setErr(""); // clear lỗi (nếu có)
           } else {
             const msg = res?.message || "Lỗi lưu hồ sơ";
             setErr(msg);
