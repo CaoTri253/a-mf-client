@@ -1247,7 +1247,7 @@
         <th style="width:42px"><input type="checkbox" id="adm-chk-all"></th>
         <th style="width:120px">Thao tác</th>
         <th class="text-nowrap" role="button" data-sort="ma_so_bhxh">MS BHXH${sortIcon('ma_so_bhxh')}</th>
-        <th role="button" data-sort="ho_ten_hoc_sinh">Họ tên${sortIcon('ho_ten_hoc_sinh')}</th>
+        <th role="button" data-sort="ho_ten_hoc_sinh" class="sortable th-hoten" >Họ tên${sortIcon('ho_ten_hoc_sinh')}</th>
         <th role="button" data-sort="ngay_sinh">Ngày sinh${sortIcon('ngay_sinh')}</th>
         <th role="button" data-sort="gioi_tinh">Giới tính${sortIcon('gioi_tinh')}</th>
         <th role="button" data-sort="lop_hoc">Lớp${sortIcon('lop_hoc')}</th>
@@ -1262,11 +1262,11 @@
         html += `<tr>
           <td><input type="checkbox" class="adm-chk" value="${r.stt}"></td>
           <td class="text-nowrap">
-            <button class="btn btn-sm btn-warning me-1" data-action="edit" data-idx="${i}">Sửa</button>
-            <button class="btn btn-sm btn-danger" data-action="del" data-id="${r.stt}">Xóa</button>
+            <button class="btn btn-warning btn-sm" data-action="edit" data-idx="${i}" title="Sửa học sinh"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-danger btn-sm" data-action="del" data-id="${r.stt}" title="Xóa học sinh"><i class="bi bi-trash3"></i></button>
           </td>
           <td>${r.ma_so_bhxh||''}</td>
-          <td>${r.ho_ten_hoc_sinh||''}</td>
+          <td class="td-hoten">${r.ho_ten_hoc_sinh||''}</td>
           <td>${adm_displayNgay(r.ngay_sinh)}</td>
           <td>${r.gioi_tinh||''}</td>
           <td>${r.lop_hoc||''}</td>
