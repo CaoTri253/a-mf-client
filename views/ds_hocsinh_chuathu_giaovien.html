@@ -1103,6 +1103,8 @@
       </tr></thead><tbody>`;
 
       ds.forEach((hs) => {
+        const isHS = window.isHocSinh(hs.doi_tuong_dong);
+
         if (hs._bhyt_trangthai === 1) return;
 
         const hasOld = !!parseVNDate(hs.ngay_het_han_bhyt);
