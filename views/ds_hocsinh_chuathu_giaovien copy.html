@@ -7,6 +7,8 @@
   <script src="/js/anti-devtools.js"></script>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+
   <style>
     body { background: #f8f9fa; min-height: 100vh; padding: 20px; }
     .sticky-header-box {
@@ -87,6 +89,21 @@
     
 
     @media print { html, body { height: auto !important; } }
+
+
+
+    /* Ẩn phân trang trên mobile & tablet */
+    @media (max-width: 999px) {
+      nav .pagination { display: none !important; }
+    }
+
+
+    /* Cột họ tên học sinh: không xuống dòng, dãn rộng */
+    td.td-hoten, th.th-hoten {
+      white-space: nowrap;
+      min-width: 220px;   /* bạn có thể tăng lên nếu tên dài hơn */
+      max-width: none;
+    }
 
     
   </style>
@@ -379,12 +396,31 @@
       return raw;
     }
 
-    function detectPageSize() {
-      const width = window.innerWidth;
-      if (width <= 600) pageSize = 3;
-      else if (width <= 999) pageSize = 7;
-      else pageSize = 20;
+
+    // Phân trang & render danh sách
+    const NO_PAGING_MAX_WIDTH = 999;
+    function isNoPagingDevice() {
+      return window.innerWidth <= NO_PAGING_MAX_WIDTH; // mobile + tablet
     }
+
+
+    // function detectPageSize() {
+    //   const width = window.innerWidth;
+    //   if (width <= 600) pageSize = 3;
+    //   else if (width <= 999) pageSize = 7;
+    //   else pageSize = 20;
+    // }
+
+    function detectPageSize() {
+      if (isNoPagingDevice()) {
+        // “Vô hiệu hóa” phân trang: lấy thật lớn để gom hết vào 1 trang
+        pageSize = Number.MAX_SAFE_INTEGER;
+      } else {
+        // Desktop: giữ phân trang như cũ
+        pageSize = 20;
+      }
+    }
+
 
     window.addEventListener('resize', function() {
       const prevPageSize = pageSize;
@@ -396,27 +432,84 @@
     });
 
     // ===== GÁN HÀM GLOBAL TRƯỚC doSearch() (fix ReferenceError) =====
+    // window.renderAllView = function renderAllView() {
+    //   try {
+    //     let dataToShow = lastFiltered || allData;
+    //     if (sortField) {
+    //       dataToShow = [...dataToShow].sort(function(a, b) {
+    //         let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
+    //         if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
+    //         if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+    //       });
+    //     }
+    //     totalRecords = dataToShow.length;
+    //     totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+    //     document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
+    //     let start = (currentPage - 1) * pageSize;
+    //     let ds = dataToShow.slice(start, start + pageSize);
+    //     renderDanhSachHS(ds);
+    //     renderPagination();
+    //   } catch (e) {
+    //     console.error(logPrefix, 'renderAllView error', e);
+    //   }s
+    // };
+
+
     window.renderAllView = function renderAllView() {
       try {
-        let dataToShow = lastFiltered || allData;
+        let dataToShow = (lastFiltered && lastFiltered.length) ? lastFiltered : allData;
+
         if (sortField) {
-          dataToShow = [...dataToShow].sort(function(a, b) {
-            let av = (a[sortField] || "").toLowerCase(), bv = (b[sortField] || "").toLowerCase();
-            if (!isNaN(av) && !isNaN(bv)) { av = Number(av); bv = Number(bv); }
-            if (av < bv) return -sortDir; if (av > bv) return sortDir; return 0;
+          dataToShow = [...dataToShow].sort(function (a, b) {
+            if (sortField === 'ho_ten_hoc_sinh') {
+              // ✅ Sort theo TÊN (given name), bỏ dấu + không phân biệt hoa/thường
+              const av = toSortKeyVN(getTen(a.ho_ten_hoc_sinh));
+              const bv = toSortKeyVN(getTen(b.ho_ten_hoc_sinh));
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+
+              // Tie-breaker: nếu trùng TÊN, so tiếp theo họ tên đầy đủ (không dấu)
+              const af = toSortKeyVN(a.ho_ten_hoc_sinh || '');
+              const bf = toSortKeyVN(b.ho_ten_hoc_sinh || '');
+              if (af < bf) return -sortDir;
+              if (af > bf) return  sortDir;
+              return 0;
+            } else {
+              // Các cột khác: giữ logic cũ (ưu tiên số, rồi đến chuỗi thường)
+              let av = a[sortField];
+              let bv = b[sortField];
+
+              const aNum = typeof av === 'number' || (typeof av === 'string' && av.trim() !== '' && !isNaN(+av));
+              const bNum = typeof bv === 'number' || (typeof bv === 'string' && bv.trim() !== '' && !isNaN(+bv));
+
+              if (aNum && bNum) {
+                av = +av; bv = +bv;
+              } else {
+                av = String(av ?? '').toLowerCase();
+                bv = String(bv ?? '').toLowerCase();
+              }
+
+              if (av < bv) return -sortDir;
+              if (av > bv) return  sortDir;
+              return 0;
+            }
           });
         }
+
         totalRecords = dataToShow.length;
-        totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+        totalPages   = Math.max(1, Math.ceil(totalRecords / pageSize));
         document.getElementById('total-hs').innerText = `(${totalRecords} học sinh)`;
-        let start = (currentPage - 1) * pageSize;
-        let ds = dataToShow.slice(start, start + pageSize);
+
+        const start = (currentPage - 1) * pageSize;
+        const ds    = dataToShow.slice(start, start + pageSize);
+
         renderDanhSachHS(ds);
         renderPagination();
       } catch (e) {
         console.error(logPrefix, 'renderAllView error', e);
       }
     };
+
 
     window.doSort = function doSort(field) {
       if (sortField === field) sortDir = -sortDir; else { sortField = field; sortDir = 1; }
@@ -1004,7 +1097,7 @@
       <tr>
         <th style="width:42px;"><input type="checkbox" id="chk-bulk-all" onchange="toggleSelectAllBulk(this)"></th>
         <th class="th-action">Thao tác</th>
-        <th class="sortable" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
+        <th class="sortable th-hoten" onclick="doSort('ho_ten_hoc_sinh')">Họ tên học sinh${sortIcon('ho_ten_hoc_sinh')}</th>
         <th class="sortable" onclick="doSort('ngay_sinh')">Ngày sinh${sortIcon('ngay_sinh')}</th>
         <th class="sortable" onclick="doSort('so_dinh_danh')">Số định danh cá nhân${sortIcon('so_dinh_danh')}</th>
       </tr></thead><tbody>`;
@@ -1023,15 +1116,23 @@
           </td>
           <td>
             <div class="action-btns">
-              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>
-              ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
-              ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
-                <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')">Sửa hồ sơ</button>
-                <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')">In phiếu thu</button>
-              ` : ``}
-            </div>
+            ${
+              (hs._bhyt_trangthai === 0)
+                ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
+                : `<button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+            }
+            ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
+            ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
+              <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')" title="Sửa hồ sơ">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')" title="In phiếu thu">
+                <i class="bi bi-printer"></i>
+              </button>
+            ` : ``}
+          </div>
           </td>
-          <td>${hs.ho_ten_hoc_sinh || ""}</td>
+          <td class="td-hoten">${hs.ho_ten_hoc_sinh || ""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
           <td>${hs.so_dinh_danh || ""}</td>
         </tr>`;
@@ -1050,6 +1151,15 @@
 
     function renderPagination() {
       const pagin = document.getElementById('pagination');
+
+      if (!pagin) return;
+
+      // Mobile/tablet: không phân trang
+      if (isNoPagingDevice()) {
+        pagin.innerHTML = '';
+        return;
+      }
+
       pagin.innerHTML = '';
       if (totalPages <= 1) return;
       pagin.innerHTML += `<li class="page-item${currentPage===1?' disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1});return false;">Trước</a></li>`;
@@ -1338,6 +1448,34 @@
         setTimeout(doPrint, 50);
       }
     }
+
+
+
+
+    // === SẮP XẾP CỘT HỌ TÊN THEO ALPHABET ===
+    function getTen(fullname){
+      const s = String(fullname || '').trim().replace(/\s+/g, ' ');
+      if (!s) return '';
+      const parts = s.split(' ');
+      return parts[parts.length - 1]; // lấy TÊN (từ cuối)
+    }
+    function toSortKeyVN(s){
+      // so sánh không dấu + không phân biệt hoa/thường
+      const base = (typeof stripVN === 'function' ? stripVN(s) : String(s));
+      return String(base).toLowerCase();
+    }
+
+
+
+
+
+    // Nhận diện đối tượng "Học sinh" (có/không dấu, viết tắt HS)
+    function isHocSinh(v){
+      const s = String(v || '').trim().toLowerCase();
+      return s === 'hs' || s === 'học sinh' || s === 'hoc sinh';
+    }
+
+
   </script>
 </body>
 </html>

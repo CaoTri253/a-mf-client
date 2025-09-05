@@ -1109,6 +1109,12 @@
         const nopDisabled = (hs._bhyt_trangthai===0) || !hasOld;
         const nopLabel = (hs._bhyt_trangthai===0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
 
+
+        // NHÃN đỏ in đậm khi không phải đối tượng Học sinh
+        const nonHSLabel = `<span class="text-danger fw-bold">${
+          (hs.doi_tuong_dong && String(hs.doi_tuong_dong).trim()) || 'Khác đối tượng'
+        }</span>`;
+
         html += `<tr>
           <td>
             <input type="checkbox" class="chk-bulk-row" data-stt="${hs.stt}"
@@ -1116,21 +1122,28 @@
           </td>
           <td>
             <div class="action-btns">
-            ${
-              (hs._bhyt_trangthai === 0)
-                ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
-                : `<button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
-            }
-            ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
-            ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
-              <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')" title="Sửa hồ sơ">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')" title="In phiếu thu">
-                <i class="bi bi-printer"></i>
-              </button>
-            ` : ``}
-          </div>
+              ${
+                (hs._bhyt_trangthai === 0)
+                  // Đang chờ duyệt: giữ nguyên
+                  ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
+                  : (
+                      // KHÔNG phải Học sinh => hiển thị nhãn đỏ in đậm (không có nút nộp)
+                      !isHS
+                        ? nonHSLabel
+                        // Là Học sinh => logic nút nộp như cũ
+                        : `<button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                    )
+              }
+              ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
+              ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
+                <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')" title="Sửa hồ sơ">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="inPhieuThu('${hs.stt}')" title="In phiếu thu">
+                  <i class="bi bi-printer"></i>
+                </button>
+              ` : ``}
+            </div>
           </td>
           <td class="td-hoten">${hs.ho_ten_hoc_sinh || ""}</td>
           <td>${displayNgaySinh(hs.ngay_sinh)}</td>
@@ -1464,6 +1477,17 @@
       const base = (typeof stripVN === 'function' ? stripVN(s) : String(s));
       return String(base).toLowerCase();
     }
+
+
+
+
+
+    // Nhận diện đối tượng "Học sinh" (có/không dấu, viết tắt HS)
+    function isHocSinh(v){
+      const s = String(v || '').trim().toLowerCase();
+      return s === 'hs' || s === 'học sinh' || s === 'hoc sinh';
+    }
+
 
   </script>
 </body>
