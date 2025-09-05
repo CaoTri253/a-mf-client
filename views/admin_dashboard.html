@@ -2489,27 +2489,36 @@
 
       // === Hiển thị Modal Sửa hồ sơ BHYT (ĐÃ THU) ===
       async function showSuaHoSoModal_DaThu(stt) {
-        const hs = (bhyt_lastFiltered || bhyt_allData).find(h => String(h.stt) === String(stt));
-        if (!hs) return;
-        _currentHS_Sua = hs;
+        // Lấy đúng từ nguồn dữ liệu của tab ĐÃ THU
+        const source = (window.bhytp_lastFiltered || window.bhytp_allData || []);
+        let hs = source.find(h => String(h.stt) === String(stt));
+        if (!hs && Array.isArray(window._bhytpView)) {
+          hs = window._bhytpView.find(h => String(h.stt) === String(stt));
+        }
+        if (!hs) { console.warn('Không tìm thấy hồ sơ trong dữ liệu ĐÃ THU:', stt); return; }
+
+        window._currentHS_Sua = hs;
         showLoading();
         try {
-          document.getElementById('shspaid-hoten').value = hs.ho_ten_hoc_sinh || "";
+          // Đổ dữ liệu vào modal ĐÃ THU (ID bắt đầu bằng shspaid-)
+          document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
           document.getElementById('shspaid-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
-          document.getElementById('shspaid-noikham').value = hs.noi_kham_bhyt || "";
+          document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
 
-          const info = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
-          const months = String(info?.data?.so_thang_dong || '12');
-          const rSel = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
+          // Lấy số tháng (ưu tiên dữ liệu hiện có, sau đó tới API)
+          const info   = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
+          const months = String(hs.so_thang_dong ?? info?.data?.so_thang_dong ?? '12');
+          const rSel   = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
           if (rSel) rSel.checked = true;
 
+          // Tính toán preview
           const g = await ensureGiaBHYT();
-          const { exp, amount, note } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-
-          document.getElementById('shspaid-exp-preview').innerText = exp;
+          const {exp, amount, note} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+          document.getElementById('shspaid-exp-preview').innerText    = exp;
           document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
-          document.getElementById('shspaid-exp-note').innerText = note || "";
+          document.getElementById('shspaid-exp-note').innerText       = note || "";
 
+          // Mở đúng modal ĐÃ THU
           new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_DaThu')).show();
         } catch (e) {
           console.error(e);
