@@ -150,6 +150,13 @@ async function getDanhSachBHYT(ma_truong, lop_hoc) {
   return await res.json();
 }
 
+
+async function getDoiTuongKhac(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetDoiTuongKhac&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
 // Trạng thái BHYT theo HS
 async function getBHYTStatus(so_dinh_danh, ma_truong, lop_hoc) {
   const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
