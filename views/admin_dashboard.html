@@ -2408,13 +2408,13 @@
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===1 && shs){
           return `<div class="action-btns">
-            <button class="btn btn-sm btn-warning" onclick="modalSuaHoSoBHYT_DaThu('${row.stt}')">Sửa hồ sơ</button>
+            <button class="btn btn-sm btn-warning" onclick="showSuaHoSoModal_DaThu('${row.stt}')">Sửa hồ sơ</button>
             <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button>
             <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
           </div>`;
         }
         return `<div class="action-btns">
-          <button class="btn btn-sm btn-warning" onclick="modalSuaHoSoBHYT_DaThu('${row.stt}')">Sửa hồ sơ</button>
+          <button class="btn btn-sm btn-warning" onclick="showSuaHoSoModal_DaThu('${row.stt}')">Sửa hồ sơ</button>
           <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
         </div>`;
       }
