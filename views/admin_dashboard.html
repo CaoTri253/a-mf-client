@@ -288,6 +288,8 @@
 
     <!-- Content -->
     <main class="content w-100">
+
+      <!-- NỘI DUNG ĐẦU TRANG DASHBOARD -->
       <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
         <div>
           <button id="btnToggleSidebar" class="btn btn-light border toggle-btn">
@@ -651,7 +653,7 @@
         </ul>
 
         <div class="tab-content pt-3">
-          <!-- TAB 1: Gom toàn bộ chức năng DS BHYT vào đây -->
+          <!-- TAB 1: DANH SÁCH BHYT CHƯA THU -->
           <div class="tab-pane fade show active" id="tab-unpaid" role="tabpanel" aria-labelledby="tab-unpaid-tab">
             <!-- Sticky header + search + chọn nhiều lớp -->
             <div class="table-box p-3 mb-2">
@@ -851,7 +853,7 @@
             </div>
           </div>
 
-          <!-- TAB 2: Danh sách BHYT ĐÃ THU -->
+          <!-- TAB 2: DANH SÁCH BHYT ĐÃ THU -->
           <div class="tab-pane fade" id="tab-other" role="tabpanel" aria-labelledby="tab-other-tab">
             <div class="table-box p-3 mb-2">
               <div class="row g-2 align-items-center">
@@ -944,37 +946,33 @@
 
 
             <!-- Modal Sửa hồ sơ - TAB ĐÃ THU (đồng bộ với bản gốc) -->
-            <div class="modal fade" id="modalSuaHoSoBHYT_Paid" tabindex="-1" aria-hidden="true">
+            <div class="modal fade" id="modalSuaHoSoBHYT_DaThu" tabindex="-1" aria-hidden="true">
               <div class="modal-dialog"><div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Sửa hồ sơ BHYT</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHYT (đã thu)</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="bhytp-shs-hoten" readonly></div>
-                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="bhytp-shs-ngaysinh" readonly></div>
-                  <div class="mb-2">
-                    <label>Nơi khám BHYT:</label>
-                    <input class="form-control" id="bhytp-shs-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT">
-                  </div>
+                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="shspaid-hoten" readonly></div>
+                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="shspaid-ngaysinh" readonly></div>
+                  <div class="mb-2"><label>Nơi khám BHYT:</label><input class="form-control" id="shspaid-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT"></div>
                   <div class="mb-2">
                     <label>Số tháng đóng:</label>
                     <div>
-                      <input type="radio" name="bhytp-shs-thang" value="3" id="bhytp-shs-thang-3"> <label for="bhytp-shs-thang-3">3 tháng</label>
-                      <input type="radio" name="bhytp-shs-thang" value="6" id="bhytp-shs-thang-6" class="ms-3"> <label for="bhytp-shs-thang-6">6 tháng</label>
-                      <input type="radio" name="bhytp-shs-thang" value="12" id="bhytp-shs-thang-12" class="ms-3"> <label for="bhytp-shs-thang-12">12 tháng</label>
+                      <input type="radio" name="shspaid-thang" value="3" id="shspaid-thang-3"> <label for="shspaid-thang-3">3 tháng</label>
+                      <input type="radio" name="shspaid-thang" value="6" id="shspaid-thang-6" class="ms-3"> <label for="shspaid-thang-6">6 tháng</label>
+                      <input type="radio" name="shspaid-thang" value="12" id="shspaid-thang-12" class="ms-3"> <label for="shspaid-thang-12">12 tháng</label>
                     </div>
                   </div>
                   <div class="mt-2 small">
-                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="bhytp-shs-exp-preview" class="fw-bold text-danger">—</span></div>
-                    <div id="bhytp-shs-exp-note" class="text-muted" style="min-height:18px"></div>
-                    <div><strong>Số tiền cần đóng:</strong> <span id="bhytp-shs-amount-preview" class="fw-bold text-danger">—</span></div>
+                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shspaid-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="shspaid-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong>Số tiền cần đóng:</strong> <span id="shspaid-amount-preview" class="fw-bold text-danger">—</span></div>
                   </div>
-                  <div id="bhytp-shs-error" class="text-danger" style="min-height:18px"></div>
+                  <div id="shspaid-error" class="text-danger" style="min-height:18px"></div>
                 </div>
                 <div class="modal-footer">
                   <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                  <button class="btn btn-primary" onclick="bhytp_submitSuaHoSoBHYT_Paid()">Lưu thay đổi</button>
+                  <button class="btn btn-primary" onclick="submitSuaHoSoBHYT_DaThu()">Lưu thay đổi</button>
                 </div>
               </div></div>
             </div>
@@ -1653,6 +1651,8 @@
       el.querySelector('.btn-close').onclick=()=>el.remove();
       setTimeout(()=>el.remove(), 2600);
     }
+    
+    /* ===== Force unlock scroll (nếu modal bị kẹt) & hook modal unlock ===== */
     function forceUnlockScroll(){
       try{
         document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
@@ -1663,6 +1663,8 @@
         document.documentElement.style.overflow = '';
       }catch(_){}
     }
+    
+    /* hook modal để gỡ khóa scroll khi modal đóng */
     function hookModalUnlock(id){
       const el = document.getElementById(id);
       if(!el) return;
@@ -1764,10 +1766,12 @@
       else if (width <= 1023) bhyt_pageSize = 7;
       else bhyt_pageSize = 20;
     }
+    
     window.addEventListener('resize', () => {
       const prev = bhyt_pageSize; detectPageSizeBHYT();
       if (bhyt_pageSize !== prev){ bhyt_page = 1; renderAllViewBHYT(); }
     });
+    
     function doSearchBHYT(){
       const q = String(document.getElementById('bhyt-search')?.value||"").trim().toLowerCase();
       bhyt_lastFiltered = !q ? bhyt_allData : bhyt_allData.filter(hs =>
@@ -1777,6 +1781,7 @@
       );
       bhyt_page=1; renderAllViewBHYT();
     }
+    
     function renderAllViewBHYT(){
       let data = bhyt_lastFiltered || bhyt_allData;
       if (bhyt_sortField){
@@ -1794,6 +1799,7 @@
       renderPaginationBHYT(data.length);
       updateBulkButton();
     }
+    
     function renderPaginationBHYT(total){
       const totalPages = Math.max(1, Math.ceil(total / bhyt_pageSize));
       const ul = document.getElementById('bhyt-pagin'); if(!ul) return; ul.innerHTML='';
@@ -1818,6 +1824,8 @@
     /* ===== Bảng danh sách ===== */
     function sortIconBHYT(field){ if(bhyt_sortField!==field) return ''; return bhyt_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if(bhyt_sortField===field) bhyt_sortDir=-bhyt_sortDir; else { bhyt_sortField=field; bhyt_sortDir=1; } renderAllViewBHYT(); };
+    
+    /* hiển thị danh sách Học sinh */
     function renderDanhSachHS(ds){
       const wrap = document.getElementById('bhyt-ds'); if(!wrap) return;
       if (!ds || ds.length === 0){
@@ -1911,6 +1919,8 @@
       finally{ hideLoading(); }
     }
 
+
+    /* ===== Hiển thị Modal sửa Hồ sơ Danh sách BHYT Chưa thu ===== */
     async function showSuaHoSoModal(stt){
       const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       _currentHS_Sua = hs;
@@ -1932,6 +1942,7 @@
       } catch(e){ console.error(e); }
       finally{ hideLoading(); }
     }
+    /* ===== Submit Modal sửa Hồ sơ Danh sách BHYT Chưa thu ===== */
     async function submitSuaHoSoBHYT(){
       if(!_currentHS_Sua) return;
       showLoading();
@@ -2125,11 +2136,13 @@
       } finally{ hideLoading(); }
     }
 
-
+    /* Tạo chuỗi QR theo chuẩn */
     function buildQRPayload(maTruong, school, lop, ten, thang, hanSuDung) {
       return `MT=${maTruong};S=${stripVN(school)};L=${lop};N=${stripVN(ten)};M=${thang};E=${hanSuDung}`;
     }
 
+
+    /* Loại bỏ dấu tiếng Việt để QR ngắn hơn */
     function stripVN(str) {
       return String(str || "")
         .normalize("NFD")
@@ -2137,6 +2150,7 @@
         .replace(/đ/g, 'd').replace(/Đ/g, 'D');
     }
 
+    /* Lấy chữ cái đầu tên để QR ngắn hơn */
     function initials(str) {
       return String(str || "").trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase();
     }
@@ -2201,6 +2215,7 @@
       check();
     }
 
+    /* Tải ảnh PNG của phiếu thu */
     async function downloadReceiptImage(){
       const el = document.getElementById('receiptA5'); if(!el) return;
       const canvas = await html2canvas(el,{useCORS:true,scale:2});
@@ -2226,7 +2241,7 @@
     hookModalUnlock('modalNopHoSoBHYT');
     hookModalUnlock('modalSuaHoSoBHYT');
     hookModalUnlock('modalPhieuThu');
-    hookModalUnlock('modalSuaHoSoBHYT_Paid');
+    hookModalUnlock('modalSuaHoSoBHYT_DaThu');
 
 
     /* Router gọi khi vào tab BHYT */
@@ -2244,6 +2259,16 @@
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
+
+
+
+
+
+
+
+
+
 
   <!-- ====== KHỐI BHYT ĐÃ THU ===== -->
   <script>
@@ -2327,6 +2352,8 @@
         bhytp_page=1;
         bhytp_renderAllView();
       }
+
+      /* Sort khi click header */
       function bhytp_renderAllView(){
         let data = bhytp_lastFiltered || bhytp_allData;
         if (bhytp_sortField){
@@ -2345,6 +2372,8 @@
         bhytp_renderTable(data.slice(start,start+bhytp_pageSize), start);
         bhytp_renderPagin(data.length);
       }
+
+      /* Render bảng */
       function bhytp_renderPagin(total){
         const totalPages = Math.max(1, Math.ceil(total / bhytp_pageSize));
         const ul = document.getElementById('bhytp-pagin'); if(!ul) return; ul.innerHTML='';
@@ -2365,7 +2394,7 @@
         add(bhytp_page+1,'Sau',false,bhytp_page===totalPages);
       }
 
-      /* ===== Table ===== */
+      /* ===== Bảng dữ liệu ===== */
       function bhytp_statusCell(row){
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
@@ -2373,20 +2402,24 @@
         if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${bhytp_escapeHtml(shs)}</span></div>`;
         return `<span class="status-badge status-pending">Đang xử lý</span>`;
       }
+
+      /* Các nút thao tác trong bảng */
       function bhytp_actionsCell(i,row){
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===1 && shs){
           return `<div class="action-btns">
-            <button class="btn btn-sm btn-warning" onclick="bhytp_showSuaHoSoModal('${row.stt}')">Sửa hồ sơ</button>
+            <button class="btn btn-sm btn-warning" onclick="modalSuaHoSoBHYT_DaThu('${row.stt}')">Sửa hồ sơ</button>
             <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button>
             <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
           </div>`;
         }
         return `<div class="action-btns">
-          <button class="btn btn-sm btn-warning" onclick="bhytp_showSuaHoSoModal('${row.stt}')">Sửa hồ sơ</button>
+          <button class="btn btn-sm btn-warning" onclick="modalSuaHoSoBHYT_DaThu('${row.stt}')">Sửa hồ sơ</button>
           <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
         </div>`;
       }
+
+      
       function bhytp_buildHead(){
         return `<thead><tr>
           <th class="th-action">Thao tác</th>
@@ -2454,37 +2487,31 @@
 
 
 
-      // === Sửa hồ sơ (ĐÃ THU) ===
-      // Mở modal Sửa hồ sơ dành riêng cho TAB ĐÃ THU (không dùng modal cũ)
-      // Dùng cùng cấu trúc như showSuaHoSoModal(stt) bên "Chưa thu"
-      async function bhytp_showSuaHoSoModal(stt){
+      // === Hiển thị Modal Sửa hồ sơ BHYT (ĐÃ THU) ===
+      async function showSuaHoSoModal_DaThu(stt) {
         const hs = (bhyt_lastFiltered || bhyt_allData).find(h => String(h.stt) === String(stt));
         if (!hs) return;
-
-        _currentHS_Sua = hs;           // giống hệt mẫu gốc
+        _currentHS_Sua = hs;
         showLoading();
         try {
-          // Điền dữ liệu vào modal ĐÃ THU (id field khác, còn lại y chang luồng)
-          document.getElementById('bhytp-shs-hoten').value    = hs.ho_ten_hoc_sinh || "";
-          document.getElementById('bhytp-shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
-          document.getElementById('bhytp-shs-noikham').value  = hs.noi_kham_bhyt || "";
+          document.getElementById('shspaid-hoten').value = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('shspaid-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+          document.getElementById('shspaid-noikham').value = hs.noi_kham_bhyt || "";
 
-          // Lấy số tháng đang dùng
-          const info   = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
-          const months = String(info?.data?.so_thang_dong || "12");
-          const rSel   = document.querySelector(`input[name="bhytp-shs-thang"][value="${months}"]`);
+          const info = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
+          const months = String(info?.data?.so_thang_dong || '12');
+          const rSel = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
           if (rSel) rSel.checked = true;
 
-          // Tính preview hạn & tiền
           const g = await ensureGiaBHYT();
           const { exp, amount, note } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
-          document.getElementById('bhytp-shs-exp-preview').innerText    = exp;
-          document.getElementById('bhytp-shs-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
-          document.getElementById('bhytp-shs-exp-note').innerText       = note || "";
 
-          // Mở đúng modal của tab ĐÃ THU
-          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_Paid')).show();
-        } catch(e){
+          document.getElementById('shspaid-exp-preview').innerText = exp;
+          document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+          document.getElementById('shspaid-exp-note').innerText = note || "";
+
+          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_DaThu')).show();
+        } catch (e) {
           console.error(e);
         } finally {
           hideLoading();
@@ -2495,93 +2522,50 @@
 
 
 
+
       // Submit riêng cho modal Sửa hồ sơ (TAB ĐÃ THU) — hành vi giống submitSuaHoSoBHYT bên "Chưa thu"
-      let __bhytp_paid_submitting = false;
-      async function bhytp_submitSuaHoSoBHYT_Paid(){
-        if (__bhytp_paid_submitting) return; // tránh double-click
-        __bhytp_paid_submitting = true;
+      async function submitSuaHoSoBHYT_DaThu() {
+        if (!_currentHS_Sua) return;
+        showLoading();
+        try {
+          const g = await ensureGiaBHYT();
+          const months = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+          const noikham = document.getElementById('shspaid-noikham').value.trim();
 
-        const setErr = (msg) => {
-          const el = document.getElementById('bhytp-shs-error');
-          if (el) el.textContent = msg || "";
-        };
-        setErr("");
+          const { exp, amount } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
+          const rate = getRateByMonths(g, months);
+          const hh = parseFloat((amount * rate).toFixed(2));
 
-        try{
-          showLoading();
-
-          // 1) Validate giống bản gốc
-          if (!window._currentHS_Sua) {
-            setErr("Thiếu thông tin hồ sơ hiện tại.");
-            toastError("Thiếu thông tin hồ sơ.");
-            return;
-          }
-          const noikham = document.getElementById('bhytp-shs-noikham')?.value?.trim() || "";
-          if (!noikham) {
-            setErr("Vui lòng nhập Nơi khám BHYT.");
-            toastError("Chưa nhập Nơi khám BHYT");
-            document.getElementById('bhytp-shs-noikham')?.focus();
-            return;
-          }
-          const months = document.querySelector('input[name="bhytp-shs-thang"]:checked')?.value || "";
-          if (!["3","6","12"].includes(months)) {
-            setErr("Vui lòng chọn số tháng đóng (3 / 6 / 12).");
-            toastError("Chưa chọn số tháng đóng");
-            return;
-          }
-
-          // 2) Tính tiền & hạn sử dụng (y như “Chưa thu”)
-          const gia = await ensureGiaBHYT();
-          const oldEnd = displayNgaySinh(_currentHS_Sua.ngay_het_han_bhyt || "");
-          const { exp, amount } = computeAmountAndExp(oldEnd, months, gia?.gia_tien);
-
-          const rate = (typeof getRateByMonths === "function") ? getRateByMonths(gia, months) : 0;
-          const hoa_hong = parseFloat((amount * (rate || 0)).toFixed(2));
-
-          // 3) Gọi API với payload trùng khớp
           const res = await suaHoSoBHYTApi({
             so_dinh_danh: _currentHS_Sua.so_dinh_danh,
-            ma_truong:    bhyt_user.ma_truong,
-            lop_hoc:      _currentHS_Sua.lop_hoc || "",
+            ma_truong: bhyt_user.ma_truong,
+            lop_hoc: _currentHS_Sua.lop_hoc || "",
             so_thang_dong: months,
             noi_kham_bhyt: noikham,
-            so_tien:       amount,
-            hoa_hong:      hoa_hong,
+            so_tien: amount,
+            hoa_hong: hh,
             han_su_dung_bhyt_moi: exp
           });
 
-          // 4) Xử lý kết quả — THỨ TỰ Y HỆT BÊN “CHƯA THU”
           if (res?.success) {
-            const mEl = document.getElementById('modalSuaHoSoBHYT_Paid');
-            if (mEl) (bootstrap.Modal.getInstance(mEl) || new bootstrap.Modal(mEl)).hide();
-            // giống bản gốc: unlock trước, toast sau, rồi reload
+            bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT_DaThu'))?.hide();
             forceUnlockScroll();
-            toastSuccess("Đã lưu thay đổi");
+            toastSuccess('Đã lưu thay đổi');
 
-            // reload danh sách CHƯA THU (giống bản gốc)
-            if (typeof fetchChuaThuHocsinh === "function") {
-              await fetchChuaThuHocsinh();
-            }
-            // cũng reload luôn danh sách ĐÃ THU (nếu có hàm tiện ích)
-            if (typeof window.bhyt_paid_reload === "function") {
+            // reload danh sách CHƯA THU (nếu bạn đang hiển thị song song)
+            await fetchChuaThuHocsinh?.();
+
+            // và reload danh sách ĐÃ THU nếu có khai báo hàm này
+            if (window.bhyt_paid_reload) {
               await window.bhyt_paid_reload();
-            } else if (typeof fetchBHYTDaThu === "function") {
-              await fetchBHYTDaThu();
             }
-
-            setErr(""); // clear lỗi (nếu có)
           } else {
-            const msg = res?.message || "Lỗi lưu hồ sơ";
-            setErr(msg);
-            toastError(msg);
+            document.getElementById('shspaid-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
           }
         } catch (e) {
           console.error(e);
-          setErr("Đã xảy ra lỗi khi lưu hồ sơ");
-          toastError("Đã xảy ra lỗi khi lưu hồ sơ");
         } finally {
           hideLoading();
-          __bhytp_paid_submitting = false;
         }
       }
 
