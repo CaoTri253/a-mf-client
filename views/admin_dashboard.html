@@ -2876,8 +2876,10 @@
         bhyt = bhyt.filter(byCls);
         bhtn = bhtn.filter(byCls);
       }
+      // BHYT: đã thu = unique SDD (không tính ĐTK) + Đối tượng khác
       renderRanking('#rankBHYT', buildClassRankingBHYT(students, bhyt));
-      renderRanking('#rankBHTN', buildClassRanking(students, bhtn));
+      // BHTN: xếp hạng theo số DÒNG đã thu
+      renderRanking('#rankBHTN', buildClassRankingBHTN(students, bhtn));
     }
 
 
@@ -3107,6 +3109,60 @@
 
       return result.sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
     }
+
+
+
+    // Xếp hạng tiến độ đóng BHTN (đếm dòng đã thu theo lớp)
+    function buildClassRankingBHTN(students, bhtnRows){
+      // Tổng HS theo lớp
+      const totalByClass = new Map();
+      (students || []).forEach(s => {
+        const cls = String(s.lop_hoc || '').trim();
+        if (!cls) return;
+        totalByClass.set(cls, (totalByClass.get(cls) || 0) + 1);
+      });
+
+      // Map SDD -> lớp (fallback khi dòng BHTN thiếu lớp)
+      const sddToClass = new Map();
+      (students || []).forEach(s => {
+        const sdd = String(s.so_dinh_danh || '').trim();
+        const cls = String(s.lop_hoc || '').trim();
+        if (sdd && cls) sddToClass.set(sdd, cls);
+      });
+
+      // Tiêu chí "đã thu"
+      const isPaid = (r) => {
+        const so_tien = Number(String(r.so_tien || '').replaceAll(',', ''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so  = String(r.so_ho_so || '');
+        return (so_tien > 0) || (trang_thai === '1') || !!so_ho_so;
+      };
+
+      // Đếm số dòng đã thu theo lớp (KHÔNG unique theo SDD cho BHTN)
+      const doneByClass = new Map();
+      (bhtnRows || []).forEach(r => {
+        if (!isPaid(r)) return;
+        let cls = String(r.lop_hoc || '').trim();
+        if (!cls) {
+          const sdd = String(r.so_dinh_danh || '').replace(/^'/, '').trim();
+          if (sdd) cls = sddToClass.get(sdd) || '';
+        }
+        if (!cls) return;
+        doneByClass.set(cls, (doneByClass.get(cls) || 0) + 1);
+      });
+
+      // Kết quả
+      const result = [];
+      for (const [cls, total] of totalByClass.entries()) {
+        const done = doneByClass.get(cls) || 0;
+        const pct  = total ? Math.round(done * 100 / total) : 0;
+        result.push({ cls, done, total, pct });
+      }
+
+      // Sort: % giảm → đã thu giảm → tên lớp
+      return result.sort((a, b) => b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
+    }
+
 
 
     function wireSidebar(){
