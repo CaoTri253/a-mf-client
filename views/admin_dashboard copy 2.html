@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Dashboard – ABT Medu</title>
+
+  <!-- Disable Devtool -->
+  <!-- <script src="/js/anti-devtools.js"></script> -->
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
@@ -20,20 +24,89 @@
     .app{ display:flex; min-height:100vh; width:100%; }
 
     /* ===== Sidebar (match superadmin) ===== */
-    .sidebar{ width:var(--sidebar-w); background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a); color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh; }
+    /* ===== Sidebar ===== */
+    .sidebar{ width:var(--sidebar-w); background:linear-gradient(180deg, #0d47a1, #1e3a8a 60%, #0f172a); color:#fff; padding:16px 14px; position:sticky; top:0; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden;}
     .brand{ display:flex; gap:10px; align-items:center; padding:10px 10px 18px 6px; border-bottom:1px solid rgba(255,255,255,.12); margin-bottom:8px; }
     .brand .logo{ width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; font-size:22px; }
     .brand .name{ font-weight:800; letter-spacing:.3px; line-height:1.1 }
-    .nav-section{ margin-top:10px; }
+    .nav-section{ margin-top:10px; flex-grow:1; }
     .nav-item{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#dbeafe; text-decoration:none; margin:4px 0; cursor:pointer; }
     .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; }
     .nav-item.active{ background:rgba(59,130,246,.35); color:#fff; }
     .nav-item .bi{ font-size:18px; width:22px; text-align:center; }
 
+    @supports (height: 100svh){
+      .sidebar{ height:100svh; }
+    }
+
+    /* Chỉ phần menu cuộn, tránh “kẹt” chiều cao trong flex */
+    .sidebar-scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+
+
+    /* Đáy sidebar luôn thấy được, thêm safe-area cho mobile */
+    .sidebar-bottom{
+      position: sticky; bottom: 0;
+      padding-top: 8px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,.35) 40%, rgba(15,23,42,.6) 100%);
+    }
+
+    /* Phân cách menu và logout */
+    .sidebar hr{ border:none; border-top:1px solid rgba(255,255,255,.2); margin:12px 0; }
+
+    /* Nút đăng xuất ở đáy: kích thước gọn, rõ hover */
+    .sidebar-bottom .nav-item{
+      margin: 0;                 /* gọn sát đáy */
+      padding: 10px 12px;
+    }
+    .sidebar-bottom .nav-item:hover{
+      background: rgba(255,255,255,.10);
+    }
+
+    /* Footer bản quyền nhỏ, cân màu */
+    .sidebar footer{
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.2;
+      color: #d1d5db;
+      margin-top: 8px;
+      opacity: .9;
+    }
+
+    /* ===== Tối ưu cho màn hình thấp (laptop 13" hoặc cửa sổ nhỏ) ===== */
+    @media (max-height: 720px){
+      .brand{ padding-bottom: 10px; margin-bottom: 6px; }
+      .nav-item{ padding: 8px 10px; }
+      .nav-section{ margin-top: 6px; }
+    }
+
+    /* ===== Cuộn mượt và đẹp (tùy chọn) ===== */
+    .sidebar-scroll{ scroll-behavior: smooth; }
+    .sidebar-scroll::-webkit-scrollbar{ width: 8px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.25);
+      border-radius: 8px;
+    }
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover{
+      background: rgba(255,255,255,.35);
+    }
+
+    /* Tôn trọng người dùng giảm chuyển động (tùy chọn) */
+    @media (prefers-reduced-motion: reduce){
+      .sidebar{ scroll-behavior: auto; }
+      .sidebar-scroll{ scroll-behavior: auto; }
+    }
+
+
+
+
     /* ===== Content ===== */
     .content{ flex:1; padding:18px; max-width:1600px; margin:0 auto; }
     .page-title{ font-weight:800; letter-spacing:.3px; color:#0f172a; }
     .sub-muted{ color:var(--muted); }
+
+    /* Link tải mẫu excel */
+    .download-link { margin-left: 15px; color: #007bff; cursor: pointer; }
 
     /* ===== Cards / KPI ===== */
     .kpi-grid{ display:grid; gap:14px; grid-template-columns: repeat(12, 1fr); }
@@ -45,6 +118,8 @@
     .ic-indigo{ background:#6366f1; }
     .ic-orange{ background:#f59e0b; }
     .ic-blue{ background:#2563eb; }
+    .ic-amber{ background:#be0bf5; color:#fff; }
+
     @media (min-width: 576px){ .kpi-card{ grid-column: span 6; } }
     @media (min-width: 1200px){ .kpi-card{ grid-column: span 3; } }
 
@@ -193,17 +268,24 @@
         </div>
       </div>
 
-      <div class="nav-section" id="sidebarMenu">
-        <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
-        <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
-        <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
-        <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
-        <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
-        <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
-        <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
-        <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
-        <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
+      <div class="sidebar-scroll">
+        <div class="nav-section" id="sidebarMenu">
+          <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
+          <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
+          <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
+          <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
+          <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
+          <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
+          <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
+          <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
+          <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <hr>
         <div class="nav-item" id="btnLogout"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span></div>
+        <footer>Copyright &copy; ABT Medu 2025</footer>
       </div>
     </aside>
 
@@ -211,6 +293,8 @@
 
     <!-- Content -->
     <main class="content w-100">
+
+      <!-- NỘI DUNG ĐẦU TRANG DASHBOARD -->
       <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
         <div>
           <button id="btnToggleSidebar" class="btn btn-light border toggle-btn">
@@ -257,6 +341,16 @@
                   <div class="lbl">Tổng số BHTN đã thu</div>
                 </div>
               </div>
+
+              <div class="kpi-card">
+                <div class="icon ic-amber"><i class="bi bi-people"></i></div>
+                <div>
+                  <div class="val" id="kpiOther">0</div>
+                  <div class="lbl">Đối tượng khác</div>
+                </div>
+              </div>
+
+
               <div class="kpi-card">
                 <div class="icon ic-blue"><i class="bi bi-speedometer2"></i></div>
                 <div>
@@ -403,6 +497,7 @@
             <button id="adm-btn-reload" class="btn btn-primary">Tải lại</button>
             <button id="adm-btn-add" class="btn btn-success">Thêm học sinh</button>
             <button id="adm-btn-import" class="btn btn-outline-primary">Nhập Excel</button>
+            <span class="download-link" onclick="downloadMauHS()">Tải mẫu excel nhập học sinh</span>
             <button id="adm-btn-delmany" class="btn btn-danger d-none">Xóa đã chọn</button>
           </div>
 
@@ -573,7 +668,7 @@
         </ul>
 
         <div class="tab-content pt-3">
-          <!-- TAB 1: Gom toàn bộ chức năng DS BHYT vào đây -->
+          <!-- TAB 1: DANH SÁCH BHYT CHƯA THU -->
           <div class="tab-pane fade show active" id="tab-unpaid" role="tabpanel" aria-labelledby="tab-unpaid-tab">
             <!-- Sticky header + search + chọn nhiều lớp -->
             <div class="table-box p-3 mb-2">
@@ -773,7 +868,7 @@
             </div>
           </div>
 
-          <!-- TAB 2: Danh sách BHYT ĐÃ THU -->
+          <!-- TAB 2: DANH SÁCH BHYT ĐÃ THU -->
           <div class="tab-pane fade" id="tab-other" role="tabpanel" aria-labelledby="tab-other-tab">
             <div class="table-box p-3 mb-2">
               <div class="row g-2 align-items-center">
@@ -805,62 +900,99 @@
 
             <!-- Modal XEM THẺ BHYT (riêng, không trùng ID) -->
             <div class="modal fade" id="modalTheBHYT" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Thẻ bảo hiểm y tế</h5>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-secondary btn-sm" onclick="bhytp_downloadCardImage()">Lưu ảnh thẻ</button>
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Thẻ bảo hiểm y tế</h5>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-secondary btn-sm" onclick="bhytp_downloadCardImage()">Lưu ảnh thẻ</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                  <div id="cardScaleWrap">
-                    <div id="cardArea" class="bhyt-card">
-                      <div class="bhyt-inner">
-                        <div class="bhyt-top">
-                          <div class="bhyt-logo-wrap">
-                            <div class="bhyt-logo"><img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN"></div>
-                            <div class="bhyt-obj" id="c-doituong">Học sinh</div>
+                  <div class="modal-body">
+                    <div id="cardScaleWrap">
+                      <div id="cardArea" class="bhyt-card">
+                        <div class="bhyt-inner">
+                          <div class="bhyt-top">
+                            <div class="bhyt-logo-wrap">
+                              <div class="bhyt-logo"><img id="c-logo" src="../assets/image/bhxh-logo.png" alt="BHXH VN"></div>
+                              <div class="bhyt-obj" id="c-doituong">Học sinh</div>
+                            </div>
+                            <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
+                            <div class="bhyt-lop-big" id="c-lop-big"></div>
                           </div>
-                          <div class="bhyt-title">THẺ BẢO HIỂM Y TẾ</div>
-                          <div class="bhyt-lop-big" id="c-lop-big"></div>
-                        </div>
-                        <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
-                        <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
-                        <div class="bhyt-grid">
-                          <div class="bhyt-col">
-                            <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
-                            <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
-                            <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
-                            <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
-                            <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
-                            <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
-                            <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
-                            <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                          <div class="bhyt-ms">Mã số: <span id="c-ms">—</span></div>
+                          <div class="bhyt-sdd-line">Số định danh:<span class="bhyt-sdd" id="c-sdd">—</span></div>
+                          <div class="bhyt-grid">
+                            <div class="bhyt-col">
+                              <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten">—</div></div>
+                              <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh">—</div></div>
+                              <div class="kv"><div class="k">Nơi ĐK KCB BĐ</div><div class="v" id="c-noikham">—</div></div>
+                              <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu">—</div></div>
+                              <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den">—</div></div>
+                              <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi">—</div></div>
+                              <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt">—</div></div>
+                              <div class="kv"><div class="k">Ghi chú</div><div class="v" id="c-ghichu">—</div></div>
+                            </div>
+                            <div class="bhyt-col">
+                              <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
+                              <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
+                              <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
+                              <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
+                              <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
+                              <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+                            </div>
                           </div>
-                          <div class="bhyt-col">
-                            <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh">—</div></div>
-                            <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop">—</div></div>
-                            <div class="kv"><div class="k">Số tháng đóng</div><div class="v" id="c-thang">—</div></div>
-                            <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien">—</div></div>
-                            <div class="kv"><div class="k">Trường</div><div class="v" id="c-truong">—</div></div>
-                            <div class="kv"><div class="k">QR</div><div class="v" id="card-qr"></div></div>
+                          <div class="bhyt-footer">
+                            <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
+                            <div class="bhyt-sohoso" id="c-sohoso">—</div>
                           </div>
-                        </div>
-                        <div class="bhyt-footer">
-                          <div class="bhyt-stamp">ĐÃ KÍCH HOẠT</div>
-                          <div class="bhyt-sohoso" id="c-sohoso">—</div>
                         </div>
                       </div>
                     </div>
                   </div>
+                  <div class="modal-footer">
+                    <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhytp_downloadCardImage()">Lưu ảnh thẻ</button></div>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- Modal Sửa hồ sơ - TAB ĐÃ THU (đồng bộ với bản gốc) -->
+            <div class="modal fade" id="modalSuaHoSoBHYT_DaThu" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHYT (đã thu)</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="shspaid-hoten" readonly></div>
+                  <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="shspaid-ngaysinh" readonly></div>
+                  <div class="mb-2"><label>Nơi khám BHYT:</label><input class="form-control" id="shspaid-noikham" list="noikham-list" placeholder="Nhập nơi khám BHYT"></div>
+                  <div class="mb-2">
+                    <label>Số tháng đóng:</label>
+                    <div>
+                      <input type="radio" name="shspaid-thang" value="3" id="shspaid-thang-3"> <label for="shspaid-thang-3">3 tháng</label>
+                      <input type="radio" name="shspaid-thang" value="6" id="shspaid-thang-6" class="ms-3"> <label for="shspaid-thang-6">6 tháng</label>
+                      <input type="radio" name="shspaid-thang" value="12" id="shspaid-thang-12" class="ms-3"> <label for="shspaid-thang-12">12 tháng</label>
+                    </div>
+                  </div>
+                  <div class="mt-2 small">
+                    <div><strong>Hạn sử dụng dự kiến:</strong> <span id="shspaid-exp-preview" class="fw-bold text-danger">—</span></div>
+                    <div id="shspaid-exp-note" class="text-muted" style="min-height:18px"></div>
+                    <div><strong>Số tiền cần đóng:</strong> <span id="shspaid-amount-preview" class="fw-bold text-danger">—</span></div>
+                  </div>
+                  <div id="shspaid-error" class="text-danger" style="min-height:18px"></div>
                 </div>
                 <div class="modal-footer">
-                  <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhytp_downloadCardImage()">Lưu ảnh thẻ</button></div>
                   <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button class="btn btn-primary" onclick="submitSuaHoSoBHYT_DaThu()">Lưu thay đổi</button>
                 </div>
               </div></div>
             </div>
+
+
           </div>
 
         </div>
@@ -910,6 +1042,8 @@
   </div>
 
 
+
+
   <!-- Bootstrap JS & các thư viện khác -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -921,6 +1055,9 @@
 
   <!-- Thư viện nội bộ -->
   <script src="../js/api.js"></script>
+
+
+  
 
   <!-- ====== KHỐI HỌC SINH CHO ADMIN ====== -->
   <script>
@@ -982,7 +1119,7 @@
   function adm_isValidPhone(s){ return /^0\d{9}$/.test(String(s||'').trim()); }
   function adm_isValidSdd(s){ return /^\d{12}$/.test(String(s||'').trim()); }
 
-  // Validate từng dòng import (tham khảo validateImportRowNew bên ds_hocsinh.html)
+  // Validate từng dòng import
   function adm_validateImportRowNew(
     row, rowNum,
     soDinhDanhSet, maSoBHXHSet,
@@ -1004,15 +1141,28 @@
       ['ten_cha_me', 'Tên cha/mẹ'],
       ['ma_truong', 'Mã trường']
     ];
-    for (const [k,label] of required){
+    // Kiểm tra các trường bắt buộc
+    for (const [k, label] of required){
       if (!row[k] || String(row[k]).trim()===''){
         return `Dòng ${rowNum}: Trường "${label}" không được để trống.`;
       }
     }
+
+    // Kiểm tra lớp
+    if (!row.lop_hoc || String(row.lop_hoc).trim() === '') {
+      return `Dòng ${rowNum}: Trường "Lớp" không được để trống.`;
+    }
+
+    // Kiểm tra số điện thoại hợp lệ
+    if (!adm_isValidPhone(row.sdt_lienhe)) {
+      return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+    }
+
+    // Kiểm tra định dạng ngày hợp lệ
     if (!adm_isValidDateVN(row.ngay_sinh)) return `Dòng ${rowNum}: Ngày sinh "${row.ngay_sinh}" không hợp lệ.`;
     if (!adm_isValidDateVN(row.ngay_het_han_bhyt)) return `Dòng ${rowNum}: Hạn BHYT "${row.ngay_het_han_bhyt}" không hợp lệ.`;
     if (!adm_isValidDateVN(row.ngay_het_han_bhtn)) return `Dòng ${rowNum}: Hạn BHTN "${row.ngay_het_han_bhtn}" không hợp lệ.`;
-    if (!adm_isValidPhone(row.sdt_lienhe)) return `Dòng ${rowNum}: SĐT "${row.sdt_lienhe}" không hợp lệ.`;
+
     if (!adm_isValidSdd(row.so_dinh_danh)) return `Dòng ${rowNum}: Số định danh "${row.so_dinh_danh}" không hợp lệ. Số định danh phải gồm 12 số!`;
 
     if (requiredMaTruong && String(row.ma_truong).trim() !== String(requiredMaTruong).trim()){
@@ -1031,7 +1181,8 @@
     maSoBHXHSet.add(ms);
     soDinhDanhSet.add(sdd);
     return "";
-  }
+}
+
 
 
 
@@ -1462,7 +1613,12 @@
           showToast(msg, 'danger');
         }
 
-      } finally { hideLoading(); }
+      } catch (err) {
+        hideLoading();
+        console.error(err);
+        err.textContent = 'Đã có lỗi xảy ra khi xử lý tệp!';
+        showToast('Đã có lỗi xảy ra khi xử lý tệp!', 'danger');
+      }
     });
   }
   </script>
@@ -1513,6 +1669,8 @@
       el.querySelector('.btn-close').onclick=()=>el.remove();
       setTimeout(()=>el.remove(), 2600);
     }
+    
+    /* ===== Force unlock scroll (nếu modal bị kẹt) & hook modal unlock ===== */
     function forceUnlockScroll(){
       try{
         document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
@@ -1523,6 +1681,8 @@
         document.documentElement.style.overflow = '';
       }catch(_){}
     }
+    
+    /* hook modal để gỡ khóa scroll khi modal đóng */
     function hookModalUnlock(id){
       const el = document.getElementById(id);
       if(!el) return;
@@ -1624,10 +1784,12 @@
       else if (width <= 1023) bhyt_pageSize = 7;
       else bhyt_pageSize = 20;
     }
+    
     window.addEventListener('resize', () => {
       const prev = bhyt_pageSize; detectPageSizeBHYT();
       if (bhyt_pageSize !== prev){ bhyt_page = 1; renderAllViewBHYT(); }
     });
+    
     function doSearchBHYT(){
       const q = String(document.getElementById('bhyt-search')?.value||"").trim().toLowerCase();
       bhyt_lastFiltered = !q ? bhyt_allData : bhyt_allData.filter(hs =>
@@ -1637,6 +1799,7 @@
       );
       bhyt_page=1; renderAllViewBHYT();
     }
+    
     function renderAllViewBHYT(){
       let data = bhyt_lastFiltered || bhyt_allData;
       if (bhyt_sortField){
@@ -1654,6 +1817,7 @@
       renderPaginationBHYT(data.length);
       updateBulkButton();
     }
+    
     function renderPaginationBHYT(total){
       const totalPages = Math.max(1, Math.ceil(total / bhyt_pageSize));
       const ul = document.getElementById('bhyt-pagin'); if(!ul) return; ul.innerHTML='';
@@ -1678,6 +1842,8 @@
     /* ===== Bảng danh sách ===== */
     function sortIconBHYT(field){ if(bhyt_sortField!==field) return ''; return bhyt_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
     window.doSort = function(field){ if(bhyt_sortField===field) bhyt_sortDir=-bhyt_sortDir; else { bhyt_sortField=field; bhyt_sortDir=1; } renderAllViewBHYT(); };
+    
+    /* hiển thị danh sách Học sinh */
     function renderDanhSachHS(ds){
       const wrap = document.getElementById('bhyt-ds'); if(!wrap) return;
       if (!ds || ds.length === 0){
@@ -1771,6 +1937,8 @@
       finally{ hideLoading(); }
     }
 
+
+    /* ===== Hiển thị Modal sửa Hồ sơ Danh sách BHYT Chưa thu ===== */
     async function showSuaHoSoModal(stt){
       const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
       _currentHS_Sua = hs;
@@ -1792,6 +1960,7 @@
       } catch(e){ console.error(e); }
       finally{ hideLoading(); }
     }
+    /* ===== Submit Modal sửa Hồ sơ Danh sách BHYT Chưa thu ===== */
     async function submitSuaHoSoBHYT(){
       if(!_currentHS_Sua) return;
       showLoading();
@@ -1819,6 +1988,12 @@
           forceUnlockScroll();
           toastSuccess('Đã lưu thay đổi');
           await fetchChuaThuHocsinh();
+
+          // cũng reload danh sách ĐÃ THU nếu hàm reload có tồn tại
+          if (window.bhyt_paid_reload) {
+            await window.bhyt_paid_reload();
+          }
+
         } else {
           document.getElementById('shs-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
         }
@@ -1826,9 +2001,17 @@
       finally{ hideLoading(); }
     }
 
+
+
+
     /* ===== Alias tên hàm theo mẫu ===== */
     window.suaHoSo = (stt)=>showSuaHoSoModal(stt);
     window.inPhieuThu = (stt)=>openPreviewReceipt(stt);
+
+
+
+
+
 
     /* ===== Bulk ===== */
     function showBulkNopHoSoModal(){
@@ -1971,11 +2154,13 @@
       } finally{ hideLoading(); }
     }
 
-
+    /* Tạo chuỗi QR theo chuẩn */
     function buildQRPayload(maTruong, school, lop, ten, thang, hanSuDung) {
       return `MT=${maTruong};S=${stripVN(school)};L=${lop};N=${stripVN(ten)};M=${thang};E=${hanSuDung}`;
     }
 
+
+    /* Loại bỏ dấu tiếng Việt để QR ngắn hơn */
     function stripVN(str) {
       return String(str || "")
         .normalize("NFD")
@@ -1983,6 +2168,7 @@
         .replace(/đ/g, 'd').replace(/Đ/g, 'D');
     }
 
+    /* Lấy chữ cái đầu tên để QR ngắn hơn */
     function initials(str) {
       return String(str || "").trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase();
     }
@@ -2047,6 +2233,7 @@
       check();
     }
 
+    /* Tải ảnh PNG của phiếu thu */
     async function downloadReceiptImage(){
       const el = document.getElementById('receiptA5'); if(!el) return;
       const canvas = await html2canvas(el,{useCORS:true,scale:2});
@@ -2072,6 +2259,8 @@
     hookModalUnlock('modalNopHoSoBHYT');
     hookModalUnlock('modalSuaHoSoBHYT');
     hookModalUnlock('modalPhieuThu');
+    hookModalUnlock('modalSuaHoSoBHYT_DaThu');
+
 
     /* Router gọi khi vào tab BHYT */
     window.bhyt_wirePage = function(){
@@ -2088,6 +2277,16 @@
     /* Init nhẹ (không auto fetch) */
     (function initBHYT(){ if(!bhyt_user?.ma_truong) return; /* no-op */ })();
   </script>
+
+
+
+
+
+
+
+
+
+
 
   <!-- ====== KHỐI BHYT ĐÃ THU ===== -->
   <script>
@@ -2171,6 +2370,8 @@
         bhytp_page=1;
         bhytp_renderAllView();
       }
+
+      /* Sort khi click header */
       function bhytp_renderAllView(){
         let data = bhytp_lastFiltered || bhytp_allData;
         if (bhytp_sortField){
@@ -2189,6 +2390,8 @@
         bhytp_renderTable(data.slice(start,start+bhytp_pageSize), start);
         bhytp_renderPagin(data.length);
       }
+
+      /* Render bảng */
       function bhytp_renderPagin(total){
         const totalPages = Math.max(1, Math.ceil(total / bhytp_pageSize));
         const ul = document.getElementById('bhytp-pagin'); if(!ul) return; ul.innerHTML='';
@@ -2209,7 +2412,7 @@
         add(bhytp_page+1,'Sau',false,bhytp_page===totalPages);
       }
 
-      /* ===== Table ===== */
+      /* ===== Bảng dữ liệu ===== */
       function bhytp_statusCell(row){
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
@@ -2217,18 +2420,24 @@
         if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${bhytp_escapeHtml(shs)}</span></div>`;
         return `<span class="status-badge status-pending">Đang xử lý</span>`;
       }
+
+      /* Các nút thao tác trong bảng */
       function bhytp_actionsCell(i,row){
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===1 && shs){
           return `<div class="action-btns">
+            <button class="btn btn-sm btn-warning" onclick="showSuaHoSoModal_DaThu('${row.stt}')">Sửa hồ sơ</button>
             <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button>
             <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
           </div>`;
         }
         return `<div class="action-btns">
+          <button class="btn btn-sm btn-warning" onclick="showSuaHoSoModal_DaThu('${row.stt}')">Sửa hồ sơ</button>
           <button class="btn btn-sm btn-primary" onclick="bhytp_onPrintReceiptIdx(${i})">In phiếu thu</button>
         </div>`;
       }
+
+      
       function bhytp_buildHead(){
         return `<thead><tr>
           <th class="th-action">Thao tác</th>
@@ -2291,6 +2500,110 @@
 
       window.bhytp_onViewCardIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onViewCard(row), 50); };
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
+
+
+
+
+
+      // === Hiển thị Modal Sửa hồ sơ BHYT (ĐÃ THU) ===
+      async function showSuaHoSoModal_DaThu(stt) {
+        // Lấy đúng từ nguồn dữ liệu của tab ĐÃ THU
+        const source = (window.bhytp_lastFiltered || window.bhytp_allData || []);
+        let hs = source.find(h => String(h.stt) === String(stt));
+        if (!hs && Array.isArray(window._bhytpView)) {
+          hs = window._bhytpView.find(h => String(h.stt) === String(stt));
+        }
+        if (!hs) { console.warn('Không tìm thấy hồ sơ trong dữ liệu ĐÃ THU:', stt); return; }
+
+        window._currentHS_Sua = hs;
+        showLoading();
+        try {
+          // Đổ dữ liệu vào modal ĐÃ THU (ID bắt đầu bằng shspaid-)
+          document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('shspaid-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+          document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
+
+          // Lấy số tháng (ưu tiên dữ liệu hiện có, sau đó tới API)
+          const info   = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
+          const months = String(hs.so_thang_dong ?? info?.data?.so_thang_dong ?? '12');
+          const rSel   = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
+          if (rSel) rSel.checked = true;
+
+          // Tính toán preview
+          const g = await ensureGiaBHYT();
+          const {exp, amount, note} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+          document.getElementById('shspaid-exp-preview').innerText    = exp;
+          document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+          document.getElementById('shspaid-exp-note').innerText       = note || "";
+
+          // Mở đúng modal ĐÃ THU
+          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_DaThu')).show();
+        } catch (e) {
+          console.error(e);
+        } finally {
+          hideLoading();
+        }
+      }
+
+
+
+
+
+
+      // Submit riêng cho modal Sửa hồ sơ (TAB ĐÃ THU) — hành vi giống submitSuaHoSoBHYT bên "Chưa thu"
+      async function submitSuaHoSoBHYT_DaThu() {
+        if (!_currentHS_Sua) return;
+        showLoading();
+        try {
+          const g = await ensureGiaBHYT();
+          const months = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+          const noikham = document.getElementById('shspaid-noikham').value.trim();
+
+          const { exp, amount } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
+          const rate = getRateByMonths(g, months);
+          const hh = parseFloat((amount * rate).toFixed(2));
+
+          const res = await suaHoSoBHYTApi({
+            so_dinh_danh: _currentHS_Sua.so_dinh_danh,
+            ma_truong: bhyt_user.ma_truong,
+            lop_hoc: _currentHS_Sua.lop_hoc || "",
+            so_thang_dong: months,
+            noi_kham_bhyt: noikham,
+            so_tien: amount,
+            hoa_hong: hh,
+            han_su_dung_bhyt_moi: exp
+          });
+
+          if (res?.success) {
+            bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT_DaThu'))?.hide();
+            forceUnlockScroll();
+            toastSuccess('Đã lưu thay đổi');
+
+            // reload danh sách CHƯA THU (nếu bạn đang hiển thị song song)
+            await fetchChuaThuHocsinh?.();
+
+            // và reload danh sách ĐÃ THU nếu có khai báo hàm này
+            if (window.bhyt_paid_reload) {
+              await window.bhyt_paid_reload();
+            }
+          } else {
+            document.getElementById('shspaid-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          hideLoading();
+        }
+      }
+
+
+
+      /* Hiện biến hồ sơ đang sửa */
+      window.showSuaHoSoModal_DaThu = showSuaHoSoModal_DaThu;
+      window.submitSuaHoSoBHYT_DaThu = submitSuaHoSoBHYT_DaThu;
+
+
+
 
       function bhytp_onViewCard(row){
         const LOGO_BHXH = "../assets/image/bhxh-logo.png";
@@ -2472,6 +2785,23 @@
 
   <!-- Main script -->
   <script>
+
+    // === Vietnamese text processing ===
+    function stripVN(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+    function keyVN(s){ return stripVN(String(s||'')).toLowerCase().trim(); }
+    function isOtherDoiTuong(val){
+      const raw = (val ?? '').toString().trim();
+      if (!raw || raw.toLowerCase()==='null') return false;
+      const k = keyVN(raw);
+      return !(k === 'hs' || k === 'hoc sinh');
+    }
+
+
+
+
+
+
+
     // === Utilities ===
     const $ = (s, root=document) => root.querySelector(s);
     const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
@@ -2549,8 +2879,10 @@
         bhyt = bhyt.filter(byCls);
         bhtn = bhtn.filter(byCls);
       }
-      renderRanking('#rankBHYT', buildClassRanking(students, bhyt));
-      renderRanking('#rankBHTN', buildClassRanking(students, bhtn));
+      // BHYT: đã thu = unique SDD (không tính ĐTK) + Đối tượng khác
+      renderRanking('#rankBHYT', buildClassRankingBHYT(students, bhyt));
+      // BHTN: xếp hạng theo số DÒNG đã thu
+      renderRanking('#rankBHTN', buildClassRankingBHTN(students, bhtn));
     }
 
 
@@ -2574,16 +2906,17 @@
           const so_ho_so = String(r.so_ho_so||'');
           return so_tien>0 || trang_thai==='1' || !!so_ho_so;
         };
-        const bhytPaid = bhytRows.filter(isPaid);
-        const bhtnPaid = bhtnRows.filter(isPaid);
 
-        renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
+
+        const { otherCount, bhytPaidAdjusted, bhtnPaidCount } = calcOverviewNumbers(students, bhytRows, bhtnRows);
+
+        renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
         const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-        STATE = { students, bhytPaid, bhtnPaid };
+        STATE = { students, bhytPaid: bhytRows, bhtnPaid: bhtnRows };
         applyFilters();
 
         // Users overview
@@ -2637,16 +2970,69 @@
       catch(e){ return []; }
     }
 
-    // === Rendering ===
-    function renderKPIs(studentsTotal, bhytPaidCount, bhtnPaidCount){
-      $('#kpiStudents').textContent = studentsTotal.toLocaleString('vi-VN');
-      $('#kpiBHYTCount').textContent = bhytPaidCount.toLocaleString('vi-VN');
-      $('#kpiBHTNCount').textContent = bhtnPaidCount.toLocaleString('vi-VN');
-      const rateBHYT = studentsTotal ? Math.round(bhytPaidCount * 100 / studentsTotal) : 0;
-      const rateBHTN = studentsTotal ? Math.round(bhtnPaidCount * 100 / studentsTotal) : 0;
-      $('#progressBHYTText').textContent = rateBHYT + '%';
-      $('#progressBHTNTextCard').textContent = rateBHTN + '%';
+
+
+
+
+    function calcOverviewNumbers(students, bhytRows, bhtnRows){
+      // Đối tượng khác (từ DS học sinh)
+      const otherSet = new Set();
+      (students||[]).forEach(s=>{
+        const id = String(s?.so_dinh_danh||'').trim();
+        if (!id) return;
+        if (isOtherDoiTuong(s.doi_tuong_dong)) otherSet.add(id);
+      });
+
+      // Đã thu BHYT (unique theo SDD) từ bảng BHYT
+      const isPaid = r => {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so = String(r.so_ho_so||'');
+        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
+      };
+      const paidSet = new Set();
+      (bhytRows||[]).forEach(r=>{
+        if (!isPaid(r)) return;
+        const sdd = String(r.so_dinh_danh||'').replace(/^'/,'').trim();
+        if (sdd) paidSet.add(sdd);
+      });
+
+      // Tránh đếm đôi: tách phần HS “thực tế” (không thuộc đối tượng khác)
+      let paidHSOnly = 0;
+      paidSet.forEach(id=>{ if (!otherSet.has(id)) paidHSOnly++; });
+
+      const bhytPaidAdjusted = paidHSOnly + otherSet.size;
+      const bhtnPaidCount   = (bhtnRows||[]).filter(isPaid).length;
+
+      return {
+        otherCount: otherSet.size,
+        bhytPaidAdjusted,
+        bhtnPaidCount
+      };
     }
+
+
+
+
+
+
+
+
+
+    // === Rendering ===
+    function renderKPIs(studentsTotal, bhytPaidCountAdjusted, bhtnPaidCount, otherCount){
+      $('#kpiStudents').textContent  = (studentsTotal||0).toLocaleString('vi-VN');
+      $('#kpiBHYTCount').textContent = (bhytPaidCountAdjusted||0).toLocaleString('vi-VN');
+      $('#kpiBHTNCount').textContent = (bhtnPaidCount||0).toLocaleString('vi-VN');
+      const rateBHYT = studentsTotal ? Math.round((bhytPaidCountAdjusted||0) * 100 / studentsTotal) : 0;
+      const rateBHTN = studentsTotal ? Math.round((bhtnPaidCount||0) * 100 / studentsTotal) : 0;
+      $('#progressBHYTText').textContent     = rateBHYT + '%';
+      $('#progressBHTNTextCard').textContent = rateBHTN + '%';
+      // KPI card “Đối tượng khác”
+      const elOther = document.getElementById('kpiOther');
+      if (elOther) elOther.textContent = (otherCount||0).toLocaleString('vi-VN');
+    }
+
 
     function renderRanking(tbodySel, items){
       const tbody = $(tbodySel);
@@ -2664,12 +3050,123 @@
       tbody.innerHTML = rows || `<tr><td colspan="5" class="text-center text-secondary">Không có dữ liệu</td></tr>`;
     }
 
-    function buildClassRanking(students, paidRows){
-      const totalByClass = students.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-      const paidByClass = paidRows.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-      return Object.entries(totalByClass).map(([cls,total])=>{ const done = paidByClass[cls]||0; const pct = total? Math.round(done*100/total):0; return { cls, done, total, pct }; })
-        .sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
+    function buildClassRankingBHYT(students, bhytRows){
+      // Tổng HS & Đối tượng khác theo lớp
+      const totalByClass = new Map();
+      const otherByClass = new Map();
+      (students||[]).forEach(s=>{
+        const cls = String(s.lop_hoc||'').trim(); if(!cls) return;
+        totalByClass.set(cls, (totalByClass.get(cls)||0)+1);
+        if (isOtherDoiTuong(s.doi_tuong_dong)){
+          otherByClass.set(cls, (otherByClass.get(cls)||0)+1);
+        }
+      });
+
+      // Map SDD -> lớp (fallback khi dòng BHYT thiếu lớp)
+      const sddToClass = new Map();
+      (students||[]).forEach(s=>{
+        const sdd = String(s.so_dinh_danh||'').trim();
+        const cls = String(s.lop_hoc||'').trim();
+        if (sdd && cls) sddToClass.set(sdd, cls);
+      });
+
+      // Tập SDD đã nộp theo lớp (unique)
+      const isPaid = r => {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so = String(r.so_ho_so||'');
+        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
+      };
+      const paidSetByClass = new Map();
+      (bhytRows||[]).forEach(r=>{
+        if (!isPaid(r)) return;
+        const sdd = String(r.so_dinh_danh||'').replace(/^'/,'').trim();
+        if (!sdd) return;
+        let cls = String(r.lop_hoc||'').trim();
+        if (!cls) cls = sddToClass.get(sdd)||'';
+        if (!cls) return;
+        if (!paidSetByClass.has(cls)) paidSetByClass.set(cls, new Set());
+        paidSetByClass.get(cls).add(sdd);
+      });
+
+      // Loại trùng với “Đối tượng khác”: done = paidUnique(non-Other) + Other
+      const result = [];
+      for (const [cls,total] of totalByClass.entries()){
+        const paidUnique = paidSetByClass.get(cls) || new Set();
+        let paidHSOnly = 0;
+        paidUnique.forEach(sdd=>{
+          // nếu sdd thuộc other => KHÔNG cộng vào paidHSOnly
+          // dựng set other theo lớp nhanh
+          const otherCount = otherByClass.get(cls)||0; // dùng sẵn cho done
+          // Không có danh sách SDD-other theo lớp => ước lượng bằng cách:
+          //   Nếu học sinh sdd đó trong 'students' của lớp này và isOtherDoiTuong=true ⇒ loại
+          //   (đã có map sdd->class; ở đây class đang xét)
+          const s = (students||[]).find(x => String(x.so_dinh_danh||'').trim()===sdd);
+          if (!s || !isOtherDoiTuong(s?.doi_tuong_dong)) paidHSOnly++;
+        });
+        const otherCls = otherByClass.get(cls)||0;
+        const done = paidHSOnly + otherCls;
+        const pct  = total ? Math.round(done*100/total) : 0;
+        result.push({ cls, done, total, pct });
+      }
+
+      return result.sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
     }
+
+
+
+    // Xếp hạng tiến độ đóng BHTN (đếm dòng đã thu theo lớp)
+    function buildClassRankingBHTN(students, bhtnRows){
+      // Tổng HS theo lớp
+      const totalByClass = new Map();
+      (students || []).forEach(s => {
+        const cls = String(s.lop_hoc || '').trim();
+        if (!cls) return;
+        totalByClass.set(cls, (totalByClass.get(cls) || 0) + 1);
+      });
+
+      // Map SDD -> lớp (fallback khi dòng BHTN thiếu lớp)
+      const sddToClass = new Map();
+      (students || []).forEach(s => {
+        const sdd = String(s.so_dinh_danh || '').trim();
+        const cls = String(s.lop_hoc || '').trim();
+        if (sdd && cls) sddToClass.set(sdd, cls);
+      });
+
+      // Tiêu chí "đã thu"
+      const isPaid = (r) => {
+        const so_tien = Number(String(r.so_tien || '').replaceAll(',', ''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so  = String(r.so_ho_so || '');
+        return (so_tien > 0) || (trang_thai === '1') || !!so_ho_so;
+      };
+
+      // Đếm số dòng đã thu theo lớp (KHÔNG unique theo SDD cho BHTN)
+      const doneByClass = new Map();
+      (bhtnRows || []).forEach(r => {
+        if (!isPaid(r)) return;
+        let cls = String(r.lop_hoc || '').trim();
+        if (!cls) {
+          const sdd = String(r.so_dinh_danh || '').replace(/^'/, '').trim();
+          if (sdd) cls = sddToClass.get(sdd) || '';
+        }
+        if (!cls) return;
+        doneByClass.set(cls, (doneByClass.get(cls) || 0) + 1);
+      });
+
+      // Kết quả
+      const result = [];
+      for (const [cls, total] of totalByClass.entries()) {
+        const done = doneByClass.get(cls) || 0;
+        const pct  = total ? Math.round(done * 100 / total) : 0;
+        result.push({ cls, done, total, pct });
+      }
+
+      // Sort: % giảm → đã thu giảm → tên lớp
+      return result.sort((a, b) => b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
+    }
+
+
 
     function wireSidebar(){
       setActivePage('overview');
@@ -2715,16 +3212,15 @@
         ]);
 
         const isPaid = r => { const so_tien = Number(String(r.so_tien||'').replaceAll(',','')); const trang_thai = String(r.trang_thai ?? ''); const so_ho_so = String(r.so_ho_so||''); return so_tien>0 || trang_thai==='1' || !!so_ho_so; };
-        const bhytPaid = bhytRows.filter(isPaid);
-        const bhtnPaid = bhtnRows.filter(isPaid);
+        const { otherCount, bhytPaidAdjusted, bhtnPaidCount } = calcOverviewNumbers(students, bhytRows, bhtnRows);
 
-        renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
+        renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
         const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-        STATE = { students, bhytPaid, bhtnPaid };
+        STATE = { students, bhytPaid: bhytRows, bhtnPaid: bhtnRows };
         applyFilters();
 
         // Users overview
@@ -2757,6 +3253,12 @@
         hideLoading();
       }
     })();
+  </script>
+
+
+
+  <script>
+    function downloadMauHS() { window.open("../mau_nhap_hocsinh.xlsx", "_blank"); }
   </script>
 </body>
 </html>
