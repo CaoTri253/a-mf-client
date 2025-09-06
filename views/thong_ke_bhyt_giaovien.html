@@ -174,76 +174,38 @@
         const allHS = Array.isArray(resHS?.data) ? resHS.data : [];
         const total = allHS.length;
 
-        // 2) Danh sách BHYT theo lớp
+        // === Lấy "Đối tượng khác" trực tiếp từ danh sách học sinh (KHÔNG dựa vào bảng BHYT) ===
+        const otherSet = new Set(); // key: so_dinh_danh
+        for (const hs of allHS) {
+          const id = String(hs?.so_dinh_danh || '').trim();
+          if (!id) continue;
+          if (isOtherDoiTuongFromHS(hs)) otherSet.add(id);
+        }
+        const paidOther = otherSet.size; // số "Đối tượng khác" thực tế
+
+        // 2) Danh sách BHYT theo lớp (chỉ để xác định học sinh đóng theo kênh HS/Học sinh)
         const resBHYT = await getDanhSachBHYT(user.ma_truong, user.lop_hoc);
         const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
 
-        //==========Mã cũ=================================
-        // Tập học sinh đã đóng (unique theo so_dinh_danh) — quy ước: so_tien>0 hoặc trang_thai=="1"
-        // const paidSet = new Set();
-        // for (const r of ds) {
-        //   const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
-        //   const trang_thai = String(r.trang_thai ?? '');
-        //   const isPaid = (so_tien > 0) || (trang_thai === '1');
-        //   if (isPaid && r.so_dinh_danh) paidSet.add(String(r.so_dinh_danh));
-        // }
-
-        // const paid = paidSet.size;
-        // const unpaid = Math.max(0, total - paid);
-        // const rate = pct(paid, total);
-        // Cập nhật KPI
-        // document.getElementById('kpi-total').innerText = total.toLocaleString('vi-VN');
-        // document.getElementById('kpi-paid').innerText  = paid.toLocaleString('vi-VN');
-        // document.getElementById('kpi-unpaid').innerText= unpaid.toLocaleString('vi-VN');
-        // document.getElementById('kpi-rate').innerText  = fmtPercent(rate);
-
-        // Render biểu đồ tròn
-        // renderPie(unpaid, paid, total);
-        //==========Mã cũ=================================
-
-
-
-
-        // Gom cờ thanh toán theo từng học sinh để tránh đếm trùng
-        // key ưu tiên: so_dinh_danh; nếu rỗng thì bỏ qua để tránh sai lệch
-        const perStudent = new Map();
-        /*
-          Mỗi entry: { hasPaidHS:boolean, hasPaidOther:boolean }
-          - hasPaidHS: đã đóng & doi_tuong_dong ∈ {'HS','Học sinh'}
-          - hasPaidOther: đã đóng & doi_tuong_dong khác 2 giá trị trên
-        */
+        // Xác định đã đóng (isPaid) từ bảng BHYT
+        const paidHSSet = new Set();
         for (const r of ds) {
-          const so_tien = Number(String(r.so_tien || '').replaceAll(',', ''));
+          const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
           const trang_thai = String(r.trang_thai ?? '');
           const isPaid = (so_tien > 0) || (trang_thai === '1');
+          if (!isPaid) continue;
+
           const id = String(r.so_dinh_danh || '').trim();
-          if (!isPaid || !id) continue;
+          if (!id) continue;
 
-          const doiTuong = String(r.doi_tuong_dong || '').trim();
-          const isHS = doiTuong.toLowerCase() === 'hs' || doiTuong.toLowerCase() === 'học sinh';
-
-          const cur = perStudent.get(id) || { hasPaidHS: false, hasPaidOther: false };
-          if (isHS) cur.hasPaidHS = true; else cur.hasPaidOther = true;
-          perStudent.set(id, cur);
+          // Loại trừ các em thuộc "Đối tượng khác" (đã tính bằng danh sách HS)
+          if (!otherSet.has(id)) paidHSSet.add(id);
         }
 
-        // Tách 2 nhóm theo ưu tiên:
-        // - Nếu 1 học sinh vừa có HS vừa có Other, tính vào "Đối tượng khác"
-        let paidThucTe = 0;    // HS/Học sinh
-        let paidOther   = 0;   // Đối tượng khác
-        for (const { hasPaidHS, hasPaidOther } of perStudent.values()) {
-          if (hasPaidOther) paidOther++;
-          else if (hasPaidHS) paidThucTe++;
-        }
-
-        // Tổng đã đóng theo yêu cầu (3)
-        const paidTotal = paidThucTe + paidOther;
-
-        // Chưa đóng theo yêu cầu (2): tổng chưa đóng - số "đối tượng khác"
-        const unpaid = Math.max(0, (total - paidThucTe) - paidOther);
-
-        // Tỉ lệ hoàn thành theo yêu cầu (3)
-        const rate = pct(paidTotal, total);
+        const paidThucTe = paidHSSet.size;         // HS/Học sinh đã đóng (không tính “Đối tượng khác”)
+        const paidTotal  = paidThucTe + paidOther; // theo yêu cầu (3)
+        const unpaid     = Math.max(0, (total - paidThucTe) - paidOther); // theo yêu cầu (2)
+        const rate       = pct(paidTotal, total);
 
         // Cập nhật KPI
         document.getElementById('kpi-total').innerText = total.toLocaleString('vi-VN');
@@ -253,7 +215,8 @@
         document.getElementById('kpi-rate').innerText  = fmtPercent(rate);
 
         // Render biểu đồ tròn theo số mới (4)
-        renderPie(unpaid, paidTotal, total);       
+        renderPie(unpaid, paidTotal, total);
+     
         
       } catch (e) {
         console.error(e);
@@ -318,6 +281,24 @@
 
     // (tùy chọn) đảm bảo chart fit khi resize
     addEventListener('resize', ()=>{ if (chart) chart.resize(); });
+
+
+
+
+    
+    // Bóc dấu tiếng Việt & chuẩn hóa
+    const stripVN = (s)=> String(s||"").normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/đ/g,'d').replace(/Đ/g,'D');
+    const keyVN = (s)=> stripVN(String(s||'')).toLowerCase();
+
+    // Học sinh thuộc "Đối tượng khác" nếu doi_tuong_dong KHÁC "HS"/"Học sinh" (không phân biệt dấu/hoa-thường)
+    function isOtherDoiTuongFromHS(hs){
+      const raw = (hs?.doi_tuong_dong ?? "").toString().trim();
+      if (!raw || raw.toLowerCase() === "null") return false;
+      const k = keyVN(raw);
+      return !(k === "hs" || k === "hoc sinh");
+    }
   </script>
 </body>
 </html>
