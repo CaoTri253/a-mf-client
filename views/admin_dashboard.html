@@ -115,6 +115,8 @@
     .ic-indigo{ background:#6366f1; }
     .ic-orange{ background:#f59e0b; }
     .ic-blue{ background:#2563eb; }
+    .ic-amber{ background:#be0bf5; color:#fff; }
+
     @media (min-width: 576px){ .kpi-card{ grid-column: span 6; } }
     @media (min-width: 1200px){ .kpi-card{ grid-column: span 3; } }
 
@@ -336,6 +338,16 @@
                   <div class="lbl">Tổng số BHTN đã thu</div>
                 </div>
               </div>
+
+              <div class="kpi-card">
+                <div class="icon ic-amber"><i class="bi bi-people"></i></div>
+                <div>
+                  <div class="val" id="kpiOther">0</div>
+                  <div class="lbl">Đối tượng khác</div>
+                </div>
+              </div>
+
+
               <div class="kpi-card">
                 <div class="icon ic-blue"><i class="bi bi-speedometer2"></i></div>
                 <div>
@@ -1040,6 +1052,9 @@
 
   <!-- Thư viện nội bộ -->
   <script src="../js/api.js"></script>
+
+
+  
 
   <!-- ====== KHỐI HỌC SINH CHO ADMIN ====== -->
   <script>
@@ -2767,6 +2782,23 @@
 
   <!-- Main script -->
   <script>
+
+    // === Vietnamese text processing ===
+    function stripVN(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+    function keyVN(s){ return stripVN(String(s||'')).toLowerCase().trim(); }
+    function isOtherDoiTuong(val){
+      const raw = (val ?? '').toString().trim();
+      if (!raw || raw.toLowerCase()==='null') return false;
+      const k = keyVN(raw);
+      return !(k === 'hs' || k === 'hoc sinh');
+    }
+
+
+
+
+
+
+
     // === Utilities ===
     const $ = (s, root=document) => root.querySelector(s);
     const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
@@ -2844,7 +2876,7 @@
         bhyt = bhyt.filter(byCls);
         bhtn = bhtn.filter(byCls);
       }
-      renderRanking('#rankBHYT', buildClassRanking(students, bhyt));
+      renderRanking('#rankBHYT', buildClassRankingBHYT(students, bhyt));
       renderRanking('#rankBHTN', buildClassRanking(students, bhtn));
     }
 
@@ -2869,16 +2901,17 @@
           const so_ho_so = String(r.so_ho_so||'');
           return so_tien>0 || trang_thai==='1' || !!so_ho_so;
         };
-        const bhytPaid = bhytRows.filter(isPaid);
-        const bhtnPaid = bhtnRows.filter(isPaid);
 
-        renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
+
+        const { otherCount, bhytPaidAdjusted, bhtnPaidCount } = calcOverviewNumbers(students, bhytRows, bhtnRows);
+
+        renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
         const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-        STATE = { students, bhytPaid, bhtnPaid };
+        STATE = { students, bhytPaid: bhytRows, bhtnPaid: bhtnRows };
         applyFilters();
 
         // Users overview
@@ -2932,16 +2965,69 @@
       catch(e){ return []; }
     }
 
-    // === Rendering ===
-    function renderKPIs(studentsTotal, bhytPaidCount, bhtnPaidCount){
-      $('#kpiStudents').textContent = studentsTotal.toLocaleString('vi-VN');
-      $('#kpiBHYTCount').textContent = bhytPaidCount.toLocaleString('vi-VN');
-      $('#kpiBHTNCount').textContent = bhtnPaidCount.toLocaleString('vi-VN');
-      const rateBHYT = studentsTotal ? Math.round(bhytPaidCount * 100 / studentsTotal) : 0;
-      const rateBHTN = studentsTotal ? Math.round(bhtnPaidCount * 100 / studentsTotal) : 0;
-      $('#progressBHYTText').textContent = rateBHYT + '%';
-      $('#progressBHTNTextCard').textContent = rateBHTN + '%';
+
+
+
+
+    function calcOverviewNumbers(students, bhytRows, bhtnRows){
+      // Đối tượng khác (từ DS học sinh)
+      const otherSet = new Set();
+      (students||[]).forEach(s=>{
+        const id = String(s?.so_dinh_danh||'').trim();
+        if (!id) return;
+        if (isOtherDoiTuong(s.doi_tuong_dong)) otherSet.add(id);
+      });
+
+      // Đã thu BHYT (unique theo SDD) từ bảng BHYT
+      const isPaid = r => {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so = String(r.so_ho_so||'');
+        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
+      };
+      const paidSet = new Set();
+      (bhytRows||[]).forEach(r=>{
+        if (!isPaid(r)) return;
+        const sdd = String(r.so_dinh_danh||'').replace(/^'/,'').trim();
+        if (sdd) paidSet.add(sdd);
+      });
+
+      // Tránh đếm đôi: tách phần HS “thực tế” (không thuộc đối tượng khác)
+      let paidHSOnly = 0;
+      paidSet.forEach(id=>{ if (!otherSet.has(id)) paidHSOnly++; });
+
+      const bhytPaidAdjusted = paidHSOnly + otherSet.size;
+      const bhtnPaidCount   = (bhtnRows||[]).filter(isPaid).length;
+
+      return {
+        otherCount: otherSet.size,
+        bhytPaidAdjusted,
+        bhtnPaidCount
+      };
     }
+
+
+
+
+
+
+
+
+
+    // === Rendering ===
+    function renderKPIs(studentsTotal, bhytPaidCountAdjusted, bhtnPaidCount, otherCount){
+      $('#kpiStudents').textContent  = (studentsTotal||0).toLocaleString('vi-VN');
+      $('#kpiBHYTCount').textContent = (bhytPaidCountAdjusted||0).toLocaleString('vi-VN');
+      $('#kpiBHTNCount').textContent = (bhtnPaidCount||0).toLocaleString('vi-VN');
+      const rateBHYT = studentsTotal ? Math.round((bhytPaidCountAdjusted||0) * 100 / studentsTotal) : 0;
+      const rateBHTN = studentsTotal ? Math.round((bhtnPaidCount||0) * 100 / studentsTotal) : 0;
+      $('#progressBHYTText').textContent     = rateBHYT + '%';
+      $('#progressBHTNTextCard').textContent = rateBHTN + '%';
+      // KPI card “Đối tượng khác”
+      const elOther = document.getElementById('kpiOther');
+      if (elOther) elOther.textContent = (otherCount||0).toLocaleString('vi-VN');
+    }
+
 
     function renderRanking(tbodySel, items){
       const tbody = $(tbodySel);
@@ -2959,12 +3045,69 @@
       tbody.innerHTML = rows || `<tr><td colspan="5" class="text-center text-secondary">Không có dữ liệu</td></tr>`;
     }
 
-    function buildClassRanking(students, paidRows){
-      const totalByClass = students.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-      const paidByClass = paidRows.reduce((m, r)=>{ const cls = String(r.lop_hoc||'').trim(); if(!cls) return m; m[cls]=(m[cls]||0)+1; return m; }, {});
-      return Object.entries(totalByClass).map(([cls,total])=>{ const done = paidByClass[cls]||0; const pct = total? Math.round(done*100/total):0; return { cls, done, total, pct }; })
-        .sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
+    function buildClassRankingBHYT(students, bhytRows){
+      // Tổng HS & Đối tượng khác theo lớp
+      const totalByClass = new Map();
+      const otherByClass = new Map();
+      (students||[]).forEach(s=>{
+        const cls = String(s.lop_hoc||'').trim(); if(!cls) return;
+        totalByClass.set(cls, (totalByClass.get(cls)||0)+1);
+        if (isOtherDoiTuong(s.doi_tuong_dong)){
+          otherByClass.set(cls, (otherByClass.get(cls)||0)+1);
+        }
+      });
+
+      // Map SDD -> lớp (fallback khi dòng BHYT thiếu lớp)
+      const sddToClass = new Map();
+      (students||[]).forEach(s=>{
+        const sdd = String(s.so_dinh_danh||'').trim();
+        const cls = String(s.lop_hoc||'').trim();
+        if (sdd && cls) sddToClass.set(sdd, cls);
+      });
+
+      // Tập SDD đã nộp theo lớp (unique)
+      const isPaid = r => {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const so_ho_so = String(r.so_ho_so||'');
+        return so_tien>0 || trang_thai==='1' || !!so_ho_so;
+      };
+      const paidSetByClass = new Map();
+      (bhytRows||[]).forEach(r=>{
+        if (!isPaid(r)) return;
+        const sdd = String(r.so_dinh_danh||'').replace(/^'/,'').trim();
+        if (!sdd) return;
+        let cls = String(r.lop_hoc||'').trim();
+        if (!cls) cls = sddToClass.get(sdd)||'';
+        if (!cls) return;
+        if (!paidSetByClass.has(cls)) paidSetByClass.set(cls, new Set());
+        paidSetByClass.get(cls).add(sdd);
+      });
+
+      // Loại trùng với “Đối tượng khác”: done = paidUnique(non-Other) + Other
+      const result = [];
+      for (const [cls,total] of totalByClass.entries()){
+        const paidUnique = paidSetByClass.get(cls) || new Set();
+        let paidHSOnly = 0;
+        paidUnique.forEach(sdd=>{
+          // nếu sdd thuộc other => KHÔNG cộng vào paidHSOnly
+          // dựng set other theo lớp nhanh
+          const otherCount = otherByClass.get(cls)||0; // dùng sẵn cho done
+          // Không có danh sách SDD-other theo lớp => ước lượng bằng cách:
+          //   Nếu học sinh sdd đó trong 'students' của lớp này và isOtherDoiTuong=true ⇒ loại
+          //   (đã có map sdd->class; ở đây class đang xét)
+          const s = (students||[]).find(x => String(x.so_dinh_danh||'').trim()===sdd);
+          if (!s || !isOtherDoiTuong(s?.doi_tuong_dong)) paidHSOnly++;
+        });
+        const otherCls = otherByClass.get(cls)||0;
+        const done = paidHSOnly + otherCls;
+        const pct  = total ? Math.round(done*100/total) : 0;
+        result.push({ cls, done, total, pct });
+      }
+
+      return result.sort((a,b)=> b.pct - a.pct || b.done - a.done || a.cls.localeCompare(b.cls));
     }
+
 
     function wireSidebar(){
       setActivePage('overview');
@@ -3010,16 +3153,15 @@
         ]);
 
         const isPaid = r => { const so_tien = Number(String(r.so_tien||'').replaceAll(',','')); const trang_thai = String(r.trang_thai ?? ''); const so_ho_so = String(r.so_ho_so||''); return so_tien>0 || trang_thai==='1' || !!so_ho_so; };
-        const bhytPaid = bhytRows.filter(isPaid);
-        const bhtnPaid = bhtnRows.filter(isPaid);
+        const { otherCount, bhytPaidAdjusted, bhtnPaidCount } = calcOverviewNumbers(students, bhytRows, bhtnRows);
 
-        renderKPIs(studentsTotal, bhytPaid.length, bhtnPaid.length);
+        renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
         const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-        STATE = { students, bhytPaid, bhtnPaid };
+        STATE = { students, bhytPaid: bhytRows, bhtnPaid: bhtnRows };
         applyFilters();
 
         // Users overview
