@@ -36,6 +36,7 @@
     .kpi-total .icon { background:#0ea5e9; }
     .kpi-paid  .icon { background:#10b981; }
     .kpi-unpaid .icon { background:#ef4444; }
+    .kpi-other .icon { background:#f59e0b; } /* vàng hổ phách */
     .kpi-rate  .icon { background:#6366f1; }
     .kpi-rate .val { font-size:22px; }
 
@@ -99,6 +100,13 @@
         <div>
           <div class="val" id="kpi-unpaid">0</div>
           <div class="lbl">Số học sinh chưa đóng</div>
+        </div>
+      </div>
+      <div class="kpi-item kpi-other">
+        <div class="icon"><i class="bi bi-people"></i></div>
+        <div>
+          <div class="val" id="kpi-other">0</div>
+          <div class="lbl">Đối tượng khác</div>
         </div>
       </div>
       <div class="kpi-item kpi-rate">
@@ -170,27 +178,83 @@
         const resBHYT = await getDanhSachBHYT(user.ma_truong, user.lop_hoc);
         const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
 
+        //==========Mã cũ=================================
         // Tập học sinh đã đóng (unique theo so_dinh_danh) — quy ước: so_tien>0 hoặc trang_thai=="1"
-        const paidSet = new Set();
+        // const paidSet = new Set();
+        // for (const r of ds) {
+        //   const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        //   const trang_thai = String(r.trang_thai ?? '');
+        //   const isPaid = (so_tien > 0) || (trang_thai === '1');
+        //   if (isPaid && r.so_dinh_danh) paidSet.add(String(r.so_dinh_danh));
+        // }
+
+        // const paid = paidSet.size;
+        // const unpaid = Math.max(0, total - paid);
+        // const rate = pct(paid, total);
+        // Cập nhật KPI
+        // document.getElementById('kpi-total').innerText = total.toLocaleString('vi-VN');
+        // document.getElementById('kpi-paid').innerText  = paid.toLocaleString('vi-VN');
+        // document.getElementById('kpi-unpaid').innerText= unpaid.toLocaleString('vi-VN');
+        // document.getElementById('kpi-rate').innerText  = fmtPercent(rate);
+
+        // Render biểu đồ tròn
+        // renderPie(unpaid, paid, total);
+        //==========Mã cũ=================================
+
+
+
+
+        // Gom cờ thanh toán theo từng học sinh để tránh đếm trùng
+        // key ưu tiên: so_dinh_danh; nếu rỗng thì bỏ qua để tránh sai lệch
+        const perStudent = new Map();
+        /*
+          Mỗi entry: { hasPaidHS:boolean, hasPaidOther:boolean }
+          - hasPaidHS: đã đóng & doi_tuong_dong ∈ {'HS','Học sinh'}
+          - hasPaidOther: đã đóng & doi_tuong_dong khác 2 giá trị trên
+        */
         for (const r of ds) {
-          const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+          const so_tien = Number(String(r.so_tien || '').replaceAll(',', ''));
           const trang_thai = String(r.trang_thai ?? '');
           const isPaid = (so_tien > 0) || (trang_thai === '1');
-          if (isPaid && r.so_dinh_danh) paidSet.add(String(r.so_dinh_danh));
+          const id = String(r.so_dinh_danh || '').trim();
+          if (!isPaid || !id) continue;
+
+          const doiTuong = String(r.doi_tuong_dong || '').trim();
+          const isHS = doiTuong.toLowerCase() === 'hs' || doiTuong.toLowerCase() === 'học sinh';
+
+          const cur = perStudent.get(id) || { hasPaidHS: false, hasPaidOther: false };
+          if (isHS) cur.hasPaidHS = true; else cur.hasPaidOther = true;
+          perStudent.set(id, cur);
         }
 
-        const paid = paidSet.size;
-        const unpaid = Math.max(0, total - paid);
-        const rate = pct(paid, total);
+        // Tách 2 nhóm theo ưu tiên:
+        // - Nếu 1 học sinh vừa có HS vừa có Other, tính vào "Đối tượng khác"
+        let paidThucTe = 0;    // HS/Học sinh
+        let paidOther   = 0;   // Đối tượng khác
+        for (const { hasPaidHS, hasPaidOther } of perStudent.values()) {
+          if (hasPaidOther) paidOther++;
+          else if (hasPaidHS) paidThucTe++;
+        }
+
+        // Tổng đã đóng theo yêu cầu (3)
+        const paidTotal = paidThucTe + paidOther;
+
+        // Chưa đóng theo yêu cầu (2): tổng chưa đóng - số "đối tượng khác"
+        const unpaid = Math.max(0, (total - paidThucTe) - paidOther);
+
+        // Tỉ lệ hoàn thành theo yêu cầu (3)
+        const rate = pct(paidTotal, total);
 
         // Cập nhật KPI
         document.getElementById('kpi-total').innerText = total.toLocaleString('vi-VN');
-        document.getElementById('kpi-paid').innerText  = paid.toLocaleString('vi-VN');
+        document.getElementById('kpi-paid').innerText  = paidTotal.toLocaleString('vi-VN');
+        document.getElementById('kpi-other').innerText = paidOther.toLocaleString('vi-VN');
         document.getElementById('kpi-unpaid').innerText= unpaid.toLocaleString('vi-VN');
         document.getElementById('kpi-rate').innerText  = fmtPercent(rate);
 
-        // Render biểu đồ tròn
-        renderPie(unpaid, paid, total);
+        // Render biểu đồ tròn theo số mới (4)
+        renderPie(unpaid, paidTotal, total);       
+        
       } catch (e) {
         console.error(e);
         alert("Không tải được dữ liệu. Vui lòng thử lại.");
