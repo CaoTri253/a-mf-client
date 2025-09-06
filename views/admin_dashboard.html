@@ -2506,8 +2506,20 @@
 
 
       // === Hiển thị Modal Sửa hồ sơ BHYT (ĐÃ THU) ===
+      // Helper: mở modal an toàn, tránh race-condition với spinner/backdrop
+      function openModalSafe(modalId){
+        const el = document.getElementById(modalId);
+        if(!el) return;
+        // Đảm bảo bỏ spinner trước khi show
+        try { hideLoading?.(); } catch(_) {}
+        const m = bootstrap.Modal.getOrCreateInstance(el, {backdrop:true, focus:true});
+        // Trễ 1 tick để DOM ổn định
+        setTimeout(()=>m.show(), 10);
+      }
+
+      // === Hiển thị Modal Sửa hồ sơ BHYT (ĐÃ THU) ===
       async function showSuaHoSoModal_DaThu(stt) {
-        // Lấy đúng từ nguồn dữ liệu của tab ĐÃ THU
+        // Lấy đúng dữ liệu từ tab ĐÃ THU
         const source = (window.bhytp_lastFiltered || window.bhytp_allData || []);
         let hs = source.find(h => String(h.stt) === String(stt));
         if (!hs && Array.isArray(window._bhytpView)) {
@@ -2515,29 +2527,55 @@
         }
         if (!hs) { console.warn('Không tìm thấy hồ sơ trong dữ liệu ĐÃ THU:', stt); return; }
 
+        // baseline: dùng hạn MỚI (nếu có) cho bản ghi đã thu
+        const baselineEnd =
+          hs.han_su_dung_bhyt_moi ||
+          hs.ngay_het_han_bhyt_moi ||
+          hs.ngay_het_han_bhyt || "";
+
         window._currentHS_Sua = hs;
+
         showLoading();
         try {
-          // Đổ dữ liệu vào modal ĐÃ THU (ID bắt đầu bằng shspaid-)
+          // Đổ dữ liệu vào modal ĐÃ THU
           document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
-          document.getElementById('shspaid-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+          document.getElementById('shspaid-ngaysinh').value = (typeof displayNgaySinh === 'function' ? displayNgaySinh(hs.ngay_sinh || "") : (hs.ngay_sinh||""));
           document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
 
-          // Lấy số tháng (ưu tiên dữ liệu hiện có, sau đó tới API)
-          const info   = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
-          const months = String(hs.so_thang_dong ?? info?.data?.so_thang_dong ?? '12');
-          const rSel   = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
+          // Số tháng: ưu tiên dữ liệu hiện có, sau đó tới API để lấy mặc định
+          let months = String(hs.so_thang_dong ?? '');
+          if (!months) {
+            try {
+              const info = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong, hs.lop_hoc || "");
+              months = String(info?.data?.so_thang_dong ?? '12');
+            } catch(_) { months = '12'; }
+          }
+          const rSel = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
           if (rSel) rSel.checked = true;
 
-          // Tính toán preview
+          // Tính preview theo baselineEnd (đã sửa)
           const g = await ensureGiaBHYT();
-          const {exp, amount, note} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+          const { exp, amount, note } = computeAmountAndExp(baselineEnd, months, g?.gia_tien);
           document.getElementById('shspaid-exp-preview').innerText    = exp;
           document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
           document.getElementById('shspaid-exp-note').innerText       = note || "";
 
-          // Mở đúng modal ĐÃ THU
-          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHYT_DaThu')).show();
+          // (Re)wire change cho radio – mỗi lần mở modal gán lại handler
+          ['3','6','12'].forEach(v=>{
+            const el = document.getElementById('shspaid-thang-' + v);
+            if (!el) return;
+            el.onchange = async () => {
+              const g2 = await ensureGiaBHYT();
+              const months2 = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+              const { exp:exp2, amount:amt2, note:note2 } = computeAmountAndExp(baselineEnd, months2, g2?.gia_tien);
+              document.getElementById('shspaid-exp-preview').innerText    = exp2;
+              document.getElementById('shspaid-amount-preview').innerText = (amt2 || 0).toLocaleString('vi-VN');
+              document.getElementById('shspaid-exp-note').innerText       = note2 || "";
+            };
+          });
+
+          // Mở modal an toàn (tránh NotFound khi backdrop/spinner còn tồn tại)
+          openModalSafe('modalSuaHoSoBHYT_DaThu');
         } catch (e) {
           console.error(e);
         } finally {
@@ -2545,23 +2583,25 @@
         }
       }
 
-
-
-
-
-
-      // Submit riêng cho modal Sửa hồ sơ (TAB ĐÃ THU) — hành vi giống submitSuaHoSoBHYT bên "Chưa thu"
+      // Submit riêng cho modal Sửa hồ sơ (TAB ĐÃ THU)
       async function submitSuaHoSoBHYT_DaThu() {
         if (!_currentHS_Sua) return;
+
+        // baseline: dùng hạn MỚI (nếu có) để tính tiếp
+        const baselineEnd =
+          _currentHS_Sua.han_su_dung_bhyt_moi ||
+          _currentHS_Sua.ngay_het_han_bhyt_moi ||
+          _currentHS_Sua.ngay_het_han_bhyt || "";
+
         showLoading();
         try {
           const g = await ensureGiaBHYT();
-          const months = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+          const months  = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
           const noikham = document.getElementById('shspaid-noikham').value.trim();
 
-          const { exp, amount } = computeAmountAndExp(_currentHS_Sua.ngay_het_han_bhyt, months, g?.gia_tien);
+          const { exp, amount } = computeAmountAndExp(baselineEnd, months, g?.gia_tien);
           const rate = getRateByMonths(g, months);
-          const hh = parseFloat((amount * rate).toFixed(2));
+          const hh   = parseFloat((amount * rate).toFixed(2));
 
           const res = await suaHoSoBHYTApi({
             so_dinh_danh: _currentHS_Sua.so_dinh_danh,
@@ -2575,22 +2615,21 @@
           });
 
           if (res?.success) {
-            bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT_DaThu'))?.hide();
-            forceUnlockScroll();
-            toastSuccess('Đã lưu thay đổi');
+            const mm = bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHYT_DaThu'));
+            mm?.hide();
+            // mở khóa	scroll/backdrop phòng kẹt
+            forceUnlockScroll?.();
+            toastSuccess?.('Đã lưu thay đổi');
 
-            // reload danh sách CHƯA THU (nếu bạn đang hiển thị song song)
+            // reload danh sách (tương thích mã hiện tại)
             await fetchChuaThuHocsinh?.();
-
-            // và reload danh sách ĐÃ THU nếu có khai báo hàm này
-            if (window.bhyt_paid_reload) {
-              await window.bhyt_paid_reload();
-            }
+            if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
           } else {
             document.getElementById('shspaid-error').innerText = res?.message || 'Lỗi lưu hồ sơ';
           }
         } catch (e) {
           console.error(e);
+          document.getElementById('shspaid-error').innerText = 'Có lỗi xảy ra khi lưu.';
         } finally {
           hideLoading();
         }
