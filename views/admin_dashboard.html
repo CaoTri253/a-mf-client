@@ -983,6 +983,14 @@
                     <div id="shspaid-exp-note" class="text-muted" style="min-height:18px"></div>
                     <div><strong>Số tiền cần đóng:</strong> <span id="shspaid-amount-preview" class="fw-bold text-danger">—</span></div>
                   </div>
+                  <hr>
+                  <div class="mb-3">
+                    <label for="shspaid-sohoso" class="form-label">Số hồ sơ</label>
+                    <input type="text" class="form-control" id="shspaid-sohoso" placeholder="">
+                    <div class="form-text text-danger">
+                      Nếu mã hồ sơ đã kích hoạt thì nhập mã hồ sơ vào đây
+                    </div>
+                  </div>
                   <div id="shspaid-error" class="text-danger" style="min-height:18px"></div>
                 </div>
                 <div class="modal-footer">
@@ -2540,6 +2548,9 @@
           document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
           document.getElementById('shspaid-ngaysinh').value = bhytp_displayDate(hs.ngay_sinh || "");
           document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
+          // Hiển thị Số hồ sơ (nếu null hoặc undefined thì để rỗng)
+          document.getElementById('shspaid-sohoso').value = hs.so_ho_so && hs.so_ho_so !== 'null' ? hs.so_ho_so : '';
+
 
           // Months: ưu tiên trên dòng BHYT, fallback API chi tiết nếu thiếu, mặc định 12
           let months = String(hs.so_thang_dong ?? '12');
@@ -2630,8 +2641,16 @@
 
           const rate   = getRateByMonths(g, months);
           const hh     = parseFloat((amount * rate).toFixed(2));
-          const so_ho_so = bhytp_getSoHoSo(hs) || 'null';
+          //const so_ho_so = bhytp_getSoHoSo(hs) || 'null';
           const stt      = hs.stt || '';
+          const sohosoVal = document.getElementById('shspaid-sohoso').value.trim();
+          let trang_thai = 0;
+          let so_ho_so = null;
+          if (sohosoVal) {
+            trang_thai = 1;
+            so_ho_so = sohosoVal;
+          }
+
 
           log('Submit edit (PAID):', {
             stt, so_ho_so, sdd: hs.so_dinh_danh, lop: hs.lop_hoc || "",
@@ -2640,7 +2659,8 @@
 
           const res = await suaHoSoBHYTApi({
             stt,
-            so_ho_so,
+            so_ho_so, // đã set ở trên
+            trang_thai, // mới thêm
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
             lop_hoc: hs.lop_hoc || "",
