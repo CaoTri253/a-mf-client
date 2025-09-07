@@ -2507,21 +2507,20 @@
 
       // ========= SỬA HỒ SƠ BHYT (TAB ĐÃ THU) — BẢN CHUẨN HÓA + LOG =========
 
-      // Helper: mở modal an toàn (tránh race-condition với spinner/backdrop)
+      // Helper: mở modal an toàn (nếu bạn chưa có sẵn)
       function openModalSafe(modalId) {
         const el = document.getElementById(modalId);
-        if (!el) {
-          console.warn("[DaThu] openModalSafe: không thấy modal:", modalId);
-          return;
-        }
+        if (!el) { console.warn("[DaThu] openModalSafe: không thấy modal", modalId); return; }
         try { hideLoading?.(); } catch (_) {}
         const m = bootstrap.Modal.getOrCreateInstance(el, { backdrop: true, focus: true });
         setTimeout(() => m.show(), 10);
       }
 
-      // === Hiển thị modal Sửa hồ sơ (ĐÃ THU) ===
+      /** =========================
+       *  Hiển thị modal Sửa hồ sơ (TAB ĐÃ THU)
+       *  ========================= */
       async function showSuaHoSoModal_DaThu(stt) {
-        console.debug("[DaThu] showSuaHoSoModal_DaThu: start với STT =", stt);
+        console.debug("[DaThu] showSuaHoSoModal_DaThu: start, STT =", stt);
 
         // Lấy đúng nguồn dữ liệu của tab ĐÃ THU
         const source = (window.bhytp_lastFiltered || window.bhytp_allData || []);
@@ -2534,25 +2533,29 @@
           return;
         }
 
-        // baseline: dùng hạn MỚI (nếu có) cho bản ghi đã thu
+        // Baseline dùng hạn MỚI nếu có (đã thu)
         const baselineEnd =
           hs.han_su_dung_bhyt_moi ||
           hs.ngay_het_han_bhyt_moi ||
           hs.ngay_het_han_bhyt || "";
 
-        // LƯU Ý: gán biến trước để submit dùng, tránh null
+        // LƯU Ý: gán biến trước để submit dùng
         window._currentHS_Sua = hs;
         console.debug("[DaThu] set _currentHS_Sua =", window._currentHS_Sua);
+
+        document.getElementById('shspaid-error').innerText = "";
 
         showLoading?.();
         try {
           // Đổ dữ liệu form
           document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
           document.getElementById('shspaid-ngaysinh').value =
-            (typeof displayNgaySinh === 'function' ? displayNgaySinh(hs.ngay_sinh || "") : (hs.ngay_sinh || ""));
+            (typeof displayNgaySinh === 'function'
+              ? displayNgaySinh(hs.ngay_sinh || "")
+              : (hs.ngay_sinh || ""));
           document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
 
-          // Xác định số tháng mặc định (ưu tiên dữ liệu hiện có, sau đó API)
+          // Số tháng mặc định: ưu tiên dữ liệu hiện có, fallback API, cuối cùng 12
           let months = String(hs.so_thang_dong ?? '');
           if (!months) {
             try {
@@ -2562,6 +2565,7 @@
           }
           console.debug("[DaThu] months mặc định =", months);
 
+          // Check radio
           const rSel = document.querySelector(`input[name="shspaid-thang"][value="${months}"]`);
           if (rSel) rSel.checked = true;
 
@@ -2597,7 +2601,9 @@
         }
       }
 
-      // === Submit Sửa hồ sơ (ĐÃ THU) ===
+      /** =============================
+       *  Submit Sửa hồ sơ (TAB ĐÃ THU)
+       *  ============================= */
       async function submitSuaHoSoBHYT_DaThu() {
         console.debug("[DaThu] submitSuaHoSoBHYT_DaThu: click!");
         document.getElementById('shspaid-error').innerText = "";
@@ -2629,25 +2635,25 @@
             so_dinh_danh : _currentHS_Sua.so_dinh_danh,
             ma_truong    : bhyt_user.ma_truong,
             lop_hoc      : _currentHS_Sua.lop_hoc || "",
-            so_thang_dong: monthsN,          // <-- gửi NUMBER
+            so_thang_dong: monthsN,          // GỬI NUMBER
             noi_kham_bhyt: noikham,
             so_tien      : amount,
             hoa_hong     : hh,
             han_su_dung_bhyt_moi: exp
           };
-          console.debug("[DaThu] submit payload:", { baselineEnd, gia: g?.gia_tien, rate, ...payload });
+          console.debug("[DaThu] submit payload:", { baselineEnd, gia: g?.gia_tien, rate, payload });
 
           const res = await suaHoSoBHYTApi(payload);
           console.debug("[DaThu] submit response:", res);
 
           if (res?.success) {
-            // đóng modal + gỡ khóa scroll
             const el = document.getElementById('modalSuaHoSoBHYT_DaThu');
             bootstrap.Modal.getInstance(el)?.hide();
             forceUnlockScroll?.();
 
             toastSuccess?.('Đã lưu thay đổi');
-            // reload hai tab nếu có
+
+            // Tương thích các danh sách đang hiển thị
             await fetchChuaThuHocsinh?.();
             if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
           } else {
@@ -2661,8 +2667,8 @@
         }
       }
 
-      // Export ra window để onclick trong HTML gọi được
-      window.showSuaHoSoModal_DaThu = showSuaHoSoModal_DaThu;
+      // Export ra window để nút onclick trong HTML gọi được
+      window.showSuaHoSoModal_DaThu  = showSuaHoSoModal_DaThu;
       window.submitSuaHoSoBHYT_DaThu = submitSuaHoSoBHYT_DaThu;
 
       // Kiểm tra nhanh khi load script
