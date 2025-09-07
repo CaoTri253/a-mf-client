@@ -2535,9 +2535,10 @@
 
         // Baseline dùng hạn MỚI nếu có (đã thu)
         const baselineEnd =
-          hs.han_su_dung_bhyt_moi ||
-          hs.ngay_het_han_bhyt_moi ||
-          hs.ngay_het_han_bhyt || "";
+          hs.ngay_het_han_bhyt_cu || // nếu API trả field này
+          hs.han_su_dung_bhyt_cu ||  // hoặc field này
+          hs.ngay_het_han_bhyt || ""; // fallback cuối cùng
+
 
         // LƯU Ý: gán biến trước để submit dùng
         window._currentHS_Sua = hs;
@@ -2615,9 +2616,10 @@
         }
 
         const baselineEnd =
-          window._currentHS_Sua.han_su_dung_bhyt_moi ||
-          window._currentHS_Sua.ngay_het_han_bhyt_moi ||
-          window._currentHS_Sua.ngay_het_han_bhyt || "";
+          hs.ngay_het_han_bhyt_cu || // nếu API trả field này
+          hs.han_su_dung_bhyt_cu ||  // hoặc field này
+          hs.ngay_het_han_bhyt || ""; // fallback cuối cùng
+
 
         showLoading?.();
         try {
