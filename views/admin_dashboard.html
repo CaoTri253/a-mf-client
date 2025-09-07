@@ -2650,29 +2650,34 @@
 
 
       // Bắt sự kiện thay đổi số tháng để cập nhật preview trong modal BHYT đã thu
-      ['shspaid-thang-3','shspaid-thang-6','shspaid-thang-12'].forEach(id=>{
-        document.getElementById(id)?.addEventListener('change', async ()=>{
-          if(!_currentHS_Sua) return;
-          await ensureBhytpStudentMap();
-          const g = await ensureGiaBHYT();
-          const months = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+      document.addEventListener('DOMContentLoaded', () => {
+        ['shspaid-thang-3','shspaid-thang-6','shspaid-thang-12'].forEach(id=>{
+          const el = document.getElementById(id);
+          if (!el) return; // nếu chưa có trong DOM thì bỏ qua
+          el.addEventListener('change', async ()=>{
+            if(!_currentHS_Sua) return;
+            await ensureBhytpStudentMap();
+            const g = await ensureGiaBHYT();
+            const months = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
 
-          const baseEndStudent = getOldEndFromStudents(_currentHS_Sua.so_dinh_danh);
-          let exp, amount, note = "";
-          if (baseEndStudent) {
-            const c = computeAmountAndExp(baseEndStudent, months, g?.gia_tien);
-            exp = c.exp; amount = c.amount; note = c.note || "";
-          } else {
-            const currentEnd = (_currentHS_Sua.han_su_dung_bhyt_moi || _currentHS_Sua.ngay_het_han_bhyt_moi || "").trim();
-            amount = (parseInt(g?.gia_tien || 0, 10) || 0) * (parseInt(months || 0, 10));
-            exp = currentEnd ? bhytp_displayDate(currentEnd) : "(không xác định)";
-            note = "Thiếu hạn cũ trong DanhSach_Hocsinh. Vui lòng cập nhật hạn cũ để tính chuẩn.";
-          }
-          document.getElementById('shspaid-exp-preview').innerText    = exp;
-          document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
-          document.getElementById('shspaid-exp-note').innerText       = note;
+            const baseEndStudent = getOldEndFromStudents(_currentHS_Sua.so_dinh_danh);
+            let exp, amount, note = "";
+            if (baseEndStudent) {
+              const c = computeAmountAndExp(baseEndStudent, months, g?.gia_tien);
+              exp = c.exp; amount = c.amount; note = c.note || "";
+            } else {
+              const currentEnd = (_currentHS_Sua.han_su_dung_bhyt_moi || _currentHS_Sua.ngay_het_han_bhyt_moi || "").trim();
+              amount = (parseInt(g?.gia_tien || 0, 10) || 0) * (parseInt(months || 0, 10));
+              exp = currentEnd ? bhytp_displayDate(currentEnd) : "(không xác định)";
+              note = "Thiếu hạn cũ trong DanhSach_Hocsinh. Vui lòng cập nhật hạn cũ để tính chuẩn.";
+            }
+            document.getElementById('shspaid-exp-preview').innerText    = exp;
+            document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+            document.getElementById('shspaid-exp-note').innerText       = note;
+          });
         });
       });
+
 
 
 
