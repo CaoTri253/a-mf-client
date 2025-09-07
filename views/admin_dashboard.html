@@ -1716,13 +1716,30 @@
     /* ===== Giá BHYT & tính hạn/tiền/hoa hồng ===== */
     async function getGiaBHYT(){ const r=await fetch(`${API_BASE}?func=GetGiaBHYT`); return r.json(); }
     async function ensureGiaBHYT(){ if(_cachedGiaBHYT) return _cachedGiaBHYT; const g=await getGiaBHYT(); _cachedGiaBHYT=g?.data?.[0]||null; return _cachedGiaBHYT; }
+    // OLD: dùng addDaysExact(oldEnd, 1) rồi +m tháng, lấy ngày 0 => lệch ở ranh giới
+    // NEW: bắt đầu từ ngày 01 của tháng liền sau oldEnd, kết thúc ở ngày cuối của (start + m - 1) tháng
     function computeAmountAndExp(oldEndStr, months, basePrice){
-      const oldEnd=parseVNDate(oldEndStr), m=parseInt(months||0,10); let exp='—', note='';
-      if(oldEnd && m>0){ const start=addDaysExact(oldEnd,1); const lastDay=new Date(start.getFullYear(), start.getMonth()+m, 0); exp=formatVNDate(lastDay); }
-      else { exp='(không xác định)'; note='Không xác định do chưa nhập ngày hết hạn thẻ cũ trong DanhSach_Hocsinh.'; }
-      const amount=(parseInt(basePrice||0,10)||0)*(m||0);
-      return {exp, amount, note};
+      const oldEnd = parseVNDate(oldEndStr);
+      const m = parseInt(months || 0, 10);
+      let exp = '—', note = '';
+
+      if (oldEnd && m > 0){
+        // 01 của tháng kế tiếp
+        const start = new Date(oldEnd.getFullYear(), oldEnd.getMonth() + 1, 1);
+        // ngày cuối của (start + m - 1) tháng
+        const expDate = new Date(start.getFullYear(), start.getMonth() + m, 0);
+        exp = formatVNDate(expDate);
+      } else {
+        exp  = '(không xác định)';
+        note = 'Không xác định do thiếu ngày hết hạn thẻ cũ.';
+      }
+
+      const price = parseInt(basePrice || 0, 10) || 0;
+      const amount = price * (m || 0);
+
+      return { exp, amount, note };
     }
+
     function toRate(val){ let n=Number(String(val??'').replace(',','.')); if(!isFinite(n)||n<=0) return 0; return n>1 ? n/100 : n; }
     function getRateByMonths(g, months){
       const m=String(months);
@@ -2104,7 +2121,10 @@
         document.getElementById('rec-address').innerText = hs.dia_chi||'—';
         document.getElementById('rec-content').innerText = 'Thu Bảo hiểm y tế (BHYT) học sinh';
         document.getElementById('rec-months').innerText = months;
-        const startDate = formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1));
+        const oldEnd = parseVNDate(hs.ngay_het_han_bhyt) || new Date();
+        const startFirstOfNextMonth = new Date(oldEnd.getFullYear(), oldEnd.getMonth() + 1, 1);
+        const startDate = formatVNDate(startFirstOfNextMonth);
+
         document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
         document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
         document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
@@ -2489,14 +2509,17 @@
         return null;
       }
       function bhytp_formatVN(d){ const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
+      // REPLACE toàn bộ bhytp_makeRange cũ
       function bhytp_makeRange(row){
-        const end=row.han_su_dung_bhyt_moi||row.ngay_het_han_bhyt_moi||"";
-        const months=Number(row.so_thang_dong||0);
-        const e=bhytp_parseDate(end);
-        if(!e||!months) return {tu:"",den:""};
-        const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);
-        return {tu:bhytp_formatVN(s), den:bhytp_formatVN(e)};
+        const end = row.han_su_dung_bhyt_moi || row.ngay_het_han_bhyt_moi || "";
+        const months = Number(row.so_thang_dong || 0);
+        const e = bhytp_parseDate(end);
+        if(!e || !months) return {tu:"", den:""};
+        // 01 của tháng (e - (months - 1) tháng)
+        const s = new Date(e.getFullYear(), e.getMonth() - (months - 1), 1);
+        return { tu: bhytp_formatVN(s), den: bhytp_formatVN(e) };
       }
+
 
       window.bhytp_onViewCardIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onViewCard(row), 50); };
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
@@ -2570,27 +2593,42 @@
           if (rSel) rSel.checked = true;
 
           // Tính preview theo baselineEnd
+          const storedEnd = hs.han_su_dung_bhyt_moi || hs.ngay_het_han_bhyt_moi || '';
           const g = await ensureGiaBHYT();
-          const { exp, amount, note } = computeAmountAndExp(baselineEnd, months, g?.gia_tien);
-          document.getElementById('shspaid-exp-preview').innerText    = exp;
-          document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
-          document.getElementById('shspaid-exp-note').innerText       = note || "";
-          console.debug("[DaThu] preview ban đầu:", { baselineEnd, months, exp, amount, note, gia: g?.gia_tien });
+
+          if (storedEnd) {
+            // Ưu tiên hiển thị hạn mới đã lưu trong DB
+            document.getElementById('shspaid-exp-preview').innerText = bhytp_displayDate(storedEnd);
+            // Số tiền = giá * số tháng hiện có
+            const price = parseInt(g?.gia_tien || 0, 10) || 0;
+            const amount = price * (parseInt(months, 10) || 0);
+            document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+            document.getElementById('shspaid-exp-note').innerText = '';
+          } else {
+            // Không có hạn mới trong DB ⇒ tính từ ngày hết hạn cũ theo tháng tròn
+            const baselineEnd = hs.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || '';
+            const { exp, amount, note } = computeAmountAndExp(baselineEnd, months, g?.gia_tien);
+            document.getElementById('shspaid-exp-preview').innerText = exp;
+            document.getElementById('shspaid-amount-preview').innerText = (amount || 0).toLocaleString('vi-VN');
+            document.getElementById('shspaid-exp-note').innerText = note || '';
+          }
+
 
           // Gán onchange cho radio (mỗi lần mở modal gán lại)
           ['3','6','12'].forEach(v => {
             const el = document.getElementById('shspaid-thang-' + v);
             if (!el) return;
             el.onchange = async () => {
-              const g2 = await ensureGiaBHYT();
               const months2 = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
+              const g2 = await ensureGiaBHYT();
+              const baselineEnd = hs.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || '';
               const { exp:exp2, amount:amt2, note:note2 } = computeAmountAndExp(baselineEnd, months2, g2?.gia_tien);
               document.getElementById('shspaid-exp-preview').innerText    = exp2;
               document.getElementById('shspaid-amount-preview').innerText = (amt2 || 0).toLocaleString('vi-VN');
-              document.getElementById('shspaid-exp-note').innerText       = note2 || "";
-              console.debug("[DaThu] radio change:", { months2, exp2, amt2, note2, gia: g2?.gia_tien });
+              document.getElementById('shspaid-exp-note').innerText       = note2 || '';
             };
           });
+
 
           // Mở modal an toàn
           openModalSafe('modalSuaHoSoBHYT_DaThu');
@@ -2615,8 +2653,9 @@
         }
 
         const baselineEnd =
-          hs.ngay_het_han_bhyt_cu || // nếu API trả field này
-          hs.ngay_het_han_bhyt || ""; // fallback cuối cùng
+          window._currentHS_Sua?.ngay_het_han_bhyt_cu ||
+          window._currentHS_Sua?.ngay_het_han_bhyt || '';
+
 
 
         showLoading?.();
