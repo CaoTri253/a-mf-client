@@ -888,7 +888,8 @@
           noi_kham: noikham,
           so_thang_dong: so_thang,
           hoa_hong,
-          so_tien
+          so_tien,
+          phan_quyen: (user.phan_quyen || "").toLowerCase()
         };
         let res = await suaHoSoBHYTApi(payload);
         if (res.success) {
