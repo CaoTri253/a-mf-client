@@ -889,7 +889,7 @@
           so_thang_dong: so_thang,
           hoa_hong,
           so_tien,
-          phan_quyen: (user.phan_quyen || "").toLowerCase()
+          phan_quyen: user.phan_quyen || "giao_vien"
         };
         let res = await suaHoSoBHYTApi(payload);
         if (res.success) {
