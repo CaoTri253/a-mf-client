@@ -191,6 +191,27 @@ async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
 }
 
 
+// Xóa hồ sơ BHYT theo so_dinh_danh + ma_truong + lop_hoc (dùng cho "Chưa thu" khi hồ sơ đang chờ duyệt)
+async function deleteBHYTByKey({ so_dinh_danh, ma_truong, lop_hoc, phan_quyen = "" }) {
+  const url = `${API_BASE}?func=DeleteBHYT`
+    + `&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa hồ sơ BHYT theo stt (dùng cho “Đã thu”)
+async function deleteBHYTByStt(stt, phan_quyen = "") {
+  const url = `${API_BASE}?func=DeleteBHYTByStt`
+    + `&stt=${encodeURIComponent(stt)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+
 
 
 

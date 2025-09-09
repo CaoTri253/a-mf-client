@@ -1885,6 +1885,11 @@
                   <i class="bi bi-printer"></i>
                 </button>
               ` : ``}
+              ${(hs._bhyt_trangthai === 0) ? `
+                <button class="btn btn-danger btn-sm" onclick="bhyt_cancelPending('${hs.stt}')" title="Hủy hồ sơ chờ duyệt">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              ` : ``}
             </div>
           </td>
           <td>${hs.ho_ten_hoc_sinh || ""}</td>
@@ -2016,6 +2021,33 @@
     }
 
 
+
+
+    // Hủy hồ sơ chờ duyệt trong tab Chưa thu
+    async function bhyt_cancelPending(stt){
+      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt));
+      if (!hs) return;
+      if (!window.confirm(`Bạn có chắc muốn hủy hồ sơ BHYT đang chờ duyệt của học sinh "${hs.ho_ten_hoc_sinh}"?`)) return;
+
+      showLoading();
+      try{
+        const rs = await deleteBHYTByKey({
+          so_dinh_danh: hs.so_dinh_danh,
+          ma_truong: bhyt_user.ma_truong,
+          lop_hoc: hs.lop_hoc || "",
+          phan_quyen: bhyt_user.phan_quyen || ""
+        });
+        if (rs?.success) {
+          toastSuccess('Đã hủy hồ sơ BHYT đang chờ duyệt');
+          await fetchChuaThuHocsinh();
+          if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
+        } else {
+          showToast(rs?.message || 'Không thể hủy hồ sơ', 'danger');
+        }
+      } finally {
+        hideLoading();
+      }
+    }
 
 
     /* ===== Alias tên hàm theo mẫu ===== */
@@ -2461,6 +2493,9 @@
             <button class="btn btn-primary btn-sm" onclick="bhytp_onPrintReceiptIdx(${i})" title="In phiếu thu">
               <i class="bi bi-printer"></i>
             </button>
+            <button class="btn btn-danger btn-sm" onclick="bhytp_deleteIdx(${i})" title="Xóa hồ sơ">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>`;
         }
         return `<div class="action-btns">
@@ -2469,6 +2504,9 @@
           </button>
           <button class="btn btn-primary btn-sm" onclick="bhytp_onPrintReceiptIdx(${i})" title="In phiếu thu">
             <i class="bi bi-printer"></i>
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="bhytp_deleteIdx(${i})" title="Xóa hồ sơ">
+            <i class="bi bi-trash"></i>
           </button>
         </div>`;
       }
@@ -2536,6 +2574,27 @@
 
       window.bhytp_onViewCardIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onViewCard(row), 50); };
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
+      window.bhytp_deleteIdx = async function(i){
+        const row = window._bhytpView[i];
+        if (!row) return;
+        const name = row.ho_ten_hoc_sinh || '';
+        if (!window.confirm(`Bạn có chắc muốn xóa hồ sơ BHYT của "${name}"?`)) return;
+
+        showLoading();
+        try{
+          const rs = await deleteBHYTByStt(row.stt, bhyt_user.phan_quyen || "");
+          if (rs?.success){
+            toastSuccess('Đã xóa hồ sơ BHYT');
+            await window.bhyt_paid_reload?.();
+            // Cập nhật lại tab Chưa thu nếu cần
+            if (typeof window.bhyt_reload === 'function') await window.bhyt_reload();
+          } else {
+            showToast(rs?.message || 'Không thể xóa hồ sơ', 'danger');
+          }
+        } finally {
+          hideLoading();
+        }
+      };
 
 
 
