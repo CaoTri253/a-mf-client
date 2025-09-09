@@ -1990,7 +1990,7 @@
           hoa_hong: hh,
           han_su_dung_bhyt_moi: exp,
           // Thêm quyền người dùng
-          phan_quyen: user.phan_quyen
+          phan_quyen: bhyt_user.phan_quyen
         });
 
         if(res?.success){
@@ -2656,10 +2656,10 @@
 
           log('Submit edit (PAID):', {
             stt, so_ho_so, sdd: hs.so_dinh_danh, lop: hs.lop_hoc || "",
-            months, noikham, gia_tien: g?.gia_tien, amount, rate, hh, exp
+            months, noikham, gia_tien: g?.gia_tien, amount, rate, hh, expsuaHoSoBHYTApi
           });
 
-          const res = await suaHoSoBHYTApi({
+          const res = await ({
             stt,
             so_ho_so, // đã set ở trên
             trang_thai, // mới thêm
@@ -2672,7 +2672,7 @@
             hoa_hong: hh,
             han_su_dung_bhyt_moi: exp,
             // Thêm quyền người dùng
-            phan_quyen: user.phan_quyen
+            phan_quyen: bhyt_user.phan_quyen
           });
 
           log('Submit result:', res);
