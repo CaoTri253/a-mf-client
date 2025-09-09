@@ -1988,7 +1988,9 @@
           noi_kham_bhyt: noikham,
           so_tien: amount,
           hoa_hong: hh,
-          han_su_dung_bhyt_moi: exp
+          han_su_dung_bhyt_moi: exp,
+          // Thêm quyền người dùng
+          phan_quyen: (bhyt_user.phan_quyen || "").toLowerCase()
         });
 
         if(res?.success){
