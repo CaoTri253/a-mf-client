@@ -614,7 +614,7 @@
           </div></div>
         </div>
 
-        <!-- Modal Xác nhận dùng chung -->
+        <!-- Modal Xác nhận dùng cho danh sách học sinh -->
         <div class="modal fade" id="admModalConfirm" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
             <div class="modal-header"><h5 class="modal-title" id="admConfirmTitle">Xác nhận</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -988,7 +988,7 @@
                   <div class="mb-3">
                     <label for="shspaid-sohoso" class="form-label">Số hồ sơ</label>
                     <input type="text" class="form-control" id="shspaid-sohoso" placeholder="">
-                    <div class="form-text text-danger">
+                    <div class="form-text text-danger" style="font-weight: bold;">
                       Nếu mã hồ sơ đã kích hoạt thì nhập mã hồ sơ vào đây
                     </div>
                   </div>
@@ -1006,9 +1006,28 @@
 
         </div>
 
-        <div id="_printArea"></div>
-      </section>
 
+        <!-- Modal xác nhận xóa cho BHYT -->
+        <div class="modal fade" id="bhytModalConfirm" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="bhytConfirmTitle">Xác nhận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body" id="bhytConfirmBody"></div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button id="bhytConfirmBtn" class="btn btn-danger">Đồng ý</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <div id="_printArea"></div>
+        
+      </section>
       <!-- BẢO HIỂM Y TẾ (embedded, for admin) -->
 
 
@@ -1190,7 +1209,7 @@
     maSoBHXHSet.add(ms);
     soDinhDanhSet.add(sdd);
     return "";
-}
+  }
 
 
 
@@ -2024,30 +2043,60 @@
 
 
     // Hủy hồ sơ chờ duyệt trong tab Chưa thu
-    async function bhyt_cancelPending(stt){
-      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt));
-      if (!hs) return;
-      if (!window.confirm(`Bạn có chắc muốn hủy hồ sơ BHYT đang chờ duyệt của học sinh "${hs.ho_ten_hoc_sinh}"?`)) return;
+    // async function bhyt_cancelPending(stt){
+    //   const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt));
+    //   if (!hs) return;
+    //   if (!window.confirm(`Bạn có chắc muốn hủy hồ sơ BHYT đang chờ duyệt của học sinh "${hs.ho_ten_hoc_sinh}"?`)) return;
 
-      showLoading();
-      try{
-        const rs = await deleteBHYTByKey({
-          so_dinh_danh: hs.so_dinh_danh,
-          ma_truong: bhyt_user.ma_truong,
-          lop_hoc: hs.lop_hoc || "",
-          phan_quyen: bhyt_user.phan_quyen || ""
-        });
-        if (rs?.success) {
-          toastSuccess('Đã hủy hồ sơ BHYT đang chờ duyệt');
-          await fetchChuaThuHocsinh();
-          if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
-        } else {
-          showToast(rs?.message || 'Không thể hủy hồ sơ', 'danger');
+    //   showLoading();
+    //   try{
+    //     const rs = await deleteBHYTByKey({
+    //       so_dinh_danh: hs.so_dinh_danh,
+    //       ma_truong: bhyt_user.ma_truong,
+    //       lop_hoc: hs.lop_hoc || "",
+    //       phan_quyen: bhyt_user.phan_quyen || ""
+    //     });
+    //     if (rs?.success) {
+    //       toastSuccess('Đã hủy hồ sơ BHYT đang chờ duyệt');
+    //       await fetchChuaThuHocsinh();
+    //       if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
+    //     } else {
+    //       showToast(rs?.message || 'Không thể hủy hồ sơ', 'danger');
+    //     }
+    //   } finally {
+    //     hideLoading();
+    //   }
+    // }
+
+    function bhyt_cancelPending(stt) {
+      const hs = (bhyt_lastFiltered || bhyt_allData).find(h => String(h.stt) === String(stt));
+      if (!hs) return;
+
+      showBHYTConfirm(
+        `Bạn có chắc muốn hủy hồ sơ BHYT đang chờ duyệt của học sinh <strong>${hs.ho_ten_hoc_sinh}</strong>?`,
+        async function () {
+          showLoading();
+          try {
+            const rs = await deleteBHYTByKey({
+              so_dinh_danh: hs.so_dinh_danh,
+              ma_truong: bhyt_user.ma_truong,
+              lop_hoc: hs.lop_hoc || "",
+              phan_quyen: bhyt_user.phan_quyen || ""
+            });
+            if (rs?.success) {
+              toastSuccess('Đã hủy hồ sơ BHYT đang chờ duyệt');
+              await fetchChuaThuHocsinh();
+              if (window.bhyt_paid_reload) await window.bhyt_paid_reload();
+            } else {
+              showToast(rs?.message || 'Không thể hủy hồ sơ', 'danger');
+            }
+          } finally {
+            hideLoading();
+          }
         }
-      } finally {
-        hideLoading();
-      }
+      );
     }
+
 
 
     /* ===== Alias tên hàm theo mẫu ===== */
@@ -2574,27 +2623,57 @@
 
       window.bhytp_onViewCardIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onViewCard(row), 50); };
       window.bhytp_onPrintReceiptIdx = (i)=>{ const row=window._bhytpView[i]; if(!row) return; showLoading(); setTimeout(()=>bhytp_onPrintReceipt(row), 50); };
-      window.bhytp_deleteIdx = async function(i){
+      
+      //Xóa hồ sơ BHYT (ĐÃ THU)
+      // window.bhytp_deleteIdx = async function(i){
+      //   const row = window._bhytpView[i];
+      //   if (!row) return;
+      //   const name = row.ho_ten_hoc_sinh || '';
+      //   if (!window.confirm(`Bạn có chắc muốn xóa hồ sơ BHYT của "${name}"?`)) return;
+
+      //   showLoading();
+      //   try{
+      //     const rs = await deleteBHYTByStt(row.stt, bhyt_user.phan_quyen || "");
+      //     if (rs?.success){
+      //       toastSuccess('Đã xóa hồ sơ BHYT');
+      //       await window.bhyt_paid_reload?.();
+      //       // Cập nhật lại tab Chưa thu nếu cần
+      //       if (typeof window.bhyt_reload === 'function') await window.bhyt_reload();
+      //     } else {
+      //       showToast(rs?.message || 'Không thể xóa hồ sơ', 'danger');
+      //     }
+      //   } finally {
+      //     hideLoading();
+      //   }
+      // };
+
+      //Xóa hồ sơ BHYT (ĐÃ THU)
+      window.bhytp_deleteIdx = function (i) {
         const row = window._bhytpView[i];
         if (!row) return;
         const name = row.ho_ten_hoc_sinh || '';
-        if (!window.confirm(`Bạn có chắc muốn xóa hồ sơ BHYT của "${name}"?`)) return;
 
-        showLoading();
-        try{
-          const rs = await deleteBHYTByStt(row.stt, bhyt_user.phan_quyen || "");
-          if (rs?.success){
-            toastSuccess('Đã xóa hồ sơ BHYT');
-            await window.bhyt_paid_reload?.();
-            // Cập nhật lại tab Chưa thu nếu cần
-            if (typeof window.bhyt_reload === 'function') await window.bhyt_reload();
-          } else {
-            showToast(rs?.message || 'Không thể xóa hồ sơ', 'danger');
+        showBHYTConfirm(
+          `Bạn có chắc muốn xóa hồ sơ BHYT của học sinh <strong>${name}</strong>?`,
+          async function () {
+            showLoading();
+            try {
+              const rs = await deleteBHYTByStt(row.stt, bhyt_user.phan_quyen || "");
+              if (rs?.success) {
+                toastSuccess('Đã xóa hồ sơ BHYT');
+                await window.bhyt_paid_reload?.();
+                if (typeof window.bhyt_reload === 'function') await window.bhyt_reload();
+              } else {
+                showToast(rs?.message || 'Không thể xóa hồ sơ', 'danger');
+              }
+            } finally {
+              hideLoading();
+            }
           }
-        } finally {
-          hideLoading();
-        }
+        );
       };
+
+
 
 
 
@@ -2974,6 +3053,31 @@
     })();
     </script>
 
+    
+
+
+
+    <!-- Hiển thị Modal xác nhận BHYT (dùng chung cho 2 tab chưa thu và đã thu) -->
+    <script>
+      function showBHYTConfirm(message, onConfirm) {
+      // Set nội dung modal
+      document.getElementById('bhytConfirmBody').innerHTML = message;
+
+      // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
+      const btn = document.getElementById('bhytConfirmBtn');
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+
+      // Gán sự kiện mới
+      newBtn.addEventListener('click', function () {
+        $('#bhytModalConfirm').modal('hide');
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+
+      // Hiển thị modal
+      $('#bhytModalConfirm').modal('show');
+    }
+    </script>
 
 
 
