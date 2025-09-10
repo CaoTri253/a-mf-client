@@ -1038,10 +1038,246 @@
 
 
 
-
+      <!-- BẢO HIỂM TAI NẠN (embedded, for admin) -->
       <section id="page-bhtn" class="d-none">
-        <div class="panel"><div>Đi tới <a href="bhtn_giaovien.html">BHTN</a>.</div></div>
+        <div class="mb-2">
+          <div class="h5 fw-bold">Bảo hiểm tai nạn</div>
+        </div>
+
+        <ul class="nav nav-tabs" id="bhtnTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="bhtn-unpaid-tab" data-bs-toggle="tab"
+                    data-bs-target="#bhtn-unpaid" type="button" role="tab"
+                    aria-controls="bhtn-unpaid" aria-selected="true">
+              Danh sách BHTN chưa thu
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bhtn-paid-tab" data-bs-toggle="tab"
+                    data-bs-target="#bhtn-paid" type="button" role="tab"
+                    aria-controls="bhtn-paid" aria-selected="false">
+              Danh sách BHTN Đã thu
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+          <!-- TAB: BHTN CHƯA THU -->
+          <div class="tab-pane fade show active" id="bhtn-unpaid" role="tabpanel" aria-labelledby="bhtn-unpaid-tab">
+            <div class="table-box p-3 mb-2">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
+                  <select id="bhtn-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
+                  <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; <br> Bấm nút "Toàn trường" để xem toàn bộ lớp</small>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Tìm kiếm</label>
+                  <input class="form-control" id="bhtn-search" placeholder="Tìm theo tên, ngày sinh, số định danh..." />
+                </div>
+              </div>
+              <div class="mt-2 d-flex gap-2">
+                <button id="bhtn-btn-reload" class="btn btn-primary">
+                  <i class="bi bi-arrow-repeat"></i> Tải danh sách
+                </button>
+                <button id="bhtn-btn-all" class="btn btn-info">
+                  <i class="bi bi-building"></i> Toàn trường
+                </button>
+                <button id="bhtn-btn-bulk" class="btn btn-success" style="display:none" onclick="bhtn_showBulkModal()">
+                  Nộp nhiều hồ sơ (0)
+                </button>
+                <div class="ms-auto text-secondary">Tổng: <span id="bhtn-total">0</span> học sinh</div>
+              </div>
+            </div>
+
+            <div class="table-responsive table-box p-0" id="bhtn-ds"></div>
+            <nav class="mt-2">
+              <ul class="pagination justify-content-center" id="bhtn-pagin"></ul>
+            </nav>
+          </div>
+
+          <!-- TAB: BHTN ĐÃ THU -->
+          <div class="tab-pane fade" id="bhtn-paid" role="tabpanel" aria-labelledby="bhtn-paid-tab">
+            <div class="table-box p-3 mb-2">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
+                  <select id="bhtnp-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
+                  <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; <br> Bấm nút "Toàn trường" để xem toàn bộ lớp</small>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Tìm kiếm</label>
+                  <input class="form-control" id="bhtnp-search" placeholder="Tìm theo tên, ngày sinh, số định danh, đối tượng..." />
+                </div>
+              </div>
+              <div class="mt-2 d-flex gap-2">
+                <button id="bhtnp-btn-reload" class="btn btn-primary">
+                  <i class="bi bi-arrow-repeat"></i> Tải danh sách
+                </button>
+                <button id="bhtnp-btn-all" class="btn btn-info">
+                  <i class="bi bi-building"></i> Toàn trường
+                </button>
+                <div class="ms-auto text-secondary">Tổng: <span id="bhtnp-total">0</span> hồ sơ</div>
+              </div>
+            </div>
+
+            <div class="table-responsive table-box p-0" id="bhtnp-ds"></div>
+            <nav class="mt-2">
+              <ul class="pagination justify-content-center" id="bhtnp-pagin"></ul>
+            </nav>
+          </div>
+        </div>
       </section>
+
+
+      <!-- Modal Nộp hồ sơ BHTN -->
+      <div class="modal fade" id="modalNopHoSoBHTN_Admin" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Nộp hồ sơ BHTN</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="bhtn-nhs-hoten" readonly></div>
+            <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="bhtn-nhs-ngaysinh" readonly></div>
+            <div class="mt-2 small">
+              <div><strong>Số tháng đóng:</strong> 12 tháng</div>
+              <div><strong>Hạn sử dụng dự kiến:</strong> <span id="bhtn-nhs-exp" class="fw-bold text-danger">—</span></div>
+              <div id="bhtn-nhs-expnote" class="text-muted" style="min-height:18px"></div>
+              <div><strong>Số tiền cần đóng (12T):</strong> <span id="bhtn-nhs-amount" class="fw-bold text-danger">—</span></div>
+            </div>
+            <div class="mt-3">
+              <label class="fw-semibold d-block mb-2">Đối tượng đóng:</label>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="bhtn-nhs-cat" id="bhtn-nhs-cat-hs" value="Học sinh" checked>
+                <label class="form-check-label" for="bhtn-nhs-cat-hs">Học sinh</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="bhtn-nhs-cat" id="bhtn-nhs-cat-cn" value="Cận nghèo">
+                <label class="form-check-label" for="bhtn-nhs-cat-cn">Cận nghèo</label>
+              </div>
+            </div>
+            <div id="bhtn-nhs-error" class="text-danger" style="min-height:18px"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button class="btn btn-primary" id="bhtn-btn-nop" onclick="bhtn_submitNop()">Nộp hồ sơ</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Modal Sửa hồ sơ BHTN -->
+      <div class="modal fade" id="modalSuaHoSoBHTN_Admin" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Sửa hồ sơ BHTN</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2"><label>Họ tên học sinh:</label><input class="form-control" id="bhtn-shs-hoten" readonly></div>
+            <div class="mb-2"><label>Ngày sinh:</label><input class="form-control" id="bhtn-shs-ngaysinh" readonly></div>
+            <div class="mt-2 small">
+              <div><strong>Số tháng đóng:</strong> 12 tháng</div>
+              <div><strong>Hạn sử dụng dự kiến:</strong> <span id="bhtn-shs-exp" class="fw-bold text-danger">—</span></div>
+              <div id="bhtn-shs-expnote" class="text-muted" style="min-height:18px"></div>
+              <div><strong>Số tiền cần đóng (12T):</strong> <span id="bhtn-shs-amount" class="fw-bold text-danger">—</span></div>
+            </div>
+            <div class="mt-3">
+              <label class="fw-semibold d-block mb-2">Đối tượng đóng:</label>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="bhtn-shs-cat" id="bhtn-shs-cat-hs" value="Học sinh" checked>
+                <label class="form-check-label" for="bhtn-shs-cat-hs">Học sinh</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="bhtn-shs-cat" id="bhtn-shs-cat-cn" value="Cận nghèo">
+                <label class="form-check-label" for="bhtn-shs-cat-cn">Cận nghèo</label>
+              </div>
+            </div>
+            <div id="bhtn-shs-error" class="text-danger" style="min-height:18px"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button class="btn btn-primary" onclick="bhtn_submitSua()">Lưu thay đổi</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Modal Nộp nhiều hồ sơ BHTN -->
+      <div class="modal fade" id="modalBulkNopHoSoBHTN_Admin" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Nộp nhiều hồ sơ BHTN</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2"><b>Đã chọn:</b> <span id="bhtn-bulk-count">0</span> học sinh</div>
+            <div class="mt-2 small">
+              <div><strong class="text-danger">Số tháng đóng:</strong> 12 tháng</div>
+              <div><strong class="text-danger">Hạn sử dụng dự kiến (mẫu 1 HS):</strong> <span id="bhtn-bulk-exp" class="fw-bold text-danger">—</span></div>
+              <div id="bhtn-bulk-expnote" class="text-muted" style="min-height:18px"></div>
+              <div><strong class="text-danger">Số tiền cần đóng (mỗi HS, 12T):</strong> <span id="bhtn-bulk-amount" class="fw-bold text-danger">—</span></div>
+            </div>
+            <div id="bhtn-bulk-error" class="text-danger" style="min-height:18px"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button class="btn btn-primary" id="bhtn-btn-bulk-nop" onclick="bhtn_submitBulk()">Nộp nhiều hồ sơ</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Modal THẺ BHTN (Đã thu) -->
+      <div class="modal fade" id="modalTheBHTN_Admin" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Thẻ bảo hiểm tai nạn</h5>
+            <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button></div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Card layout copy từ ds_hocsinh_dathu_bhtn_giaovien -->
+            <div id="cardScaleWrapBHTN_Admin" style="position:relative;width:900px;height:560px;transform-origin:top left;margin:0 auto">
+              <div id="cardAreaBHTN_Admin" class="bhtn-card">
+                <div class="bhtn-inner">
+                  <div class="bhtn-top">
+                    <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'">
+                  </div>
+                  <div class="kv"><div class="k">Đối tượng đóng</div><div class="v" id="c-doituong-bhtn">—</div></div>
+                  <div class="kv"><div class="k">Số thẻ</div><div class="v v-blue" id="c-so-the-bhtn">—</div></div>
+                  <div class="bhtn-grid">
+                    <div>
+                      <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Tên Cha/Mẹ</div><div class="v" id="c-tencha-bhtn">—</div></div>
+                    </div>
+                    <div>
+                      <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop-bhtn">—</div></div>
+                      <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien-bhtn">—</div></div>
+                      <div class="bhtn-lop" id="c-lop-big-bhtn"> </div>
+                    </div>
+                  </div>
+                  <div class="bhtn-stamp">ĐÃ KÍCH HOẠT</div>
+                  <div class="bhtn-badge"><span id="c-badge-bhtn">—</span></div>
+                  <div id="card-qr-bhtn" class="bhtn-qr"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button></div>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Modal Phiếu thu A5 (dùng chung với BHYT, đã có #modalPhieuThu) -->
+
+      <!-- BẢO HIỂM TAI NẠN (embedded, for admin) -->
+
+
       <section id="page-stats" class="d-none"><div class="panel"><div>Trang thống kê nâng cao (đang phát triển).</div></div></section>
       <section id="page-rewards" class="d-none"><div class="panel"><div>Trang thù lao (đang phát triển).</div></div></section>
       <section id="page-profile" class="d-none"><div class="panel"><div>Thông tin cá nhân (đang phát triển).</div></div></section>
@@ -1650,6 +1886,11 @@
     });
   }
   </script>
+
+
+
+
+
 
 
 
@@ -2374,15 +2615,6 @@
   </script>
 
 
-
-
-
-
-
-
-
-
-
   <!-- ====== KHỐI BHYT ĐÃ THU ===== -->
   <script>
     /* ================== BHYT ĐÃ THU – Admin Tab ================== */
@@ -3051,50 +3283,913 @@
         await window.bhyt_paid_reload();
       });
     })();
-    </script>
-
-    
+  </script>
 
 
+  <!-- Hiển thị Modal xác nhận BHYT (dùng chung cho 2 tab chưa thu và đã thu) -->
+  <script>
+    function showBHYTConfirm(message, onConfirm) {
+      // Set nội dung modal
+      document.getElementById('bhytConfirmBody').innerHTML = message;
 
-    <!-- Hiển thị Modal xác nhận BHYT (dùng chung cho 2 tab chưa thu và đã thu) -->
-    <script>
-      function showBHYTConfirm(message, onConfirm) {
-        // Set nội dung modal
-        document.getElementById('bhytConfirmBody').innerHTML = message;
+      // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
+      const btn = document.getElementById('bhytConfirmBtn');
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
 
-        // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
-        const btn = document.getElementById('bhytConfirmBtn');
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-
-        // Gán sự kiện mới
-        newBtn.addEventListener('click', function () {
-          const modalEl = document.getElementById('bhytModalConfirm');
-          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          modal.hide();
-          if (typeof onConfirm === 'function') onConfirm();
-        });
-
-        // Hiển thị modal
+      // Gán sự kiện mới
+      newBtn.addEventListener('click', function () {
         const modalEl = document.getElementById('bhytModalConfirm');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-        modal.show();
+        modal.hide();
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+
+      // Hiển thị modal
+      const modalEl = document.getElementById('bhytModalConfirm');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+
+  </script>
+
+
+
+
+
+
+
+
+
+
+  <!-- ====== KHỐI BHTN CHƯA THU ===== -->
+  <script>
+    /* ================== BHTN – CHƯA THU (Admin) ================== */
+    (function(){
+      let bhtn_user = JSON.parse(localStorage.getItem("user")||"{}");
+      let bhtn_allData = [], bhtn_lastFiltered = [];
+      let bhtn_pageSize = 20, bhtn_page = 1;
+      let bhtn_sortField = "ho_ten_hoc_sinh", bhtn_sortDir = 1;
+      let bhtn_bulk = [];
+
+      // Helpers ngày/tiền (giữ nguyên logic trang GV)
+      function parseVNDate(str){ const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(!m) return null; const d=new Date(+m[3],+m[2]-1,+m[1]); return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1])?d:null; }
+      function formatVNDate(d){ const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
+      function addDaysExact(dateObj, days){ const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0); d.setDate(d.getDate()+days); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+      function displayNgaySinh(raw){
+        if (!raw) return "";
+        if (typeof raw==="string" && /^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
+        if (typeof raw==="string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)){ const [y,m,d]=raw.split('-'); return `${d}/${m}/${y}`; }
+        if (typeof raw==="string" && /^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw;
+        return raw;
       }
 
+      // Giá BHTN & tính hạn 12T (giữ nguyên)
+      let _cachedGiaBHTN = null;
+      function unwrapGiaBHTN(res){ if (!res) return {}; const d = (res.data !== undefined) ? res.data : res; if (Array.isArray(d)) return d[0] || {}; return d || {}; }
+      async function ensureGiaBHTN(){ if (_cachedGiaBHTN) return _cachedGiaBHTN; const res = await getGiaBHTN(); _cachedGiaBHTN = unwrapGiaBHTN(res); return _cachedGiaBHTN; }
+      function computeExp12M(oldEndStr){
+        const oldEnd = parseVNDate(oldEndStr);
+        if (!oldEnd) return { exp:'(không xác định)', note:'Chưa nhập Ngày hết hạn BHTN cũ trong DanhSach_Hocsinh.' };
+        const start = addDaysExact(oldEnd, 1);
+        const end = new Date(start.getFullYear(), start.getMonth()+12, 0);
+        return { exp: formatVNDate(end), note: '' };
+      }
+
+      // Quy tắc số tiền/hoa hồng theo đối tượng (giữ nguyên)
+      function _toNum(x){ const n = Number(String(x||0).replace(/[^\d.-]/g,'')); return isNaN(n)?0:n; }
+      function _toRate(x){ const r = _toNum(x); return (r>1)?(r/100):r; }
+      function calcAmountCommissionByCategory(gia, category){
+        const giaTien = _toNum(gia?.gia_tien);
+        const giaTienCanNgheo = _toNum(gia?.gia_tien_can_ngheo);
+        const rate = _toRate(gia?.hoa_hong_12_thang);
+        const cat = String(category||'Học sinh').toLowerCase();
+        const isCN = (cat==='cận nghèo' || cat==='can ngheo');
+        const so_tien = isCN ? giaTienCanNgheo : giaTien;
+        const base = isCN ? giaTienCanNgheo : giaTien;
+        const hoa_hong = Math.round(base * rate);
+        return { so_tien, hoa_hong };
+      }
+
+      // Detect page size (giống BHYT)
+      function detectPageSize(){
+        const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
+        if (width <= 767) bhtn_pageSize = 3;
+        else if (width <= 1023) bhtn_pageSize = 7;
+        else bhtn_pageSize = 20;
+      }
+      addEventListener('resize',()=>{const prev=bhtn_pageSize;detectPageSize(); if(prev!==bhtn_pageSize){ bhtn_page=1; bhtn_renderAll(); }});
+
+      // Load options lớp (multi) & fetch “chưa thu”
+      async function bhtn_loadClassOptions(){
+        const res = await getAllDanhSachHocsinh(bhtn_user.ma_truong, "");
+        const el = document.getElementById('bhtn-classes'); if(!el) return; el.innerHTML="";
+        if(res?.success && Array.isArray(res.data)){
+          [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+            .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
+        }
+      }
+
+      async function bhtn_fetchUnpaid(){
+        try{
+          showLoading();
+          detectPageSize();
+          const el = document.getElementById('bhtn-classes');
+          const selected = el ? [...el.querySelectorAll('option:checked')].map(o=>o.value) : [];
+          const classes = selected.length ? selected : [""]; // "" = cả trường
+
+          const allHS = [];
+          for (const cls of classes){
+            const hsRes = await getAllDanhSachHocsinh(bhtn_user.ma_truong, cls);
+            if(hsRes?.success && Array.isArray(hsRes.data)) allHS.push(...hsRes.data);
+          }
+
+          // Map trạng thái từ bảng BHTN
+          const statusMap = {};
+          for (const cls of classes){
+            const bhtnRes = await getDanhSachBHTN(bhtn_user.ma_truong, cls);
+            const ds = Array.isArray(bhtnRes?.data) ? bhtnRes.data : [];
+            ds.forEach(row=>{
+              const key = String(row.so_dinh_danh).replace(/^'/,'').trim();
+              statusMap[key] = Number(row.trang_thai);
+            });
+          }
+
+          bhtn_allData = (allHS||[]).map(hs=>{
+            const k = String(hs.so_dinh_danh||"").replace(/^'/,'').trim();
+            const tt = statusMap[k];
+            return {...hs, _bhtn_trangthai:(tt===undefined?undefined:tt), trang_thai:tt};
+          }).filter(hs => hs._bhtn_trangthai !== 1);
+
+          bhtn_bulk = [];
+          bhtn_page = 1;
+          bhtn_doSearch();
+        } finally { hideLoading(); }
+      }
+
+      function bhtn_doSearch(){
+        const q = (document.getElementById('bhtn-search')?.value||'').trim().toLowerCase();
+        bhtn_lastFiltered = !q ? bhtn_allData : bhtn_allData.filter(hs =>
+          (String(hs.ho_ten_hoc_sinh||"").toLowerCase().includes(q)) ||
+          (String(displayNgaySinh(hs.ngay_sinh)||"").toLowerCase().includes(q)) ||
+          (String(hs.so_dinh_danh||"").toLowerCase().includes(q))
+        );
+        bhtn_page=1; bhtn_renderAll();
+      }
+
+      function bhtn_renderAll(){
+        let data = bhtn_lastFiltered || bhtn_allData;
+        if (bhtn_sortField){
+          data = [...data].sort((a,b)=>{
+            let av=(a[bhtn_sortField]??"").toString().toLowerCase(), bv=(b[bhtn_sortField]??"").toString().toLowerCase();
+            if(!isNaN(+av)&&!isNaN(+bv)){ av=+av; bv=+bv; }
+            if (av<bv) return -bhtn_sortDir; if (av>bv) return bhtn_sortDir; return 0;
+          });
+        }
+        const total = data.length;
+        document.getElementById('bhtn-total').innerText = total;
+
+        const start=(bhtn_page-1)*bhtn_pageSize;
+        const pageData = data.slice(start, start+bhtn_pageSize);
+        bhtn_renderTable(pageData);
+        bhtn_renderPagin(total);
+        bhtn_updateBulkBtn();
+      }
+
+      function bhtn_renderPagin(total){
+        const el = document.getElementById('bhtn-pagin'); if(!el) return; el.innerHTML='';
+        const totalPages = Math.max(1, Math.ceil(total / bhtn_pageSize));
+        if (totalPages<=1) return;
+        const add = (p,label,active=false,disabled=false)=>{
+          const li=document.createElement('li'); li.className=`page-item ${active?'active':''} ${disabled?'disabled':''}`;
+          const a=document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label;
+          a.onclick=(e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===bhtn_page) return; bhtn_page=p; bhtn_renderAll(); };
+          li.appendChild(a); el.appendChild(li);
+        };
+        add(bhtn_page-1,'Trước',false,bhtn_page===1);
+        let minP=Math.max(1,bhtn_page-2), maxP=Math.min(totalPages,bhtn_page+2);
+        if (minP>1) add(1,'1');
+        if (minP>2) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; el.appendChild(li); }
+        for (let p=minP;p<=maxP;p++) add(p,String(p),p===bhtn_page,false);
+        if (maxP<totalPages-1) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; el.appendChild(li); }
+        if (maxP<totalPages) add(totalPages,String(totalPages));
+        add(bhtn_page+1,'Sau',false,bhtn_page===totalPages);
+      }
+
+      function bhtn_sortIcon(field){ if(bhtn_sortField!==field) return ''; return bhtn_sortDir===1 ? '<span class="sort-icon">&#9650;</span>' : '<span class="sort-icon">&#9660;</span>'; }
+      window.bhtn_doSort = function(field){ if(bhtn_sortField===field) bhtn_sortDir=-bhtn_sortDir; else { bhtn_sortField=field; bhtn_sortDir=1; } bhtn_renderAll(); };
+
+      function bhtn_renderTable(ds){
+        const wrap = document.getElementById('bhtn-ds'); if(!wrap) return;
+        if (!ds || ds.length===0){ wrap.innerHTML = `<div class='text-center text-secondary mt-4'>Không có học sinh chưa tham gia BHTN trong lựa chọn này.</div>`; return; }
+        let html = `<table class="table table-bordered table-hs align-middle"><thead><tr>
+          <th style="width:42px;"><input type="checkbox" id="bhtn-chk-all" onchange="bhtn_toggleAll(this)"></th>
+          <th class="th-action">Thao tác</th>
+          <th class="sortable" onclick="bhtn_doSort('ho_ten_hoc_sinh')">Họ tên học sinh ${bhtn_sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable" onclick="bhtn_doSort('ngay_sinh')">Ngày sinh ${bhtn_sortIcon('ngay_sinh')}</th>
+          <th class="sortable" onclick="bhtn_doSort('so_dinh_danh')">Số định danh cá nhân ${bhtn_sortIcon('so_dinh_danh')}</th>
+        </tr></thead><tbody>`;
+        ds.forEach(hs=>{
+          if (hs._bhtn_trangthai===1) return;
+          const hasOld = !!parseVNDate(hs.ngay_het_han_bhtn);
+          const nopDisabled = (hs._bhtn_trangthai===0) || !hasOld;
+          const nopLabel = (hs._bhtn_trangthai===0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
+          html += `<tr>
+            <td><input type="checkbox" class="bhtn-chk" data-stt="${hs.stt}" onchange="bhtn_onSelect('${hs.stt}', this)" ${hs._bhtn_trangthai===0?'disabled':''}></td>
+            <td>
+              <div class="action-btns">
+                ${
+                  (hs._bhtn_trangthai === 0)
+                    ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
+                    : `<button class="btn btn-success btn-sm" onclick="bhtn_openNop('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                }
+                ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn cũ (BHTN)</div>' : ''}
+                ${(hs._bhtn_trangthai===0 || hs._bhtn_trangthai===1) ? `
+                  <button class="btn btn-warning btn-sm" onclick="bhtn_openSua('${hs.stt}')" title="Sửa hồ sơ">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="bhtn_inPhieu('${hs.stt}')" title="In phiếu thu">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                ` : ``}
+              </div>
+            </td>
+            <td>${hs.ho_ten_hoc_sinh||""}</td>
+            <td>${displayNgaySinh(hs.ngay_sinh)||""}</td>
+            <td>${hs.so_dinh_danh||""}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        wrap.innerHTML = html;
+      }
+
+      // Bulk select
+      window.bhtn_onSelect = function(stt, el){ if (el.checked){ if (!bhtn_bulk.includes(stt)) bhtn_bulk.push(stt); } else { bhtn_bulk = bhtn_bulk.filter(x=>x!==stt); const all=document.getElementById('bhtn-chk-all'); if(all) all.checked=false; } bhtn_updateBulkBtn(); };
+      window.bhtn_toggleAll = function(el){
+        document.querySelectorAll('.bhtn-chk').forEach(cb=>{
+          if (cb.disabled) return;
+          cb.checked = el.checked;
+          const stt = cb.getAttribute('data-stt');
+          if (el.checked){ if (!bhtn_bulk.includes(stt)) bhtn_bulk.push(stt); } else { bhtn_bulk = bhtn_bulk.filter(x=>x!==stt); }
+        }); bhtn_updateBulkBtn();
+      };
+      function bhtn_getSelectedData(){
+        const map={}; (bhtn_lastFiltered||bhtn_allData).forEach(h=>{ map[String(h.stt)] = h; });
+        return bhtn_bulk.map(stt=>map[String(stt)]).filter(Boolean).filter(hs => !(hs._bhtn_trangthai===0 || hs._bhtn_trangthai===1));
+      }
+      function bhtn_updateBulkBtn(){
+        const btn = document.getElementById('bhtn-btn-bulk'); const c = bhtn_getSelectedData().length;
+        if (!btn) return; if (c>0){ btn.style.display=''; btn.innerText=`Nộp nhiều hồ sơ (${c})`; } else { btn.style.display='none'; btn.innerText='Nộp nhiều hồ sơ (0)'; }
+      }
+
+      // NỘP / SỬA HỒ SƠ (đơn)
+      let _curHS = null, _curHS_Sua = null;
+
+      window.bhtn_openNop = function(stt){
+        const hs = (bhtn_lastFiltered||bhtn_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
+        _curHS = hs;
+        document.getElementById('bhtn-nhs-hoten').value = hs.ho_ten_hoc_sinh||"";
+        document.getElementById('bhtn-nhs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh||"");
+        document.getElementById('bhtn-nhs-error').innerText = "";
+
+        (async ()=>{
+          const gia = await ensureGiaBHTN();
+          const { exp, note } = computeExp12M(_curHS.ngay_het_han_bhtn);
+          document.getElementById('bhtn-nhs-exp').innerText = exp;
+          document.getElementById('bhtn-nhs-expnote').innerText = note||"";
+          const isCN = document.getElementById('bhtn-nhs-cat-cn').checked;
+          const { so_tien } = calcAmountCommissionByCategory(gia, isCN?'Cận nghèo':'Học sinh');
+          document.getElementById('bhtn-nhs-amount').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
+        })().finally(()=> new bootstrap.Modal(document.getElementById('modalNopHoSoBHTN_Admin')).show());
+
+        // lắng nghe radio để cập nhật amount
+        const rHS = document.getElementById('bhtn-nhs-cat-hs');
+        const rCN = document.getElementById('bhtn-nhs-cat-cn');
+        [rHS,rCN].forEach(el=>{
+          el?.addEventListener('change', async ()=>{
+            const gia = await ensureGiaBHTN();
+            const isCN = document.getElementById('bhtn-nhs-cat-cn').checked;
+            const { so_tien } = calcAmountCommissionByCategory(gia, isCN?'Cận nghèo':'Học sinh');
+            document.getElementById('bhtn-nhs-amount').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
+          }, {once:false});
+        });
+      };
+
+      window.bhtn_submitNop = async function(){
+        if (!_curHS) return;
+        const hasOld = !!parseVNDate(_curHS.ngay_het_han_bhtn);
+        if (!hasOld){ document.getElementById('bhtn-nhs-error').innerText='Chưa có "Ngày hết hạn hạn BHTN cũ". Vui lòng cập nhật trước khi nộp.';
+            return;
+        }
+        showLoading();
+        try{
+          const gia = await ensureGiaBHTN();
+          const isCN = document.getElementById('bhtn-nhs-cat-cn').checked;
+          const selectedCat = isCN ? 'Cận nghèo' : 'Học sinh';
+          const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
+
+          const payload = {
+            ho_ten_hoc_sinh: _curHS.ho_ten_hoc_sinh || "null",
+            ngay_sinh: displayNgaySinh(_curHS.ngay_sinh) || "null",
+            gioi_tinh: _curHS.gioi_tinh || "null",
+            dia_chi: _curHS.dia_chi || "null",
+            ngay_het_han_bhtn_cu: _curHS.ngay_het_han_bhtn || "null",
+            so_thang_dong: 12,
+            lop_hoc: _curHS.lop_hoc || "null",
+            sdt_lienhe: _curHS.sdt_lienhe || "null",
+            so_dinh_danh: _curHS.so_dinh_danh || "null",
+            ten_cha_me: _curHS.ten_cha_me || "null",
+            doi_tuong_dong: selectedCat,
+            ghi_chu: "null",
+            so_tien, hoa_hong,
+            trang_thai: 0,
+            so_ho_so: "null",
+            ma_truong: bhtn_user.ma_truong || "null"
+          };
+
+          const res = await nopHoSoBHTN(payload);
+          if (res?.success){
+            bootstrap.Modal.getInstance(document.getElementById('modalNopHoSoBHTN_Admin'))?.hide();
+            if (typeof showToast === 'function') showToast("Nộp hồ sơ BHTN thành công!", 'success');
+            await bhtn_fetchUnpaid();
+          } else {
+            document.getElementById('bhtn-nhs-error').innerText = res?.message || "Nộp hồ sơ thất bại!";
+          }
+        } catch(err){
+          document.getElementById('bhtn-nhs-error').innerText = err?.message || "Có lỗi xảy ra!";
+        } finally { hideLoading(); }
+      };
+
+      window.bhtn_openSua = async function(stt){
+        showLoading();
+        try{
+          const hs = (bhtn_lastFiltered||bhtn_allData).find(h=>String(h.stt)===String(stt));
+          if (!hs || hs._bhtn_trangthai !== 0){
+            if (typeof showToast === 'function') showToast("Chỉ sửa được hồ sơ đang chờ duyệt!", 'warning');
+            hideLoading(); return;
+          }
+          _curHS_Sua = hs;
+          document.getElementById('bhtn-shs-hoten').value = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('bhtn-shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
+          document.getElementById('bhtn-shs-error').innerText = "";
+
+          // Lấy hồ sơ hiện tại để set đối tượng đóng
+          try{
+            const hsRes = await getHosoBHTNByHS(hs.so_dinh_danh, bhtn_user.ma_truong, hs.lop_hoc || "");
+            const r = hsRes?.data || {};
+            const catLower = String(r.doi_tuong_dong || 'Học sinh').trim().toLowerCase();
+            const shsHS = document.getElementById('bhtn-shs-cat-hs');
+            const shsCN = document.getElementById('bhtn-shs-cat-cn');
+            if (shsHS && shsCN){
+              if (catLower === 'cận nghèo' || catLower === 'can ngheo'){ shsCN.checked = true; } else { shsHS.checked = true; }
+            }
+          }catch(_){}
+
+          const gia = await ensureGiaBHTN();
+          const { exp, note } = computeExp12M(hs.ngay_het_han_bhtn);
+          document.getElementById('bhtn-shs-exp').innerText = exp;
+          document.getElementById('bhtn-shs-expnote').innerText = note || "";
+
+          // Preview tiền theo radio
+          const refreshAmount = ()=>{
+            const isCN = document.getElementById('bhtn-shs-cat-cn').checked;
+            const { so_tien } = calcAmountCommissionByCategory(gia, isCN?'Cận nghèo':'Học sinh');
+            document.getElementById('bhtn-shs-amount').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
+          };
+          refreshAmount();
+          document.getElementById('bhtn-shs-cat-hs')?.addEventListener('change', refreshAmount);
+          document.getElementById('bhtn-shs-cat-cn')?.addEventListener('change', refreshAmount);
+
+          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_Admin')).show();
+        } finally { hideLoading(); }
+      };
+
+      window.bhtn_submitSua = async function(){
+        if (!_curHS_Sua) return;
+        showLoading();
+        try{
+          const gia = await ensureGiaBHTN();
+          const selectedCat = document.getElementById('bhtn-shs-cat-cn').checked ? 'Cận nghèo' : 'Học sinh';
+          const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selectedCat);
+
+          const payload = {
+            so_dinh_danh: _curHS_Sua.so_dinh_danh,
+            ma_truong: bhtn_user.ma_truong,
+            lop_hoc: _curHS_Sua.lop_hoc,
+            doi_tuong_dong: selectedCat,
+            so_tien, hoa_hong,
+            trang_thai: 0
+          };
+
+          const res = await suaHoSoBHTN(payload);
+          if (res?.success){
+            bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHTN_Admin'))?.hide();
+            if (typeof showToast === 'function') showToast("Đã cập nhật hồ sơ BHTN!", 'success');
+            await bhtn_fetchUnpaid();
+          } else {
+            document.getElementById('bhtn-shs-error').innerText = res?.message || "Cập nhật thất bại!";
+          }
+        } catch(err){
+          document.getElementById('bhtn-shs-error').innerText = err?.message || "Có lỗi xảy ra!";
+        } finally { hideLoading(); }
+      };
+
+      // Nộp nhiều hồ sơ
+      window.bhtn_showBulkModal = async function(){
+        const selected = bhtn_getSelectedData();
+        if (selected.length===0) return;
+        document.getElementById('bhtn-bulk-count').innerText = String(selected.length);
+        document.getElementById('bhtn-bulk-error').innerText = '';
+
+        const invalidOld = selected.filter(h => !parseVNDate(h.ngay_het_han_bhtn));
+        const bulkBtn = document.getElementById('bhtn-btn-bulk-nop');
+        if (invalidOld.length>0){
+          document.getElementById('bhtn-bulk-error').innerText='Một số học sinh thiếu "Ngày hết hạn BHTN cũ". Hãy cập nhật trước.';
+          if (bulkBtn) bulkBtn.disabled = true;
+        } else { if (bulkBtn) bulkBtn.disabled = false; }
+
+        const gia = await ensureGiaBHTN();
+        const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0; // Bulk mặc định "Học sinh"
+        const first = selected[0];
+        const { exp, note } = computeExp12M(first?.ngay_het_han_bhtn || "");
+        document.getElementById('bhtn-bulk-exp').innerText = exp;
+        document.getElementById('bhtn-bulk-amount').innerText = price.toLocaleString('vi-VN');
+        document.getElementById('bhtn-bulk-expnote').innerText = note || "";
+
+        new bootstrap.Modal(document.getElementById('modalBulkNopHoSoBHTN_Admin')).show();
+      };
+
+      window.bhtn_submitBulk = async function(){
+        const selected = bhtn_getSelectedData();
+        if (selected.length===0) return;
+
+        const invalidOld = selected.filter(h => !parseVNDate(h.ngay_het_han_bhtn));
+        if (invalidOld.length>0){
+          document.getElementById('bhtn-bulk-error').innerText='Có học sinh thiếu "Ngày hết hạn BHTN cũ". Vui lòng cập nhật trước khi nộp.';
+          return;
+        }
+
+        const btn = document.getElementById('bhtn-btn-bulk-nop'); if(btn) btn.disabled=true;
+        showLoading();
+        try{
+          const gia = await ensureGiaBHTN();
+          const price = Number(String((gia?.gia_tien)||0).replace(/[^\d]/g,'')) || 0;
+          const rateNum = _toRate(gia?.hoa_hong_12_thang);
+          const hoa_hong = Math.round(price * rateNum); // bulk = Học sinh
+
+          let ok=0, fail=0;
+          for (const hs of selected){
+            const payload = {
+              ho_ten_hoc_sinh: hs.ho_ten_hoc_sinh || "null",
+              ngay_sinh: displayNgaySinh(hs.ngay_sinh) || "null",
+              gioi_tinh: hs.gioi_tinh || "null",
+              dia_chi: hs.dia_chi || "null",
+              ngay_het_han_bhtn_cu: hs.ngay_het_han_bhtn || "null",
+              so_thang_dong: 12,
+              lop_hoc: hs.lop_hoc || "null",
+              sdt_lienhe: hs.sdt_lienhe || "null",
+              so_dinh_danh: hs.so_dinh_danh || "null",
+              ten_cha_me: hs.ten_cha_me || "null",
+              doi_tuong_dong: "Học sinh",
+              ghi_chu: "null",
+              so_tien: price, hoa_hong,
+              trang_thai: 0,
+              so_ho_so: "null",
+              ma_truong: bhtn_user.ma_truong || "null"
+            };
+            const res = await nopHoSoBHTN(payload);
+            if (res?.success) ok++; else fail++;
+          }
+
+          bootstrap.Modal.getInstance(document.getElementById('modalBulkNopHoSoBHTN_Admin'))?.hide();
+          if (typeof showToast === 'function'){
+            showToast(fail===0 ? `Đã nộp thành công ${ok} hồ sơ!` : `Nộp xong: thành công ${ok}, thất bại ${fail}.`, fail===0?'success':'warning');
+          }
+          await bhtn_fetchUnpaid();
+        } catch(err){
+          document.getElementById('bhtn-bulk-error').innerText = err?.message || "Có lỗi xảy ra!";
+        } finally {
+          hideLoading();
+          if (btn) btn.disabled=false;
+        }
+      };
+
+      // In phiếu thu A5 dùng modal sẵn có #modalPhieuThu (re-use cách BHYT/BHTN teacher)
+      function numberToVietnamese(n){
+        const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+        function readTriple(num){ let tr=Math.floor(num/100), ch=Math.floor((num%100)/10), dv=num%10, s="";
+          if(tr>0){ s += VI_DIGITS[tr]+" trăm"; if(ch==0 && dv>0) s+=" lẻ"; }
+          if(ch>1){ s += (s?" ":"")+VI_DIGITS[ch]+" mươi"; if(dv==1) s+=" mốt"; else if(dv==5) s+=" lăm"; else if(dv>0) s+=" "+VI_DIGITS[dv]; }
+          else if(ch==1){ s += (s?" ":"")+"mười"; if(dv==5) s+=" lăm"; else if(dv>0) s+=" "+VI_DIGITS[dv]; }
+          else if(ch==0 && dv>0){ s += (s?" ":"")+VI_DIGITS[dv]; }
+          return s.trim();
+        }
+        n = Math.round(Number(n)||0); if (n===0) return "Không đồng";
+        const units=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"]; let i=0,str="";
+        while(n>0 && i<units.length){ const block=n%1000; if(block>0){ const part=readTriple(block); str = part+units[i]+(str?" "+str:""); } n=Math.floor(n/1000); i++; }
+        return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim();
+      }
+      function stripVN(str){ return String(str||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,'d').replace(/Đ/g,'D'); }
+      function initials(str){ return String(str||"").trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase(); }
+      function buildQRPayload(schoolCode, school, classCode, name, months, endDate){
+        const mt=String(schoolCode||"").slice(0,24);
+        const s=stripVN(school).slice(0,60);
+        const c=String(classCode||"").slice(0,12);
+        const n=stripVN(name).slice(0,60);
+        const m=String(months||""); const e=String(endDate||"").slice(0,10);
+        return `MT=${mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
+      }
+      function calcRangeBHTN(oldEndStr){
+        const od=parseVNDate(oldEndStr);
+        if (!od) return {startText:"—", endText:"(không xác định)"};
+        const start=addDaysExact(od,1);
+        const end=new Date(start.getFullYear(), start.getMonth()+12, 0);
+        return { startText: formatVNDate(start), endText: formatVNDate(end) };
+      }
+
+      window.bhtn_inPhieu = async function(stt){
+        try{
+          showLoading();
+          const hs = (bhtn_lastFiltered||bhtn_allData).find(h=>String(h.stt)===String(stt));
+          if (!hs){ hideLoading(); return; }
+          const hoSo = await getHosoBHTNByHS(hs.so_dinh_danh, bhtn_user.ma_truong, hs.lop_hoc||"");
+          if (!hoSo || !hoSo.success || !hoSo.data){ hideLoading(); if (typeof showToast==='function') showToast("Không tìm thấy hồ sơ BHTN để in.", 'warning'); return; }
+
+          const months = 12;
+          const amount = parseInt(String(hoSo.data.so_tien||"0").replace(/[^\d]/g,''),10)||0;
+          const { startText, endText } = calcRangeBHTN(hs.ngay_het_han_bhtn);
+          const schoolName = (bhtn_user.ten_truong || (await (await fetch(`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(bhtn_user.ma_truong)}`)).json())?.ten_truong || bhtn_user.ma_truong || '—');
+          const classCode = hoSo.data.lop_hoc || hs.lop_hoc || "";
+
+          // Gán vào modal phiếu thu chung (#modalPhieuThu đã tồn tại)
+          document.getElementById('rec-school').innerText = schoolName;
+          document.getElementById('rec-class').innerText = classCode;
+          const d=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
+          document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('rec-address').innerText = hs.dia_chi || "";
+          document.getElementById('rec-content').innerText = `Thu tiền BHTN - ${classCode}`;
+          document.getElementById('rec-months').innerText = String(months);
+          document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
+          document.getElementById('rec-amount').innerText = Number(amount).toLocaleString('vi-VN');
+          document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
+          document.getElementById('rec-teacher-name').innerText = bhtn_user.ho_ten || "(Cán bộ)";
+
+          const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
+          const primaryText = buildQRPayload(bhtn_user.ma_truong, schoolName, classCode, hs.ho_ten_hoc_sinh||"", months, endText);
+          try{ new QRCode(qrBox,{text:primaryText,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }
+          catch(e){
+            const fb = `MT=${String(bhtn_user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(hs.ho_ten_hoc_sinh)};M=${months};E=${endText}`;
+            try{ new QRCode(qrBox,{text:fb,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR quá dài</small>'; }
+          }
+
+          new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+        } finally { hideLoading(); }
+      };
+
+      // Wire UI
+      function bhtn_bindUI(){
+        document.getElementById('bhtn-btn-reload')?.addEventListener('click', bhtn_fetchUnpaid);
+        document.getElementById('bhtn-search')?.addEventListener('input', bhtn_doSearch);
+        document.getElementById('bhtn-btn-all')?.addEventListener('click', ()=>{
+          const sel = document.getElementById('bhtn-classes'); if(!sel) return;
+          [...sel.options].forEach(o => o.selected = false);
+          bhtn_fetchUnpaid();
+        });
+      }
+
+      // Router/tab loader
+      window.bhtn_unpaid_wireTab = async function(){
+        if (window._bhtnUnpaidWired) return;
+        window._bhtnUnpaidWired = true;
+        await bhtn_loadClassOptions();
+        bhtn_bindUI();
+        await bhtn_fetchUnpaid();
+      };
+
+      // Expose reload
+      window.bhtn_unpaid_reload = bhtn_fetchUnpaid;
+    })();
     </script>
+    <!-- ====== KHỐI BHTN CHƯA THU ===== -->
 
 
 
 
 
+  <!-- ====== KHỐI BHTN ĐÃ THU ===== -->
+  <script>
+    /* ================== BHTN – ĐÃ THU (Admin) ================== */
+    (function(){
+      let bhtnp_user = JSON.parse(localStorage.getItem("user")||"{}");
+      let bhtnp_all = [], bhtnp_last = [];
+      let bhtnp_pageSize=20, bhtnp_page=1, bhtnp_sortField="ho_ten_hoc_sinh", bhtnp_sortDir=1;
+
+      const norm = v => String(v??"").replace(/^'/,'').trim();
+      const toTrangThai = v => {const n=Number(norm(v));return isNaN(n)?undefined:n;}
+      const cleanVal = v => {const s=norm(v);return (!s||s==='null'||s==='undefined'||s==='NaN')?"":s}
+      function displayDate(raw){
+        if(!raw)return "";
+        if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).toLocaleDateString('vi-VN');
+        if(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw)){const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}
+        return raw;
+      }
+      function getSoHoSo(row){return cleanVal(row.so_ho_so??row.sohoso??row.so_hs)}
+
+      // Load lớp (multi)
+      async function bhtnp_loadClasses(){
+        try{
+          const res = await getAllDanhSachHocsinh(bhtnp_user.ma_truong, "");
+          const el = document.getElementById('bhtnp-classes'); if(!el) return; el.innerHTML="";
+          if(res?.success && Array.isArray(res.data)){
+            [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+              .sort()
+              .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
+          }
+        }catch(_){}
+      }
+
+      async function bhtnp_fetchPaid(){
+        showLoading();
+        try{
+          const sel = document.getElementById('bhtnp-classes');
+          const selected = sel ? [...sel.querySelectorAll('option:checked')].map(o=>o.value) : [];
+          const classes = selected.length ? selected : [""]; // "" = cả trường
+
+          const rowsAll = [];
+          for (const cls of classes){
+            const rs = await getDanhSachBHTN(bhtnp_user.ma_truong, cls);
+            const rows = Array.isArray(rs?.data) ? rs.data : [];
+            rows.forEach(r=>{
+              rowsAll.push({
+                ...r,
+                trang_thai: toTrangThai(r.trang_thai),
+                so_ho_so: getSoHoSo(r),
+                ma_so_bhtn: cleanVal(r.ma_so_bhtn)
+              });
+            });
+          }
+          bhtnp_all = rowsAll.filter(r=>r && r.so_dinh_danh);
+          bhtnp_page = 1;
+          bhtnp_doSearch();
+        } finally { hideLoading(); }
+      }
+
+      function sortIcon(field){ if(bhtnp_sortField!==field) return ''; return bhtnp_sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
+      function statusCell(row){
+        const st=toTrangThai(row.trang_thai), shs=getSoHoSo(row);
+        if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
+        if (st===1 && !shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
+        if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${shs}</span></div>`;
+        return `<span class="status-badge status-pending">Đang xử lý</span>`;
+      }
+      function actionsCell(i,row){
+        const st = toTrangThai(row.trang_thai);
+        const shs = getSoHoSo(row);
+        if (st===1 && shs){
+          return `<div class="action-btns">
+            <button class="btn btn-sm btn-info" onclick="bhtnp_onViewCardIdx(${i})">Xem thẻ</button>
+            <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+          </div>`;
+        }
+        return `<div class="action-btns">
+          <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+        </div>`;
+      }
+
+      function buildHead(){
+        return `<thead><tr>
+          <th class="th-action">Thao tác</th>
+          <th>Trạng thái</th>
+          <th class="sortable th-hoten" data-field="ho_ten_hoc_sinh">Họ tên ${sortIcon('ho_ten_hoc_sinh')}</th>
+          <th class="sortable" data-field="ngay_sinh">Ngày sinh ${sortIcon('ngay_sinh')}</th>
+          <th class="sortable" data-field="so_dinh_danh">Số định danh ${sortIcon('so_dinh_danh')}</th>
+          <th class="sortable" data-field="doi_tuong_dong">Đối tượng đóng ${sortIcon('doi_tuong_dong')}</th>
+          <th class="sortable text-center" data-field="so_thang_dong">Số tháng đóng ${sortIcon('so_thang_dong')}</th>
+          <th class="sortable" data-field="han_su_dung_bhtn_moi">Hạn BHTN mới ${sortIcon('han_su_dung_bhtn_moi')}</th>
+        </tr></thead>`;
+      }
+      function attachSort(){
+        document.querySelectorAll('#bhtnp-ds th.sortable').forEach(th=>{
+          th.onclick = ()=>{ const f=th.getAttribute('data-field'); if(!f) return;
+            if (bhtnp_sortField===f) bhtnp_sortDir=-bhtnp_sortDir; else { bhtnp_sortField=f; bhtnp_sortDir=1; }
+            renderAll();
+          };
+        });
+      }
+
+      function renderTable(ds,startIdx){
+        const wrap = document.getElementById('bhtnp-ds'); if(!wrap) return;
+        if (!ds || !ds.length){
+          wrap.innerHTML = `<div class="text-center text-secondary mt-4">Không có hồ sơ BHTN trong lựa chọn này.</div>`;
+          return;
+        }
+        const rows = ds.map((r,i)=>`<tr>
+          <td>${actionsCell(startIdx+i,r)}</td>
+          <td>${statusCell(r)}</td>
+          <td class="td-hoten">${(r.ho_ten_hoc_sinh||"")}</td>
+          <td>${displayDate(r.ngay_sinh)||""}</td>
+          <td>${(r.so_dinh_danh||"")}</td>
+          <td>${(r.doi_tuong_dong||"Học sinh")}</td>
+          <td class="text-center">${(r.so_thang_dong||"")}</td>
+          <td>${displayDate(r.han_su_dung_bhtn_moi||"")}</td>
+        </tr>`).join('');
+        wrap.innerHTML = `<table class="table table-bordered table-hs align-middle">${buildHead()}<tbody>${rows}</tbody></table>`;
+        attachSort();
+      }
+
+      function detectPageSize(){
+        const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
+        if (width <= 999) bhtnp_pageSize = Number.MAX_SAFE_INTEGER; else bhtnp_pageSize = 20;
+      }
+      addEventListener('resize', ()=>{ const old=bhtnp_pageSize; detectPageSize(); if (old!==bhtnp_pageSize){ bhtnp_page=1; renderAll(); } });
+
+      function renderPagin(total){
+        const el=document.getElementById('bhtnp-pagin'); if(!el) return;
+        if (bhtnp_pageSize===Number.MAX_SAFE_INTEGER){ el.innerHTML=''; return; } // no paging on small
+        let totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
+        if (totalPages<=1){ el.innerHTML=''; return; }
+        const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="bhtnp_goto(${p})">${lab}</a></li>`;
+        let html=''; html += add(Math.max(1,bhtnp_page-1),'&laquo;',false,bhtnp_page===1);
+        for(let i=1;i<=totalPages;i++) html += add(i,i,bhtnp_page===i,false);
+        html += add(Math.min(totalPages,bhtnp_page+1),'&raquo;',false,bhtnp_page===totalPages);
+        el.innerHTML = html;
+      }
+      window.bhtnp_goto = (p)=>{ const totalPages = Math.max(1, Math.ceil((bhtnp_last||bhtnp_all).length / bhtnp_pageSize)); if(p<1||p>totalPages) return; bhtnp_page=p; renderAll(); };
+
+      function doSearch(){
+        const q = (document.getElementById('bhtnp-search')?.value||'').trim().toLowerCase();
+        bhtnp_last = !q ? bhtnp_all : bhtnp_all.filter(h=>
+          (String(h.ho_ten_hoc_sinh||"").toLowerCase().includes(q)) ||
+          (String(displayDate(h.ngay_sinh)||"").toLowerCase().includes(q)) ||
+          (String(h.so_dinh_danh||"").toLowerCase().includes(q)) ||
+          (String(h.doi_tuong_dong||"").toLowerCase().includes(q))
+        );
+        bhtnp_page=1; renderAll();
+      }
+      function renderAll(){
+        let data = bhtnp_last || bhtnp_all;
+        if (bhtnp_sortField){
+          data = [...data].sort((a,b)=>{
+            // giữ đúng logic sort như trang GV: ưu tiên theo tên (given name) nếu cần
+            if (bhtnp_sortField === 'ho_ten_hoc_sinh'){
+              const av = toSortKeyVN(getTen(a.ho_ten_hoc_sinh)); const bv = toSortKeyVN(getTen(b.ho_ten_hoc_sinh));
+              if (av<bv) return -bhtnp_sortDir; if (av>bv) return bhtnp_sortDir;
+              const af = toSortKeyVN(a.ho_ten_hoc_sinh||''); const bf = toSortKeyVN(b.ho_ten_hoc_sinh||'');
+              if (af<bf) return -bhtnp_sortDir; if (af>bf) return bhtnp_sortDir; return 0;
+            }
+            let av=(a[bhtnp_sortField]??"").toString().toLowerCase(), bv=(b[bhtnp_sortField]??"").toString().toLowerCase();
+            if(!isNaN(+av)&&!isNaN(+bv)){ av=+av; bv=+bv; }
+            if (av<bv) return -bhtnp_sortDir; if (av>bv) return bhtnp_sortDir; return 0;
+          });
+        }
+        const total = data.length;
+        document.getElementById('bhtnp-total').innerText = total;
+        detectPageSize();
+        const start=(bhtnp_page-1)*bhtnp_pageSize;
+        renderTable(data.slice(start, start+bhtnp_pageSize), start);
+        renderPagin(total);
+      }
+
+      // ===== Xem thẻ / In phiếu (giữ nguyên logic trang GV, đổi selector id modal) =====
+      function parseDate(s){
+        if(!s) return null;
+        if(typeof s==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)}
+        if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+        return null;
+      }
+      function formatDateVN(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` }
+      function makeRangeBHTN(row){
+        const end=row.han_su_dung_bhtn_moi||"";
+        const months=Number(row.so_thang_dong||0);
+        const e=parseDate(end);
+        if(!e||!months) return {tu:"",den:""};
+        const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);
+        return {tu:formatDateVN(s), den:formatDateVN(e)};
+      }
+      const toVND=n=>Number(n||0).toLocaleString('vi-VN');
+      function stripVN(s){ return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+      function getTen(fullname){ const s=String(fullname||'').trim().replace(/\s+/g,' '); if(!s) return ''; const parts=s.split(' '); return parts[parts.length-1]; }
+      function toSortKeyVN(s){ return stripVN(String(s||'')).toLowerCase(); }
+      function numberToVietnamese(n){
+        const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+        function readTriple(n){let tr=Math.floor(n/100),ch=Math.floor((n%100)/10),dv=n%10,s="";if(tr>0){s+=VI_DIGITS[tr]+" trăm";if(ch==0&&dv>0)s+=" lẻ"}if(ch>1){s+=(s?" ":"")+VI_DIGITS[ch]+" mươi";if(dv==1)s+=" mốt";else if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==1){s+=(s?" ":"")+"mười";if(dv==5)s+=" lăm";else if(dv>0)s+=" "+VI_DIGITS[dv]}else if(ch==0&&dv>0){s+=(s?" ":"")+VI_DIGITS[dv]}return s.trim()}
+        n=Math.round(Number(n)||0);if(n===0)return"Không đồng";const u=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];let i=0,str="";while(n>0&&i<u.length){const b=n%1000;if(b>0){const p=readTriple(b);str=p+u[i]+(str?" "+str:"")}n=Math.floor(n/1000);i++}return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim()
+      }
+      function todayText(){ const d=new Date(); return `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`; }
+      function buildQRPayload(mt,school,cls,name,months,endDate){
+        const _mt=String(mt||"").slice(0,24),
+          s=stripVN(school).slice(0,60),
+          c=String(cls||"").slice(0,12),
+          n=stripVN(name).slice(0,60),
+          m=String(months||""),
+          e=String(endDate||"").slice(0,10);
+        return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
+      }
+
+      window.bhtnp_onViewCardIdx = (i)=>{ const row=(bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onViewCard(row),50); };
+      window.bhtnp_onPrintReceiptIdx = (i)=>{ const row=(bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onPrintReceipt(row),50); };
+
+      function bhtnp_onViewCard(row){
+        const {tu,den} = makeRangeBHTN(row);
+        const sohoso = getSoHoSo(row)||"—";
+        const lop = row.lop_hoc || bhtnp_user.lop_hoc || "—";
+
+        // Map sang modal thẻ Admin (ID khác)
+        document.getElementById('c-doituong-bhtn').innerText = row.doi_tuong_dong || 'Học sinh';
+        document.getElementById('c-so-the-bhtn').innerText   = cleanVal(row.ma_so_bhtn)||'—';
+        document.getElementById('c-hoten-bhtn').innerText    = row.ho_ten_hoc_sinh||'—';
+        document.getElementById('c-ngaysinh-bhtn').innerText = displayDate(row.ngay_sinh)||'—';
+        document.getElementById('c-tu-bhtn').innerText       = tu||'—';
+        document.getElementById('c-den-bhtn').innerText      = den||'—';
+        document.getElementById('c-diachi-bhtn').innerText   = cleanVal(row.dia_chi)||'—';
+        document.getElementById('c-sdt-bhtn').innerText      = cleanVal(row.sdt_lienhe||row.sdt)||'—';
+        document.getElementById('c-tencha-bhtn').innerText   = cleanVal(row.ten_cha_me)||'—';
+        document.getElementById('c-gioitinh-bhtn').innerText = cleanVal(row.gioi_tinh)||'—';
+        document.getElementById('c-lop-bhtn').innerText      = lop;
+        document.getElementById('c-lop-big-bhtn').innerText  = lop;
+        document.getElementById('c-sotien-bhtn').innerText   = toVND(row.so_tien||0);
+        document.getElementById('c-badge-bhtn').innerText    = sohoso;
+
+        const qrBox = document.getElementById('card-qr-bhtn'); qrBox.innerHTML='';
+        const months=parseInt(row.so_thang_dong||"12",10);
+        const qrText=buildQRPayload(bhtnp_user.ma_truong,(bhtnp_user.ten_truong||''),lop,(row.ho_ten_hoc_sinh||""),months,den);
+        try{ new QRCode(qrBox,{text:qrText,width:92,height:92,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR</small>'; }
+
+        new bootstrap.Modal(document.getElementById('modalTheBHTN_Admin')).show();
+        hideLoading();
+      }
+
+      function bhtnp_onPrintReceipt(row){
+        getTenTruong(bhtnp_user.ma_truong).then(truong=>{
+          const lop=row.lop_hoc||bhtnp_user.lop_hoc||"—";
+          const months=parseInt(row.so_thang_dong||"12",10);
+          const amount=parseInt((row.so_tien||"0").toString().replace(/[^\d]/g,''),10)||0;
+          const end=row.han_su_dung_bhtn_moi||""; const e=parseDate(end);
+          let startText="—",endText="(không xác định)";
+          if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN(s);endText=formatDateVN(e)}
+          document.getElementById('rec-school').innerText=truong;
+          document.getElementById('rec-class').innerText=lop;
+          document.getElementById('rec-date-today').innerText=todayText();
+          document.getElementById('rec-student-name').innerText=row.ho_ten_hoc_sinh||"";
+          document.getElementById('rec-address').innerText=row.dia_chi||"";
+          document.getElementById('rec-content').innerText=`Thu tiền BHTN - ${lop}`;
+          document.getElementById('rec-months').innerText=String(months);
+          document.getElementById('rec-range').innerText=`từ ngày ${startText} đến ngày ${endText}`;
+          document.getElementById('rec-amount').innerText=toVND(amount);
+          document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
+          document.getElementById('rec-teacher-name').innerText=bhtnp_user.ho_ten||"(Cán bộ)";
+          const qrBox=document.getElementById('receipt-qr'); qrBox.innerHTML="";
+          const payload=buildQRPayload(bhtnp_user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
+          try{ new QRCode(qrBox,{text:payload,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR</small>'; }
+          new bootstrap.Modal(document.getElementById('modalPhieuThu')).show();
+          hideLoading();
+        }).catch(()=>hideLoading());
+      }
+
+      async function getTenTruong(ma_truong){ try{ const u=`${API_BASE}?func=GetTenTruong&ma_truong=${encodeURIComponent(ma_truong)}`; const r=await fetch(u); const j=await r.json(); return j?.ten_truong||j?.data?.ten_truong||bhtnp_user.ten_truong||ma_truong||'—'; }catch(e){ return bhtnp_user.ten_truong||ma_truong||'—'; } }
+
+      // Bind UI
+      function bind(){
+        document.getElementById('bhtnp-btn-reload')?.addEventListener('click', bhtnp_fetchPaid);
+        document.getElementById('bhtnp-search')?.addEventListener('input', doSearch);
+        document.getElementById('bhtnp-btn-all')?.addEventListener('click', ()=>{
+          const sel = document.getElementById('bhtnp-classes'); if(!sel) return;
+          [...sel.options].forEach(o=>o.selected=false);
+          bhtnp_fetchPaid();
+        });
+      }
+
+      window.bhtn_paid_wireTab = async function(){
+        if (window._bhtnPaidWired) return;
+        window._bhtnPaidWired = true;
+        await bhtnp_loadClasses();
+        bind();
+        await bhtnp_fetchPaid();
+      };
+      window.bhtn_paid_reload = bhtnp_fetchPaid;
+    })();
+  </script>
+  <!-- ====== KHỐI BHTN ĐÃ THU ===== -->
 
 
+  <!-- Khi click vào tab BHTN, nạp dữ liệu tương ứng -->
+  <script>
+  // Khi user click vào tab BHTN, nạp dữ liệu tương ứng
+  document.getElementById('bhtn-unpaid-tab')?.addEventListener('shown.bs.tab', async ()=>{
+    await window.bhtn_unpaid_wireTab?.();
+  });
+  document.getElementById('bhtn-paid-tab')?.addEventListener('shown.bs.tab', async ()=>{
+    await window.bhtn_paid_wireTab?.();
+  });
 
-
-
-
-
+  // Nếu muốn auto-wire khi lần đầu vào trang BHTN của admin_dashboard
+  // Hãy thêm vào hàm setActivePage('bhtn') đã có sẵn:
+  // if (page === 'bhtn') {
+  //   if (!sec.dataset.wired) { /* no-op; tabs sẽ tự wire khi được bấm */ sec.dataset.wired = '1'; }
+  //   // Tuỳ chọn: tự nạp tab đầu tiên
+  //   window.bhtn_unpaid_wireTab?.();
+  // }
+</script>
 
 
 
@@ -3170,6 +4265,15 @@
         if (!sec.dataset.wired) { bhyt_wirePage(); sec.dataset.wired = '1'; }
         bhyt_reload();
       }
+
+
+
+      if (page === 'bhtn') {
+        if (!sec.dataset.wired) { no-op; sec.dataset.wired = '1'; }
+        // Tuỳ chọn: tự nạp tab đầu tiên
+        window.bhtn_unpaid_wireTab?.();
+      }
+
     }
 
 
