@@ -3060,23 +3060,28 @@
     <!-- Hiển thị Modal xác nhận BHYT (dùng chung cho 2 tab chưa thu và đã thu) -->
     <script>
       function showBHYTConfirm(message, onConfirm) {
-      // Set nội dung modal
-      document.getElementById('bhytConfirmBody').innerHTML = message;
+        // Set nội dung modal
+        document.getElementById('bhytConfirmBody').innerHTML = message;
 
-      // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
-      const btn = document.getElementById('bhytConfirmBtn');
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
+        // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
+        const btn = document.getElementById('bhytConfirmBtn');
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
 
-      // Gán sự kiện mới
-      newBtn.addEventListener('click', function () {
-        $('#bhytModalConfirm').modal('hide');
-        if (typeof onConfirm === 'function') onConfirm();
-      });
+        // Gán sự kiện mới
+        newBtn.addEventListener('click', function () {
+          const modalEl = document.getElementById('bhytModalConfirm');
+          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.hide();
+          if (typeof onConfirm === 'function') onConfirm();
+        });
 
-      // Hiển thị modal
-      $('#bhytModalConfirm').modal('show');
-    }
+        // Hiển thị modal
+        const modalEl = document.getElementById('bhytModalConfirm');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+      }
+
     </script>
 
 
