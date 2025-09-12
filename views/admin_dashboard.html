@@ -4027,6 +4027,9 @@
           (String(h.doi_tuong_dong||"").toLowerCase().includes(q))
         );
         bhtnp_page=1; renderAll();
+
+        //Alias toàn cục cho doSearch
+        window.bhtnp_doSearch = doSearch;
       }
       function renderAll(){
         let data = bhtnp_last || bhtnp_all;
