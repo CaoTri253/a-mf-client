@@ -4078,7 +4078,7 @@
           }
           bhtnp_all = rowsAll.filter(r=>r && r.so_dinh_danh);
           bhtnp_page = 1;
-          bhtnp_doSearch();
+          bhtnp_doSearchPaid();
         } finally { hideLoading(); }
       }
 
@@ -4164,7 +4164,7 @@
       }
       window.bhtnp_goto = (p)=>{ const totalPages = Math.max(1, Math.ceil((bhtnp_last||bhtnp_all).length / bhtnp_pageSize)); if(p<1||p>totalPages) return; bhtnp_page=p; renderAll(); };
 
-      function doSearch(){
+      function bhtnp_doSearchPaid(){
         const q = (document.getElementById('bhtnp-search')?.value||'').trim().toLowerCase();
         bhtnp_last = !q ? bhtnp_all : bhtnp_all.filter(h=>
           (String(h.ho_ten_hoc_sinh||"").toLowerCase().includes(q)) ||
@@ -4175,7 +4175,7 @@
         bhtnp_page=1; renderAll();
 
         //Alias toàn cục cho doSearch
-        window.bhtnp_doSearch = doSearch;
+        window.bhtnp_doSearchPaid = bhtnp_doSearchPaid;
       }
       function renderAll(){
         let data = bhtnp_last || bhtnp_all;
@@ -4302,7 +4302,7 @@
       // Bind UI
       function bind(){
         document.getElementById('bhtnp-btn-reload')?.addEventListener('click', bhtnp_fetchPaid);
-        document.getElementById('bhtnp-search')?.addEventListener('input', doSearch);
+        document.getElementById('bhtnp-search')?.addEventListener('input', bhtnp_doSearchPaid);
         document.getElementById('bhtnp-btn-all')?.addEventListener('click', ()=>{
           const sel = document.getElementById('bhtnp-classes'); if(!sel) return;
           [...sel.options].forEach(o=>o.selected=false);
