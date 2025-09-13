@@ -4089,55 +4089,9 @@
           }
           bhtnp_all = rowsAll.filter(r=>r && r.so_dinh_danh);
           bhtnp_page = 1;
-
-          // Sau khi có rowsAll
-          BHTNP.state.all = rowsAll.filter(r => r && String(r.so_dinh_danh||'').trim());
-          BHTNP.state.filtered = BHTNP.state.all.slice();
-
-          // Xây index
-          BHTNP.state.bySdd.clear();
-          BHTNP.state.bySoHoSo.clear();
-          BHTNP.state.all.forEach(r=>{
-            const sdd  = String(r.so_dinh_danh||'').trim();
-            const sohs = String(r.so_ho_so||'').trim();
-            if (sdd)  BHTNP.state.bySdd.set(sdd, r);
-            if (sohs) BHTNP.state.bySoHoSo.set(sohs, r);
-          });
           bhtnp_doSearchPaid();
-
-          // QUAN TRỌNG: gọi sau khi render xong
-          wireBhtnpTableActions();
         } finally { hideLoading(); }
       }
-
-
-
-      //
-      function wireBhtnpTableActions(){
-        const table = document.getElementById('bhtnp-table'); // tbody/table của tab ĐÃ THU
-        if (!table || table.dataset.wired === '1') return;
-        table.dataset.wired = '1';
-
-        table.addEventListener('click', async (e)=>{
-          const btn = e.target.closest('button[data-action]');
-          if (!btn) return;
-
-          const sdd  = String(btn.dataset.sdd||'').trim();
-          const sohs = String(btn.dataset.sohs||'').trim();
-
-          const rec = (sdd && BHTNP.state.bySdd.get(sdd)) || (sohs && BHTNP.state.bySoHoSo.get(sohs));
-          if (!rec) { showToast?.('Không tìm thấy bản ghi học sinh đã thu', 'warning'); return; }
-
-          if (btn.dataset.action === 'bhtnp-view-card') {
-            await bhtnp_viewCard(rec);
-          } else if (btn.dataset.action === 'bhtnp-print-receipt') {
-            await bhtnp_printReceipt(rec);
-          }
-        });
-      }
-
-
-
 
       function sortIcon(field){ if(bhtnp_sortField!==field) return ''; return bhtnp_sortDir===1?'<span class="sort-icon">&#9650;</span>':'<span class="sort-icon">&#9660;</span>'; }
       function statusCell(row){
