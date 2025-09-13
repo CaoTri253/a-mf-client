@@ -1282,7 +1282,7 @@
             <div class="modal-header">
               <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
               <div class="no-print d-flex gap-2">
-                <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
+                <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImageBHTN()">Lưu ảnh</button>
                 <button class="btn btn-primary btn-sm" onclick="printReceiptOnlyBHTN()">In</button>
               </div>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -3909,7 +3909,7 @@
       };
 
 
-      function printReceiptOnlyBHTN() {
+      window.printReceiptOnlyBHTN = function() {
         // Lấy phần nội dung phiếu thu BHTN
         const receipt = document.getElementById('receiptA5-bhtn');
         if (!receipt) {
@@ -3978,7 +3978,7 @@
       }
 
       /* Tải ảnh PNG của phiếu thu BHTN */
-      async function downloadReceiptImageBHTN(){
+      window.downloadReceiptImageBHTN = async function(){
         const el = document.getElementById('receiptA5-bhtn'); 
         if(!el) {
           if (typeof showToast === 'function') showToast("Không tìm thấy nội dung phiếu thu BHTN để lưu ảnh", 'warning');
