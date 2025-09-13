@@ -1283,17 +1283,17 @@
               <h5 class="modal-title">Xem trước phiếu thu (A5)</h5>
               <div class="no-print d-flex gap-2">
                 <button class="btn btn-secondary btn-sm" onclick="downloadReceiptImage()">Lưu ảnh</button>
-                <button class="btn btn-primary btn-sm" onclick="printReceiptOnly()">In</button>
+                <button class="btn btn-primary btn-sm" onclick="printReceiptOnlyBHTN()">In</button>
               </div>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" style="display:flex;justify-content:center;">
-              <div id="receiptA5" class="a5-paper">
+              <div id="receiptA5-bhtn" class="a5-paper">
                 <div class="row">
                   <div class="col">
                     <div class="receipt-meta">
-                      <div><strong id="rec-school">Trường …</strong></div>
-                      <div>Lớp: <strong id="rec-class">—</strong></div>
+                      <div><strong id="rec-school-bhtn">Trường …</strong></div>
+                      <div>Lớp: <strong id="rec-class-bhtn">—</strong></div>
                     </div>
                   </div>
                   <div class="col text-center">
@@ -1308,27 +1308,27 @@
                   <div class="col-4" style="max-width:36mm"><div class="qr-box"><div id="receipt-qr-bhtn"></div></div></div>
                   <div class="col text-center">
                     <div class="receipt-title">BIÊN LAI THU TIỀN</div>
-                    <div class="receipt-sub" id="rec-date-today">Ngày … tháng … năm …</div>
+                    <div class="receipt-sub" id="rec-date-today-bhtn">Ngày … tháng … năm …</div>
                   </div>
                 </div>
                 <div class="mt-3">
-                  <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name">—</strong></div>
-                  <div class="receipt-line">Địa chỉ: <span id="rec-address">—</span></div>
-                  <div class="receipt-line">Nội dung thu: <span id="rec-content">—</span></div>
-                  <div class="receipt-line">Số tháng đóng: <span id="rec-months">—</span> tháng (<span id="rec-range">từ ngày … đến ngày …</span>)</div>
-                  <div class="receipt-line">Số tiền thu: <strong id="rec-amount">—</strong> VNĐ</div>
-                  <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text">—</strong>.</div>
+                  <div class="receipt-line">Họ và tên học sinh: <strong id="rec-student-name-bhtn">—</strong></div>
+                  <div class="receipt-line">Địa chỉ: <span id="rec-address-bhtn">—</span></div>
+                  <div class="receipt-line">Nội dung thu: <span id="rec-content-bhtn">—</span></div>
+                  <div class="receipt-line">Số tháng đóng: <span id="rec-months-bhtn">—</span> tháng (<span id="rec-range-bhtn">từ ngày … đến ngày …</span>)</div>
+                  <div class="receipt-line">Số tiền thu: <strong id="rec-amount-bhtn">—</strong> VNĐ</div>
+                  <div class="receipt-line"><em>Viết bằng chữ:</em> <strong id="rec-amount-text-bhtn">—</strong>.</div>
                 </div>
                 <div class="row">
                   <div class="col sign-col">NGƯỜI NỘP TIỀN<br><small>(Ký và ghi rõ họ tên)</small></div>
-                  <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small><div class="sign-name" id="rec-teacher-name">—</div></div>
+                  <div class="col sign-col">NGƯỜI THU TIỀN<br><small>(Ký và ghi rõ họ tên)</small><div class="sign-name" id="rec-teacher-name-bhtn">—</div></div>
                 </div>
               </div>
             </div>
             <div class="modal-footer no-print">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-              <button class="btn btn-outline-secondary" onclick="downloadReceiptImage()">Lưu ảnh</button>
-              <button class="btn btn-primary" onclick="printReceiptOnly()">In</button>
+              <button class="btn btn-outline-secondary" onclick="downloadReceiptImageBHTN()">Lưu ảnh</button>
+              <button class="btn btn-primary" onclick="printReceiptOnlyBHTN()">In</button>
             </div>
           </div>
         </div>
@@ -3607,6 +3607,9 @@
       window.bhtn_openNop = function(stt){
         const hs = (bhtn_lastFiltered||bhtn_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
         _curHS = hs;
+
+        showLoading();
+
         document.getElementById('bhtn-nhs-hoten').value = hs.ho_ten_hoc_sinh||"";
         document.getElementById('bhtn-nhs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh||"");
         document.getElementById('bhtn-nhs-error').innerText = "";
@@ -3619,7 +3622,7 @@
           const isCN = document.getElementById('bhtn-nhs-cat-cn').checked;
           const { so_tien } = calcAmountCommissionByCategory(gia, isCN?'Cận nghèo':'Học sinh');
           document.getElementById('bhtn-nhs-amount').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
-        })().finally(()=> new bootstrap.Modal(document.getElementById('modalNopHoSoBHTN_Admin')).show());
+        })().finally(()=> { hideLoading(); new bootstrap.Modal(document.getElementById('modalNopHoSoBHTN_Admin')).show() });
 
         // lắng nghe radio để cập nhật amount
         const rHS = document.getElementById('bhtn-nhs-cat-hs');
@@ -3881,17 +3884,17 @@
           const classCode = hoSo.data.lop_hoc || hs.lop_hoc || "";
 
           // Gán vào modal phiếu thu chung (#modalPhieuThu đã tồn tại)
-          document.getElementById('rec-school').innerText = schoolName;
-          document.getElementById('rec-class').innerText = classCode;
-          const d=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
-          document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh || "";
-          document.getElementById('rec-address').innerText = hs.dia_chi || "";
-          document.getElementById('rec-content').innerText = `Thu tiền BHTN - ${classCode}`;
-          document.getElementById('rec-months').innerText = String(months);
-          document.getElementById('rec-range').innerText = `từ ngày ${startText} đến ngày ${endText}`;
-          document.getElementById('rec-amount').innerText = Number(amount).toLocaleString('vi-VN');
-          document.getElementById('rec-amount-text').innerText = numberToVietnamese(amount);
-          document.getElementById('rec-teacher-name').innerText = bhtn_user.ho_ten || "(Cán bộ)";
+          document.getElementById('rec-school-bhtn').innerText = schoolName;
+          document.getElementById('rec-class-bhtn').innerText = classCode;
+          const d=new Date(); document.getElementById('rec-date-today-bhtn').innerText = `Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
+          document.getElementById('rec-student-name-bhtn').innerText = hs.ho_ten_hoc_sinh || "";
+          document.getElementById('rec-address-bhtn').innerText = hs.dia_chi || "";
+          document.getElementById('rec-content-bhtn').innerText = `Thu tiền BHTN - ${classCode}`;
+          document.getElementById('rec-months-bhtn').innerText = String(months);
+          document.getElementById('rec-range-bhtn').innerText = `từ ngày ${startText} đến ngày ${endText}`;
+          document.getElementById('rec-amount-bhtn').innerText = Number(amount).toLocaleString('vi-VN');
+          document.getElementById('rec-amount-text-bhtn').innerText = numberToVietnamese(amount);
+          document.getElementById('rec-teacher-name-bhtn').innerText = bhtn_user.ho_ten || "(Cán bộ)";
 
           const qrBox=document.getElementById('receipt-qr-bhtn'); qrBox.innerHTML="";
           const primaryText = buildQRPayload(bhtn_user.ma_truong, schoolName, classCode, hs.ho_ten_hoc_sinh||"", months, endText);
@@ -3904,6 +3907,92 @@
           new bootstrap.Modal(document.getElementById('modalPhieuThuBHTN')).show();
         } finally { hideLoading(); }
       };
+
+
+      function printReceiptOnlyBHTN() {
+        // Lấy phần nội dung phiếu thu BHTN
+        const receipt = document.getElementById('receiptA5-bhtn');
+        if (!receipt) {
+          if (typeof showToast === 'function') showToast("Không tìm thấy nội dung phiếu thu BHTN để in", 'warning');
+          return;
+        }
+
+        // Tạo iframe ẩn để in
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.top = '-1000px';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        document.body.appendChild(iframe);
+
+        // CSS in giống BHYT
+        const css = `
+          <style>
+            @page { size: A5 portrait; margin: 10mm; }
+            html,body{ background:#fff; margin:0; padding:0; height:auto !important; }
+            .a5-paper{ width:148mm; min-height:210mm; background:#fff; color:#000;
+                      margin:0 auto; padding:10mm 12mm; line-height:1.35; font-size:13px;
+                      page-break-inside: avoid; }
+            .receipt-title{ font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.4px; }
+            .receipt-sub{ font-style:italic; }
+            .receipt-meta{ font-size:13px; }
+            .receipt-line{ margin:2mm 0; }
+            .qr-box{ width:26mm; height:26mm; border:1px solid #000; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+            .sign-col{ text-align:center; margin-top:10mm; font-weight:500; }
+            .sign-name{ margin-top:20mm; text-align:center; font-weight:600; }
+            .row{ display:flex; flex-wrap:nowrap; width:100%; }
+            .col{ flex:1 1 0; }
+            .text-center{ text-align:center; }
+          </style>
+        `;
+
+        // Ghi nội dung vào iframe
+        const content = receipt.outerHTML;
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Phiếu thu BHTN</title>
+              ${css}
+            </head>
+            <body>${content}</body>
+          </html>
+        `);
+        doc.close();
+
+        // Đợi QR render xong
+        const check = () => {
+          if (iframe.contentDocument.querySelector('#receipt-qr-bhtn img')?.complete) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            setTimeout(() => {
+              if (document.body.contains(iframe)) document.body.removeChild(iframe);
+            }, 500);
+          } else {
+            setTimeout(check, 50);
+          }
+        };
+        check();
+      }
+
+      /* Tải ảnh PNG của phiếu thu BHTN */
+      async function downloadReceiptImageBHTN(){
+        const el = document.getElementById('receiptA5-bhtn'); 
+        if(!el) {
+          if (typeof showToast === 'function') showToast("Không tìm thấy nội dung phiếu thu BHTN để lưu ảnh", 'warning');
+          return;
+        }
+        const canvas = await html2canvas(el,{useCORS:true,scale:2});
+        const link = document.createElement('a'); 
+        link.download='phieu_thu_a5_bhtn.png'; 
+        link.href=canvas.toDataURL('image/png'); 
+        link.click();
+      }
+
+
+
 
       // Wire UI
       function bhtn_bindUI(){
@@ -4189,17 +4278,17 @@
           const end=row.han_su_dung_bhtn_moi||""; const e=parseDate(end);
           let startText="—",endText="(không xác định)";
           if(e&&months>0){const s=new Date(e.getFullYear(),e.getMonth()-months,e.getDate()+1);startText=formatDateVN(s);endText=formatDateVN(e)}
-          document.getElementById('rec-school').innerText=truong;
-          document.getElementById('rec-class').innerText=lop;
-          document.getElementById('rec-date-today').innerText=todayText();
-          document.getElementById('rec-student-name').innerText=row.ho_ten_hoc_sinh||"";
-          document.getElementById('rec-address').innerText=row.dia_chi||"";
-          document.getElementById('rec-content').innerText=`Thu tiền BHTN - ${lop}`;
-          document.getElementById('rec-months').innerText=String(months);
-          document.getElementById('rec-range').innerText=`từ ngày ${startText} đến ngày ${endText}`;
-          document.getElementById('rec-amount').innerText=toVND(amount);
-          document.getElementById('rec-amount-text').innerText=numberToVietnamese(amount);
-          document.getElementById('rec-teacher-name').innerText=bhtnp_user.ho_ten||"(Cán bộ)";
+          document.getElementById('rec-school-bhtn').innerText=truong;
+          document.getElementById('rec-class-bhtn').innerText=lop;
+          document.getElementById('rec-date-today-bhtn').innerText=todayText();
+          document.getElementById('rec-student-name-bhtn').innerText=row.ho_ten_hoc_sinh||"";
+          document.getElementById('rec-address-bhtn').innerText=row.dia_chi||"";
+          document.getElementById('rec-content-bhtn').innerText=`Thu tiền BHTN - ${lop}`;
+          document.getElementById('rec-months-bhtn').innerText=String(months);
+          document.getElementById('rec-range-bhtn').innerText=`từ ngày ${startText} đến ngày ${endText}`;
+          document.getElementById('rec-amount-bhtn').innerText=toVND(amount);
+          document.getElementById('rec-amount-text-bhtn').innerText=numberToVietnamese(amount);
+          document.getElementById('rec-teacher-name-bhtn').innerText=bhtnp_user.ho_ten||"(Cán bộ)";
           const qrBox=document.getElementById('receipt-qr-bhtn'); qrBox.innerHTML="";
           const payload=buildQRPayload(bhtnp_user.ma_truong,truong,lop,row.ho_ten_hoc_sinh||"",months,endText);
           try{ new QRCode(qrBox,{text:payload,width:90,height:90,correctLevel:QRCode.CorrectLevel.L}); }catch(_){ qrBox.innerHTML='<small>QR</small>'; }
