@@ -257,6 +257,21 @@
   <!-- ====== BHYT ĐÃ THU (bảng + trạng thái + modal xem thẻ) ====== -->
 
 
+
+
+
+  <!-- ====== BHTN ĐÃ THU(bảng + trạng thái + modal xem thẻ) ====== -->
+  <style>
+    #bhtn-paid .status-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:600;font-size:12px}
+    #bhtn-paid .status-pending{color:#b91c1c;background:#fee2e2}       /* đỏ */
+    #bhtn-paid .status-paid-wait{color:#b91c1c;background:#ffe4e6}     /* đỏ nhạt */
+    #bhtn-paid .status-active{color:#065f46;background:#d1fae5}        /* xanh lá */
+    #bhtn-paid .hoso-text{display:block;font-size:12px;color:#1d4ed8;margin-top:4px} /* số hồ sơ xuống dòng */
+  </style>
+  <!-- ====== BHTN ĐÃ THU(bảng + trạng thái + modal xem thẻ) ====== -->
+
+
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
@@ -4017,8 +4032,8 @@
       // Expose reload
       window.bhtn_unpaid_reload = bhtn_fetchUnpaid;
     })();
-    </script>
-    <!-- ====== KHỐI BHTN CHƯA THU ===== -->
+  </script>
+  <!-- ====== KHỐI BHTN CHƯA THU ===== -->
 
 
 
@@ -4204,6 +4219,9 @@
             if (av<bv) return -bhtnp_sortDir; if (av>bv) return bhtnp_sortDir; return 0;
           });
         }
+        // LƯU lại danh sách đã lọc/sắp xếp để thao tác theo index đúng
+        if (window.BHTNP && BHTNP.state) BHTNP.state.filtered = data;
+
         const total = data.length;
         document.getElementById('bhtnp-total').innerText = total;
         detectPageSize();
@@ -4248,8 +4266,8 @@
         return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
       }
 
-      window.bhtnp_onViewCardIdx = (i)=>{ const row=(bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onViewCard(row),50); };
-      window.bhtnp_onPrintReceiptIdx = (i)=>{ const row=(bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onPrintReceipt(row),50); };
+        window.bhtnp_onViewCardIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onViewCard(row),50); };
+        window.bhtnp_onPrintReceiptIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onPrintReceipt(row),50); };
 
       function bhtnp_onViewCard(row){
         const {tu,den} = makeRangeBHTN(row);
