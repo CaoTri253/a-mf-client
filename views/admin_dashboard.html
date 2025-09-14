@@ -2832,7 +2832,7 @@
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===0) return `<span class="status-badge status-pending">Chờ duyệt</span>`;
         if (st===1 && !shs) return `<span class="status-badge status-paid-wait">Đã nộp, chờ kích hoạt</span>`;
-        if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${bhytp_escapeHtml(shs)}</span></div>`;
+        if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${shs}</span></div>`;
         return `<span class="status-badge status-pending">Đang xử lý</span>`;
       }
 
