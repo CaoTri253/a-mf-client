@@ -3531,13 +3531,26 @@
       }
 
       // Detect page size (giống BHYT)
+      // function detectPageSize(){
+      //   const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
+      //   if (width <= 767) bhtn_pageSize = 3;
+      //   else if (width <= 1023) bhtn_pageSize = 7;
+      //   else bhtn_pageSize = 20;
+      // }
+      // addEventListener('resize',()=>{const prev=bhtn_pageSize;detectPageSize(); if(prev!==bhtn_pageSize){ bhtn_page=1; bhtn_renderAll(); }});
+
+
       function detectPageSize(){
         const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
-        if (width <= 767) bhtn_pageSize = 3;
-        else if (width <= 1023) bhtn_pageSize = 7;
-        else bhtn_pageSize = 20;
+        if (width <= 767)       bhtnp_pageSize = 3;
+        else if (width <= 1023) bhtnp_pageSize = 7;
+        else                    bhtnp_pageSize = 20;
       }
-      addEventListener('resize',()=>{const prev=bhtn_pageSize;detectPageSize(); if(prev!==bhtn_pageSize){ bhtn_page=1; bhtn_renderAll(); }});
+      addEventListener('resize', ()=>{
+        const old = bhtnp_pageSize;
+        detectPageSize();
+        if (old !== bhtnp_pageSize){ bhtnp_page = 1; renderAll(); }
+      });
 
       // Load options lớp (multi) & fetch “chưa thu”
       async function bhtn_loadClassOptions(){
@@ -4262,16 +4275,63 @@
       }
       addEventListener('resize', ()=>{ const old=bhtnp_pageSize; detectPageSize(); if (old!==bhtnp_pageSize){ bhtnp_page=1; renderAll(); } });
 
+      // function renderPagin(total){
+      //   const el=document.getElementById('bhtnp-pagin'); if(!el) return;
+      //   if (bhtnp_pageSize===Number.MAX_SAFE_INTEGER){ el.innerHTML=''; return; } // no paging on small
+      //   let totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
+      //   if (totalPages<=1){ el.innerHTML=''; return; }
+      //   const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="bhtnp_goto(${p})">${lab}</a></li>`;
+      //   let html=''; html += add(Math.max(1,bhtnp_page-1),'&laquo;',false,bhtnp_page===1);
+      //   for(let i=1;i<=totalPages;i++) html += add(i,i,bhtnp_page===i,false);
+      //   html += add(Math.min(totalPages,bhtnp_page+1),'&raquo;',false,bhtnp_page===totalPages);
+      //   el.innerHTML = html;
+      // }
+
       function renderPagin(total){
-        const el=document.getElementById('bhtnp-pagin'); if(!el) return;
-        if (bhtnp_pageSize===Number.MAX_SAFE_INTEGER){ el.innerHTML=''; return; } // no paging on small
-        let totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
-        if (totalPages<=1){ el.innerHTML=''; return; }
-        const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="bhtnp_goto(${p})">${lab}</a></li>`;
-        let html=''; html += add(Math.max(1,bhtnp_page-1),'&laquo;',false,bhtnp_page===1);
-        for(let i=1;i<=totalPages;i++) html += add(i,i,bhtnp_page===i,false);
-        html += add(Math.min(totalPages,bhtnp_page+1),'&raquo;',false,bhtnp_page===totalPages);
-        el.innerHTML = html;
+        const el = document.getElementById('bhtnp-pagin'); if(!el) return;
+        el.innerHTML = '';
+        const totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
+        if (totalPages <= 1) return;
+
+        const add = (p, label, active=false, disabled=false) => {
+          const li = document.createElement('li');
+          li.className = `page-item ${active?'active':''} ${disabled?'disabled':''}`;
+          const a = document.createElement('a');
+          a.className = 'page-link';
+          a.href = '#';
+          a.innerHTML = label;
+          a.onclick = (e) => {
+            e.preventDefault();
+            if (p < 1 || p > totalPages || p === bhtnp_page) return;
+            bhtnp_page = p; renderAll();
+          };
+          li.appendChild(a); el.appendChild(li);
+        };
+
+        add(bhtnp_page - 1, 'Trước', false, bhtnp_page === 1);
+
+        let minP = Math.max(1, bhtnp_page - 2);
+        let maxP = Math.min(totalPages, bhtnp_page + 2);
+
+        if (minP > 1) add(1, '1');
+        if (minP > 2) {
+          const li = document.createElement('li');
+          li.className = 'page-item disabled';
+          li.innerHTML = '<span class="page-link">.</span>';
+          el.appendChild(li);
+        }
+
+        for (let p = minP; p <= maxP; p++) add(p, String(p), p === bhtnp_page, false);
+
+        if (maxP < totalPages - 1) {
+          const li = document.createElement('li');
+          li.className = 'page-item disabled';
+          li.innerHTML = '<span class="page-link">.</span>';
+          el.appendChild(li);
+        }
+        if (maxP < totalPages) add(totalPages, String(totalPages));
+
+        add(bhtnp_page + 1, 'Sau', false, bhtnp_page === totalPages);
       }
       window.bhtnp_goto = (p)=>{ const totalPages = Math.max(1, Math.ceil((bhtnp_last||bhtnp_all).length / bhtnp_pageSize)); if(p<1||p>totalPages) return; bhtnp_page=p; renderAll(); };
 
