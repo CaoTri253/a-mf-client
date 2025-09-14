@@ -278,25 +278,30 @@
     #modalTheBHTN_Admin :root{--cardW-bhtn:900px;--cardH-bhtn:560px;--orange:#f59e0b}
 
     /* viền ngoài */
-    #modalTheBHTN_Admin .bhtn-card{
-      width:var(--cardW-bhtn);height:var(--cardH-bhtn);
-      /* nền ấm giống mẫu */
+    #modalTheBHTN_Admin .bhtn-card {
+      width: var(--cardW-bhtn);
+      height: var(--cardH-bhtn);
+      border: 12px solid var(--orange);   /* viền ngoài duy nhất */
+      border-radius: 16px;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+
       background:
         radial-gradient(1200px 600px at -20% -40%, #fff1e6 0 55%, transparent 56%),
         radial-gradient(900px 420px at 120% 120%, #fff7ed 0 60%, transparent 61%),
         #fff;
-      border:8px solid var(--orange);border-radius:14px;padding:8px;
-      box-shadow:0 2px 10px #0001;overflow:hidden;position:relative;
     }
 
     /* khung trong */
-    #modalTheBHTN_Admin .bhtn-inner{
-      height:100%;border:3px solid var(--orange);border-radius:12px;
-      padding:16px 24px 24px;display:flex;flex-direction:column;
-      /* lớp nền mờ rất nhẹ cho chiều sâu */
-      background:
-        linear-gradient(135deg, rgba(245, 158, 11, .04), rgba(255,255,255,.0) 40%),
-        linear-gradient(0deg, rgba(255,255,255,.65), rgba(255,255,255,.65));
+    #modalTheBHTN_Admin .bhtn-inner {
+      height: 100%;
+      padding: 16px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      /* bỏ border ở đây */
+      border: none;
+      border-radius: 0;
     }
 
     #modalTheBHTN_Admin .bhtn-top{display:flex;align-items:center;justify-content:center;margin-bottom:4px}
@@ -4505,20 +4510,26 @@
 
       // === Lưu ảnh thẻ (sửa lỗi not defined)
       window.bhtnp_downloadCardImage = async function(){
-        const el = document.getElementById('cardAreaBHTN_Admin');
-        if (!el) return;
+        const wrap = document.getElementById('cardScaleWrapBHTN_Admin');
+        const card = document.getElementById('cardAreaBHTN_Admin');
+        if (!card) return;
+
+        // lưu transform gốc
+        const oldTransform = wrap.style.transform;
+        wrap.style.transform = 'none';   // bỏ scale khi chụp
+
         if (window.html2canvas){
-          const canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2});
+          const canvas = await html2canvas(card, {backgroundColor:'#ffffff', scale:2});
           const link = document.createElement('a');
           link.download = `the_BHTN_${Date.now()}.png`;
-          link.href = canvas.toDataURL('image/png'); link.click();
-        } else {
-          // Fallback: mở tab in
-          const w = window.open('', '_blank');
-          w.document.write(`<html><head><title>Thẻ BHTN</title></head><body>${el.outerHTML}</body></html>`);
-          w.document.close(); w.focus(); w.print();
+          link.href = canvas.toDataURL('image/png');
+          link.click();
         }
+
+        // khôi phục lại
+        wrap.style.transform = oldTransform;
       };
+
     })();
     /* ===== BHTN – xem thẻ (Admin) responsive + Lưu ảnh thẻ ===== */
   </script>
