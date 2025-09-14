@@ -272,6 +272,39 @@
 
 
 
+  <!-- ====== /THẺ BHTN (Admin, theo mẫu) ====== -->
+  <style>
+    /* ==== THẺ BHTN (Admin, theo mẫu) ==== */
+    #modalTheBHTN_Admin :root{--cardW-bhtn:900px;--cardH-bhtn:560px;--orange:#f59e0b}
+    #modalTheBHTN_Admin .bhtn-card{width:var(--cardW-bhtn);height:var(--cardH-bhtn);background:#fff;border:8px solid var(--orange);border-radius:14px;padding:8px;box-shadow:0 2px 10px #0001;overflow:hidden;position:relative}
+    #modalTheBHTN_Admin .bhtn-inner{height:100%;border:3px solid var(--orange);border-radius:12px;padding:16px 24px 24px;display:flex;flex-direction:column}
+    #modalTheBHTN_Admin .bhtn-top{display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+    #modalTheBHTN_Admin .bhtn-logo{height:60px;object-fit:contain}
+    #modalTheBHTN_Admin .bhtn-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;margin-top:6px}
+    #modalTheBHTN_Admin .kv{display:flex;gap:12px;margin:8px 0;align-items:flex-start}
+    #modalTheBHTN_Admin .kv .k{min-width:190px;color:#6b7280;font-weight:800}
+    #modalTheBHTN_Admin .kv .v{color:#111827;font-weight:800}
+    #modalTheBHTN_Admin .v-blue{color:#0b53ff!important}
+    #modalTheBHTN_Admin .v-red{color:#e11d48!important}
+    #modalTheBHTN_Admin .v-green{color:#0f9d58!important}
+    #modalTheBHTN_Admin .bhtn-lop{font-size:56px;font-weight:900;color:#9ca3af;text-align:right}
+    #modalTheBHTN_Admin .bhtn-stamp{margin-top:8px;text-align:center;font-weight:900;color:#16a34a;font-size:30px}
+    #modalTheBHTN_Admin .bhtn-badge{margin-top:8px;display:flex;justify-content:center}
+    #modalTheBHTN_Admin .bhtn-badge span{background:#fff3b0;border:2px solid #facc15;padding:8px 16px;border-radius:6px;font-weight:900;color:#1d4ed8}
+    #modalTheBHTN_Admin .bhtn-qr{position:absolute;right:16px;bottom:16px;width:96px;height:96px;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:6px}
+
+    @media print{
+      #modalTheBHTN_Admin @page{size:A5 portrait;margin:10mm}
+      #modalTheBHTN_Admin .modal{position:static!important}
+      #modalTheBHTN_Admin .modal-content{box-shadow:none!important;border:none!important}
+      #modalTheBHTN_Admin .no-print{display:none!important}
+      #cardScaleWrapBHTN_Admin{transform:none!important}
+    }
+  </style>
+  <!-- ====== /THẺ BHTN (Admin, theo mẫu) ====== -->
+
+
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
@@ -1242,53 +1275,67 @@
       </div>
 
       <!-- Modal THẺ BHTN (Đã thu) -->
-      <div class="modal fade" id="modalTheBHTN_Admin" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Thẻ bảo hiểm tai nạn</h5>
-            <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button></div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <!-- Card layout copy từ ds_hocsinh_dathu_bhtn_giaovien -->
-            <div id="cardScaleWrapBHTN_Admin" style="position:relative;width:900px;height:560px;transform-origin:top left;margin:0 auto">
-              <div id="cardAreaBHTN_Admin" class="bhtn-card">
-                <div class="bhtn-inner">
-                  <div class="bhtn-top">
-                    <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'">
-                  </div>
-                  <div class="kv"><div class="k">Đối tượng đóng</div><div class="v" id="c-doituong-bhtn">—</div></div>
-                  <div class="kv"><div class="k">Số thẻ</div><div class="v v-blue" id="c-so-the-bhtn">—</div></div>
-                  <div class="bhtn-grid">
-                    <div>
-                      <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Tên Cha/Mẹ</div><div class="v" id="c-tencha-bhtn">—</div></div>
+      <div class="modal fade" id="modalTheBHTN_Admin" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="titleTheBHTN_Admin">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 id="titleTheBHTN_Admin" class="modal-title">Thẻ bảo hiểm tai nạn</h5>
+              <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+              </div>
+            </div>
+
+            <div class="modal-body">
+              <!-- Card layout copy từ ds_hocsinh_dathu_bhtn_giaovien -->
+              <div id="cardScaleWrapBHTN_Admin" style="position:relative;width:900px;height:560px;transform-origin:top left;margin:0 auto">
+                <div id="cardAreaBHTN_Admin" class="bhtn-card">
+                  <div class="bhtn-inner">
+                    <div class="bhtn-top">
+                      <img class="bhtn-logo" src="../assets/image/baoviet-logo.png" alt="BAOVIET" onerror="this.style.display='none'">
                     </div>
-                    <div>
-                      <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop-bhtn">—</div></div>
-                      <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien-bhtn">—</div></div>
-                      <div class="bhtn-lop" id="c-lop-big-bhtn"> </div>
+
+                    <div class="kv"><div class="k">Đối tượng đóng</div><div class="v" id="c-doituong-bhtn">—</div></div>
+                    <div class="kv"><div class="k">Số thẻ</div><div class="v v-blue" id="c-so-the-bhtn">—</div></div>
+
+                    <div class="bhtn-grid">
+                      <div>
+                        <div class="kv"><div class="k">Họ và tên</div><div class="v" id="c-hoten-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Ngày sinh</div><div class="v" id="c-ngaysinh-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Sử dụng từ</div><div class="v v-blue" id="c-tu-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Ngày hết hạn</div><div class="v v-red" id="c-den-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Địa chỉ</div><div class="v" id="c-diachi-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Điện thoại</div><div class="v" id="c-sdt-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Tên Cha/Mẹ</div><div class="v" id="c-tencha-bhtn">—</div></div>
+                      </div>
+                      <div>
+                        <div class="kv"><div class="k">Giới tính</div><div class="v" id="c-gioitinh-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Lớp</div><div class="v" id="c-lop-bhtn">—</div></div>
+                        <div class="kv"><div class="k">Số tiền đóng</div><div class="v v-green" id="c-sotien-bhtn">—</div></div>
+                        <div class="bhtn-lop" id="c-lop-big-bhtn"> </div>
+                      </div>
                     </div>
+
+                    <div class="bhtn-stamp">ĐÃ KÍCH HOẠT</div>
+                    <div class="bhtn-badge"><span id="c-badge-bhtn">—</span></div>
+                    <div id="card-qr-bhtn" class="bhtn-qr"></div>
                   </div>
-                  <div class="bhtn-stamp">ĐÃ KÍCH HOẠT</div>
-                  <div class="bhtn-badge"><span id="c-badge-bhtn">—</span></div>
-                  <div id="card-qr-bhtn" class="bhtn-qr"></div>
                 </div>
               </div>
             </div>
+
+            <div class="modal-footer">
+              <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button></div>
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
           </div>
-          <div class="modal-footer">
-            <div class="d-flex gap-2"><button class="btn btn-secondary btn-sm" onclick="bhtnp_downloadCardImage()">Lưu ảnh thẻ</button></div>
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-          </div>
-        </div></div>
+        </div>
       </div>
+
+
+
+    
+
 
       <!-- Xem trước & in Phiếu thu A5 cho BHTN -->
       <div class="modal fade" id="modalPhieuThuBHTN" tabindex="-1" aria-hidden="true">
