@@ -361,6 +361,7 @@
         <div class="nav-section" id="sidebarMenu">
           <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
           <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
+          <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Danh sách đối tượng khác</span></div>
           <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
           <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
           <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
@@ -714,6 +715,51 @@
           </div></div>
         </div>
       </section>
+      <!-- DANH SÁCH HỌC SINH (embedded, for admin) -->
+
+
+
+
+
+
+
+
+      <!-- DANH SÁCH ĐỐI TƯỢNG KHÁC (embedded, for admin) -->
+      <section id="page-others" class="container-fluid d-none">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <label class="mb-0 fw-semibold">Chọn lớp:</label>
+          <select id="others-classes" multiple class="form-select" style="min-width:260px; max-width:420px;"></select>
+          <button id="others-btn-filter" class="btn btn-primary">Lọc</button>
+          <button id="others-btn-all" class="btn btn-outline-secondary">Toàn trường</button>
+
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <input id="others-search" class="form-control" placeholder="Tìm tên / SĐĐ / Mã BHXH...">
+            <span class="text-muted">Tổng: <b id="others-total">0</b></span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle" id="others-table">
+            <thead class="table-light">
+              <tr>
+                <th style="width:72px">Stt</th>
+                <th>Họ và tên</th>
+                <th>Ngày sinh</th>
+                <th>Mã thẻ BHYT</th>
+                <th>Lớp</th>
+                <th>Nơi KCB ban đầu</th>
+                <th>Hạn dùng BHYT</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <nav class="mt-3">
+          <ul id="others-pagin" class="pagination pagination-sm"></ul>
+        </nav>
+      </section>
+      <!-- DANH SÁCH ĐỐI TƯỢNG KHÁC (embedded, for admin) -->
 
 
 
@@ -2046,6 +2092,194 @@
   }
   </script>
 
+
+
+
+
+
+
+
+  <!-- ====== KHỐI ĐỐI TƯỢNG KHÁC CHO ADMIN ====== -->
+  <script>
+    /* ===== Danh sách ĐỐI TƯỢNG KHÁC (namespaced) ===== */
+    (function(){
+      // state chỉ dùng nội bộ
+      let _others_all = [], _others_view = [];
+      let _others_page = 1, _others_pageSize = 20;
+
+      // dùng helpers global $/$$ nếu có; nếu không, fallback
+      const _$  = (typeof $  === 'function') ? $  : (s,r=document)=>r.querySelector(s);
+      const _$$ = (typeof $$ === 'function') ? $$ : (s,r=document)=>Array.from(r.querySelectorAll(s));
+
+      // ==== helpers đặt tên có tiền tố others_ để tránh trùng ====
+      function others_stripVN(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+      function others_key(s){ return others_stripVN(String(s||'')).toLowerCase().trim(); }
+      function others_isOther(val){
+        const k = others_key(val||'');
+        return k && k !== 'hs' && k !== 'hoc sinh';
+      }
+
+      function others_parseVNDate(str){
+        const m=String(str||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if(!m) return null;
+        const d=new Date(+m[3],+m[2]-1,+m[1]);
+        return (d.getFullYear()==+m[3] && d.getMonth()==+m[2]-1 && d.getDate()==+m[1])?d:null;
+      }
+      function others_formatVNDate(d){
+        const dd=String(d.getDate()).padStart(2,'0');
+        const mm=String(d.getMonth()+1).padStart(2,'0');
+        return `${dd}/${mm}/${d.getFullYear()}`;
+      }
+      function others_addDaysExact(dateObj, days){
+        const d=new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12,0,0);
+        d.setDate(d.getDate()+days);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      }
+
+      // Hạn dùng BHYT: (ngay_het_han_bhyt + 1) -> cuối tháng sau 12 tháng
+      function others_calcRangeBHYT12M(oldEndStr){
+        const oldEnd = others_parseVNDate(oldEndStr);
+        if (!oldEnd) return "—";
+        const start = others_addDaysExact(oldEnd, 1);
+        const end   = new Date(start.getFullYear(), start.getMonth()+12, 0);
+        return `${others_formatVNDate(start)} → ${others_formatVNDate(end)}`;
+      }
+
+      function others_detectPageSize(){
+        const sec = document.getElementById('page-others');
+        const width = sec?.offsetWidth || window.innerWidth;
+        _others_pageSize = width <= 767 ? 3 : (width <= 1023 ? 7 : 20);
+      }
+      // resize handler riêng cho others
+      addEventListener('resize', ()=>{
+        const prev=_others_pageSize; others_detectPageSize();
+        if(prev!==_others_pageSize){ _others_page=1; others_render(); }
+      });
+
+      // Nạp danh sách lớp
+      async function others_loadClassOptions(){
+        const user = JSON.parse(localStorage.getItem('user')||'{}');
+        const res = await getAllDanhSachHocsinh?.(user.ma_truong, "");
+        const el = document.getElementById('others-classes');
+        if (!el) return; el.innerHTML="";
+        if (res?.success && Array.isArray(res.data)){
+          [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+            .sort()
+            .forEach(cls=>{
+              const opt=document.createElement('option');
+              opt.value=cls; opt.textContent=cls; el.appendChild(opt);
+            });
+        }
+      }
+
+      // Lấy dữ liệu theo lớp đã chọn (hoặc toàn trường) rồi lọc “đối tượng khác”
+      async function others_fetchData(){
+        others_detectPageSize();
+        const user = JSON.parse(localStorage.getItem('user')||'{}');
+
+        const sel = document.getElementById('others-classes');
+        const selected = sel ? [...sel.querySelectorAll('option:checked')].map(o=>o.value) : [];
+        const classes = selected.length ? selected : [""]; // "" = toàn trường
+
+        const allRows = [];
+        for (const cls of classes){
+          const hsRes = await getAllDanhSachHocsinh?.(user.ma_truong, cls);
+          if (hsRes?.success && Array.isArray(hsRes.data)) allRows.push(...hsRes.data);
+        }
+
+        _others_all = (allRows||[]).filter(r => others_isOther(r.doi_tuong_dong));
+        others_doSearch();
+      }
+
+      // Tìm kiếm nhanh (riêng others)
+      function others_doSearch(){
+        const q = (document.getElementById('others-search')?.value||'').trim().toLowerCase();
+        _others_view = !q ? _others_all : _others_all.filter(r =>
+          String(r.ho_ten_hoc_sinh||'').toLowerCase().includes(q) ||
+          String(r.so_dinh_danh||'').toLowerCase().includes(q) ||
+          String(r.ma_so_bhxh||'').toLowerCase().includes(q)
+        );
+        _others_page = 1;
+        others_render();
+      }
+
+      // Render bảng + phân trang (đặt tên riêng)
+      function others_render(){
+        const total = _others_view.length;
+        const totalEl = document.getElementById('others-total');
+        if (totalEl) totalEl.textContent = total;
+
+        const start = (_others_page-1)*_others_pageSize;
+        const pageData = _others_view.slice(start, start+_others_pageSize);
+
+        const tbody = document.querySelector('#others-table tbody');
+        if (!tbody) return;
+
+        if (!pageData.length){
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-secondary">Không có dữ liệu phù hợp.</td></tr>`;
+        } else {
+          tbody.innerHTML = pageData.map(r=>{
+            return `<tr>
+              <td class="text-center">${r.stt ?? ''}</td>
+              <td>${r.ho_ten_hoc_sinh || ''}</td>
+              <td>${r.ngay_sinh || ''}</td>
+              <td>${r.ma_so_bhxh || ''}</td>
+              <td>${r.lop_hoc || ''}</td>
+              <td>${r.noi_kham_bhyt || ''}</td>
+              <td>${others_calcRangeBHYT12M(r.ngay_het_han_bhyt || '')}</td>
+            </tr>`;
+          }).join('');
+        }
+
+        others_renderPagin(total);
+      }
+
+      function others_renderPagin(total){
+        const ul = document.getElementById('others-pagin'); if(!ul) return; ul.innerHTML='';
+        const totalPages = Math.max(1, Math.ceil(total / _others_pageSize));
+        if (totalPages <= 1) return;
+
+        const add = (p, label, active=false, disabled=false)=>{
+          const li=document.createElement('li');
+          li.className=`page-item ${active?'active':''} ${disabled?'disabled':''}`;
+          const a=document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label;
+          a.onclick=(e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===_others_page) return; _others_page = p; others_render(); };
+          li.appendChild(a); ul.appendChild(li);
+        };
+        add(_others_page-1, 'Trước', false, _others_page===1);
+        let minP = Math.max(1, _others_page-2), maxP = Math.min(totalPages, _others_page+2);
+        if (minP > 1) add(1, '1');
+        if (minP > 2){ const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">…</span>'; ul.appendChild(li); }
+        for (let p=minP; p<=maxP; p++) add(p, String(p), p===_others_page);
+        if (maxP < totalPages-1){ const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">…</span>'; ul.appendChild(li); }
+        if (maxP < totalPages) add(totalPages, String(totalPages));
+        add(_others_page+1, 'Sau', false, _others_page===totalPages);
+      }
+
+      // Bind UI (đặt tên riêng)
+      function others_bindUI(){
+        document.getElementById('others-btn-filter')?.addEventListener('click', ()=>{
+          showLoading?.(); Promise.resolve(others_fetchData()).finally(()=>hideLoading?.());
+        });
+        document.getElementById('others-btn-all')?.addEventListener('click', ()=>{
+          const sel = document.getElementById('others-classes'); if(!sel) return;
+          [...sel.options].forEach(o=>o.selected=false);
+          showLoading?.(); Promise.resolve(others_fetchData()).finally(()=>hideLoading?.());
+        });
+        document.getElementById('others-search')?.addEventListener('input', ()=>{
+          _others_page=1; others_doSearch();
+        });
+      }
+
+      // ===== Public API (duy nhất 2 hàm) =====
+      window.others_wirePage = async function(){
+        await others_loadClassOptions();
+        others_bindUI();
+      };
+      window.others_reload = others_fetchData;
+    })();
+  </script>
+  <!-- ====== KHỐI ĐỐI TƯỢNG KHÁC CHO ADMIN ====== -->
 
 
 
@@ -4623,6 +4857,16 @@
         }
         adm_reloadStudents();
       }
+
+
+      // NEW: khi vào trang Đối tượng khác, khởi tạo UI 1 lần và reload dữ liệu
+      if (page === 'others') {
+        if (!sec.dataset.wired) { others_wirePage(); sec.dataset.wired = '1'; }
+        showLoading();
+        Promise.resolve(window.others_reload?.())
+          .finally(hideLoading);
+      }
+
 
 
 
