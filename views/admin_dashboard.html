@@ -361,7 +361,7 @@
         <div class="nav-section" id="sidebarMenu">
           <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
           <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
-          <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Danh sách đối tượng khác</span></div>
+          <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Ds đ tượng khác</span></div>
           <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
           <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
           <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
@@ -726,14 +726,28 @@
 
       <!-- DANH SÁCH ĐỐI TƯỢNG KHÁC (embedded, for admin) -->
       <section id="page-others" class="container-fluid d-none">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <label class="mb-0 fw-semibold">Chọn lớp:</label>
           <select id="others-classes" multiple class="form-select" style="min-width:260px; max-width:420px;"></select>
-          <button id="others-btn-filter" class="btn btn-primary">Lọc</button>
-          <button id="others-btn-all" class="btn btn-outline-secondary">Toàn trường</button>
+
+          <button id="others-btn-filter" class="btn btn-primary">
+            <i class="bi bi-funnel"></i> Lọc
+          </button>
+
+          <button id="others-btn-all" class="btn btn-outline-secondary">
+            <i class="bi bi-collection"></i> Toàn trường
+          </button>
+
+          <button id="others-btn-export" class="btn btn-success">
+            <i class="bi bi-download"></i> Tải danh sách
+          </button>
+
+          <div class="small text-muted ms-2">
+            Giữ <b>Ctrl/Cmd</b> để chọn nhiều. Bấm nút <b>“Toàn trường”</b> để xem toàn bộ lớp.
+          </div>
 
           <div class="ms-auto d-flex align-items-center gap-2">
-            <input id="others-search" class="form-control" placeholder="Tìm tên / SĐĐ / Mã BHXH...">
+            <input id="others-search" class="form-control" placeholder="Tìm tên / SĐD / Mã BHXH...">
             <span class="text-muted">Tổng: <b id="others-total">0</b></span>
           </div>
         </div>
@@ -745,6 +759,7 @@
                 <th style="width:72px">Stt</th>
                 <th>Họ và tên</th>
                 <th>Ngày sinh</th>
+                <th>Số định danh</th>
                 <th>Mã thẻ BHYT</th>
                 <th>Lớp</th>
                 <th>Nơi KCB ban đầu</th>
@@ -756,7 +771,7 @@
         </div>
 
         <nav class="mt-3">
-          <ul id="others-pagin" class="pagination pagination-sm"></ul>
+          <ul id="others-pagin" class="pagination justify-content-center"></ul>
         </nav>
       </section>
       <!-- DANH SÁCH ĐỐI TƯỢNG KHÁC (embedded, for admin) -->
@@ -2218,11 +2233,13 @@
         if (!pageData.length){
           tbody.innerHTML = `<tr><td colspan="7" class="text-center text-secondary">Không có dữ liệu phù hợp.</td></tr>`;
         } else {
-          tbody.innerHTML = pageData.map(r=>{
+          tbody.innerHTML = pageData.map((r, i)=>{
+            const stt = (_others_page - 1) * _others_pageSize + i + 1;
             return `<tr>
-              <td class="text-center">${r.stt ?? ''}</td>
+              <td class="text-center">${stt}</td>
               <td>${r.ho_ten_hoc_sinh || ''}</td>
               <td>${r.ngay_sinh || ''}</td>
+              <td>${r.so_dinh_danh || ''}</td>
               <td>${r.ma_so_bhxh || ''}</td>
               <td>${r.lop_hoc || ''}</td>
               <td>${r.noi_kham_bhyt || ''}</td>
@@ -2269,6 +2286,8 @@
         document.getElementById('others-search')?.addEventListener('input', ()=>{
           _others_page=1; others_doSearch();
         });
+
+        document.getElementById('others-btn-export')?.addEventListener('click', others_exportCSV);
       }
 
       // ===== Public API (duy nhất 2 hàm) =====
@@ -2277,6 +2296,46 @@
         others_bindUI();
       };
       window.others_reload = others_fetchData;
+
+
+
+
+
+      // Xuất excel (CSV) – Danh sách đối tượng khác
+      function others_exportCSV(){
+        const rows = _others_view.map((r, idx)=>({
+          STT: (_others_view.indexOf(r) + 1),
+          "Họ và tên": r.ho_ten_hoc_sinh || '',
+          "Ngày sinh": r.ngay_sinh || '',
+          "Số định danh": r.so_dinh_danh || '',
+          "Mã thẻ BHYT": r.ma_so_bhxh || '',
+          "Lớp": r.lop_hoc || '',
+          "Nơi KCB ban đầu": r.noi_kham_bhyt || '',
+          "Hạn dùng BHYT": others_calcRangeBHYT12M(r.ngay_het_han_bhyt || '')
+        }));
+
+        const header = Object.keys(rows[0] || {
+          STT:'', "Họ và tên":'', "Ngày sinh":'', "Số định danh":'', "Mã thẻ BHYT":'',
+          "Lớp":'', "Nơi KCB ban đầu":'', "Hạn dùng BHYT":''
+        });
+        const csv = [
+          header.join(','),
+          ...rows.map(obj => header.map(k => {
+            const v = String(obj[k] ?? '');
+            // escape CSV
+            return `"${v.replace(/"/g, '""')}"`;
+          }).join(','))
+        ].join('\r\n');
+
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `doi_tuong_khac_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      }
+
     })();
   </script>
   <!-- ====== KHỐI ĐỐI TƯỢNG KHÁC CHO ADMIN ====== -->
