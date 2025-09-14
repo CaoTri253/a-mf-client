@@ -361,7 +361,7 @@
         <div class="nav-section" id="sidebarMenu">
           <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></div>
           <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
-          <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Ds đ tượng khác</span></div>
+          <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Ds Đối tượng khác</span></div>
           <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
           <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
           <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
@@ -731,15 +731,15 @@
           <select id="others-classes" multiple class="form-select" style="min-width:260px; max-width:420px;"></select>
 
           <button id="others-btn-filter" class="btn btn-primary">
-            <i class="bi bi-funnel"></i> Lọc
+            <i class="bi bi-arrow-repeat"></i> Tải danh sách
           </button>
 
-          <button id="others-btn-all" class="btn btn-outline-secondary">
-            <i class="bi bi-collection"></i> Toàn trường
+          <button id="others-btn-all" class="btn btn-info">
+            <i class="bi bi-building"></i> Toàn trường
           </button>
 
           <button id="others-btn-export" class="btn btn-success">
-            <i class="bi bi-download"></i> Tải danh sách
+            <i class="bi bi-file-earmark-spreadsheet"></i> Xuất Excel theo mẫu
           </button>
 
           <div class="small text-muted ms-2">
@@ -759,6 +759,7 @@
                 <th style="width:72px">Stt</th>
                 <th>Họ và tên</th>
                 <th>Ngày sinh</th>
+                <th>Đối tượng</th>
                 <th>Số định danh</th>
                 <th>Mã thẻ BHYT</th>
                 <th>Lớp</th>
@@ -1537,6 +1538,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+
+  <!-- ExcelJS (for xuất file Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+
   <!-- Thư viện nội bộ -->
   <script src="../js/api.js"></script>
 
@@ -2239,6 +2245,7 @@
               <td class="text-center">${stt}</td>
               <td>${r.ho_ten_hoc_sinh || ''}</td>
               <td>${r.ngay_sinh || ''}</td>
+              <td>${r.doi_tuong_dong || ''}</td>
               <td>${r.so_dinh_danh || ''}</td>
               <td>${r.ma_so_bhxh || ''}</td>
               <td>${r.lop_hoc || ''}</td>
@@ -2287,7 +2294,7 @@
           _others_page=1; others_doSearch();
         });
 
-        document.getElementById('others-btn-export')?.addEventListener('click', others_exportCSV);
+        document.getElementById('others-btn-export')?.addEventListener('click', others_exportExcel);
       }
 
       // ===== Public API (duy nhất 2 hàm) =====
@@ -2301,40 +2308,123 @@
 
 
 
-      // Xuất excel (CSV) – Danh sách đối tượng khác
-      function others_exportCSV(){
-        const rows = _others_view.map((r, idx)=>({
-          STT: (_others_view.indexOf(r) + 1),
-          "Họ và tên": r.ho_ten_hoc_sinh || '',
-          "Ngày sinh": r.ngay_sinh || '',
-          "Số định danh": r.so_dinh_danh || '',
-          "Mã thẻ BHYT": r.ma_so_bhxh || '',
-          "Lớp": r.lop_hoc || '',
-          "Nơi KCB ban đầu": r.noi_kham_bhyt || '',
-          "Hạn dùng BHYT": others_calcRangeBHYT12M(r.ngay_het_han_bhyt || '')
-        }));
+      // Xuất excel – Danh sách đối tượng khác
+      // === HÀM XUẤT EXCEL THEO MẪU ===
+      async function others_exportExcel(){
+        // Cấu trúc cột theo yêu cầu (đã thêm "Đối tượng" trước "Số định danh")
+        const header = [
+          "Stt",
+          "Họ và tên",
+          "Ngày sinh",
+          "Đối tượng",
+          "Số định danh",
+          "Mã thẻ BHYT",
+          "Lớp",
+          "Nơi KCB ban đầu",
+          "Hạn dùng BHYT"
+        ];
 
-        const header = Object.keys(rows[0] || {
-          STT:'', "Họ và tên":'', "Ngày sinh":'', "Số định danh":'', "Mã thẻ BHYT":'',
-          "Lớp":'', "Nơi KCB ban đầu":'', "Hạn dùng BHYT":''
+        // Độ rộng cột tham chiếu từ template bạn đính kèm & tối ưu hiển thị
+        // (ExcelJS tính theo 'khoảng' ký tự chuẩn của font mặc định)
+        const colWidths = [
+          6,   // Stt
+          30,  // Họ và tên
+          12,  // Ngày sinh
+          16,  // Đối tượng
+          20,  // Số định danh
+          22,  // Mã thẻ BHYT
+          8,   // Lớp
+          44,  // Nơi KCB ban đầu
+          22   // Hạn dùng BHYT
+        ];
+
+        // Tạo workbook/sheet
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('doi-tuong-khac');
+
+        // Set độ rộng cột
+        ws.columns = header.map((h, idx) => ({ header: h, key: `c${idx}`, width: colWidths[idx] }));
+
+        // Style hàng header (giống style bảng mẫu cơ bản: đậm, căn giữa, nền nhạt)
+        const headerRow = ws.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        headerRow.height = 24;
+        headerRow.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } }; // xanh nhạt
+          cell.border = {
+            top:   { style: 'thin', color: { argb: 'FFBFBFBF' } },
+            left:  { style: 'thin', color: { argb: 'FFBFBFBF' } },
+            bottom:{ style: 'thin', color: { argb: 'FFBFBFBF' } },
+            right: { style: 'thin', color: { argb: 'FFBFBFBF' } }
+          };
         });
-        const csv = [
-          header.join(','),
-          ...rows.map(obj => header.map(k => {
-            const v = String(obj[k] ?? '');
-            // escape CSV
-            return `"${v.replace(/"/g, '""')}"`;
-          }).join(','))
-        ].join('\r\n');
 
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        // Dữ liệu: dùng _others_view hiện tại (đã lọc/tìm kiếm), STT giả tăng dần
+        const rows = (typeof _others_view !== 'undefined' ? _others_view : []).map((r, i) => ([
+          i + 1,                                   // Stt
+          r.ho_ten_hoc_sinh || '',                 // Họ và tên
+          r.ngay_sinh || '',                       // Ngày sinh (đang giữ định dạng text dd/mm/yyyy)
+          r.doi_tuong_dong || '',                  // Đối tượng
+          r.so_dinh_danh || '',                    // Số định danh
+          r.ma_so_bhxh || '',                      // Mã thẻ BHYT
+          r.lop_hoc || '',                         // Lớp
+          r.noi_kham_bhyt || '',                   // Nơi KCB ban đầu
+          (function(){                              // Hạn dùng BHYT (text "dd/mm/yyyy → dd/mm/yyyy")
+            const s = others_calcRangeBHYT12M(r.ngay_het_han_bhyt || '');
+            return s;
+          })()
+        ]));
+
+        // Append dữ liệu & style đường viền từng ô
+        rows.forEach((arr) => {
+          const row = ws.addRow(arr);
+          row.alignment = { vertical: 'middle' };
+          // căn giữa cho STT, Ngày sinh, Lớp; wrap cho nơi KCB & Hạn dùng
+          row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }; // Stt
+          row.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' }; // Ngày sinh
+          row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' }; // Lớp
+          row.getCell(8).alignment = { vertical: 'middle', wrapText: true };       // Nơi KCB
+          row.getCell(9).alignment = { vertical: 'middle', wrapText: true };       // Hạn dùng
+          row.eachCell((cell) => {
+            cell.border = {
+              top:   { style: 'thin', color: { argb: 'FFE0E0E0' } },
+              left:  { style: 'thin', color: { argb: 'FFE0E0E0' } },
+              bottom:{ style: 'thin', color: { argb: 'FFE0E0E0' } },
+              right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+            };
+          });
+        });
+
+        // Tự chỉnh chiều cao hàng theo nội dung (giới hạn vừa phải)
+        ws.eachRow({ includeEmpty: false }, (row, idx) => {
+          if (idx === 1) return;        // bỏ header (đã set cao 24)
+          row.height = Math.min(42, Math.max(18, row.height || 18));
+        });
+
+        // Xuất file
+        const blob = await wb.xlsx.writeBuffer().then(b => new Blob([b], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `doi_tuong_khac_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(a); a.click(); a.remove();
+        a.download = `doi_tuong_khac_${new Date().toISOString().slice(0,10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         URL.revokeObjectURL(url);
       }
+
+      // === BIND nút "Xuất Excel theo mẫu" ===
+      function others_bindExport(){
+        document.getElementById('others-btn-export')?.addEventListener('click', others_exportExcel);
+      }
+
+      /* Gọi trong wirePage để chắc chắn đã bind */
+      const _others_orig_wire = window.others_wirePage;
+      window.others_wirePage = async function(){
+        await _others_orig_wire?.(); // giữ logic cũ: loadClassOptions + bind UI search/loc
+        others_bindExport();
+      };
 
     })();
   </script>
