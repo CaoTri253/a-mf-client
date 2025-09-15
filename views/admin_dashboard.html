@@ -1499,7 +1499,160 @@
       <!-- BẢO HIỂM TAI NẠN (embedded, for admin) -->
 
 
-      <section id="page-stats" class="d-none"><div class="panel"><div>Trang thống kê nâng cao (đang phát triển).</div></div></section>
+
+      <!-- THỐNG KÊ (embedded, for admin) -->
+      <section id="page-stats" class="d-none">
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
+          <div>
+            <div class="h5 fw-bold mb-1">Thống kê</div>
+            <div class="text-secondary small">Chọn nhiều lớp hoặc xem toàn trường</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="fw-semibold mb-0">Chọn lớp:</label>
+            <select id="stats-classes" class="form-select" multiple size="6" style="min-width:260px;max-width:420px"></select>
+            <button id="stats-btn-load" class="btn btn-primary"><i class="bi bi-arrow-repeat"></i> Tải dữ liệu</button>
+            <button id="stats-btn-all" class="btn btn-info"><i class="bi bi-building"></i> Toàn trường</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="statsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="stats-bhyt-tab" data-bs-toggle="tab"
+                    data-bs-target="#stats-bhyt" type="button" role="tab"
+                    aria-controls="stats-bhyt" aria-selected="true">
+              Thống kê BHYT
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="stats-bhtn-tab" data-bs-toggle="tab"
+                    data-bs-target="#stats-bhtn" type="button" role="tab"
+                    aria-controls="stats-bhtn" aria-selected="false">
+              Thống kê BHTN
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+
+          <!-- TAB: BHYT -->
+          <div class="tab-pane fade show active" id="stats-bhyt" role="tabpanel" aria-labelledby="stats-bhyt-tab">
+            <!-- KPI (đồng bộ mẫu GV) -->
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-emerald"><i class="bi bi-people-fill"></i></div>
+                  <div>
+                    <div class="val" id="bhyt-kpi-total">0</div>
+                    <div class="lbl">Tổng số học sinh</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-indigo"><i class="bi bi-check2-circle"></i></div>
+                  <div>
+                    <div class="val" id="bhyt-kpi-paid">0</div>
+                    <div class="lbl">Đã đóng (gồm đối tượng khác)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-orange"><i class="bi bi-x-circle"></i></div>
+                  <div>
+                    <div class="val" id="bhyt-kpi-unpaid">0</div>
+                    <div class="lbl">Chưa đóng</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-amber"><i class="bi bi-people"></i></div>
+                  <div>
+                    <div class="val" id="bhyt-kpi-other">0</div>
+                    <div class="lbl">Đối tượng khác</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Biểu đồ -->
+            <div class="panel">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Tỷ lệ đóng BHYT</div>
+                <div class="text-secondary small">Đơn vị: % và số lượng • <span id="bhyt-kpi-rate">0%</span> hoàn thành</div>
+              </div>
+              <div style="position:relative;width:100%;height:360px">
+                <canvas id="bhytChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: BHTN -->
+          <div class="tab-pane fade" id="stats-bhtn" role="tabpanel" aria-labelledby="stats-bhtn-tab">
+            <!-- KPI (đồng bộ mẫu GV) -->
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-emerald"><i class="bi bi-people-fill"></i></div>
+                  <div>
+                    <div class="val" id="bhtn-kpi-total">0</div>
+                    <div class="lbl">Tổng số học sinh</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-indigo"><i class="bi bi-check2-circle"></i></div>
+                  <div>
+                    <div class="val" id="bhtn-kpi-paid">0</div>
+                    <div class="lbl">Đã đóng</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-orange"><i class="bi bi-x-circle"></i></div>
+                  <div>
+                    <div class="val" id="bhtn-kpi-unpaid">0</div>
+                    <div class="lbl">Chưa đóng</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-blue"><i class="bi bi-speedometer"></i></div>
+                  <div>
+                    <div class="val" id="bhtn-kpi-rate">0%</div>
+                    <div class="lbl">Tỉ lệ hoàn thành</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Biểu đồ -->
+            <div class="panel">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Tỷ lệ đóng BHTN</div>
+                <div class="text-secondary small">Đơn vị: % và số lượng</div>
+              </div>
+              <div style="position:relative;width:100%;height:360px">
+                <canvas id="bhtnChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- THỐNG KÊ (embedded, for admin) -->
+      
+
+
+
+
+
+      
+      
       <section id="page-rewards" class="d-none"><div class="panel"><div>Trang thù lao (đang phát triển).</div></div></section>
       <section id="page-profile" class="d-none"><div class="panel"><div>Thông tin cá nhân (đang phát triển).</div></div></section>
       <section id="page-settings" class="d-none"><div class="panel"><div> Cài đặt (đang phát triển).</div></div></section>
@@ -1541,6 +1694,12 @@
 
   <!-- ExcelJS (for xuất file Excel) -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+
+  <!-- Chart.js + plugin nhãn (dùng cho 2 tab Thống kê) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
 
 
   <!-- Thư viện nội bộ -->
@@ -4981,22 +5140,291 @@
 
   <!-- Khi click vào tab BHTN, nạp dữ liệu tương ứng -->
   <script>
-  // Khi user click vào tab BHTN, nạp dữ liệu tương ứng
-  document.getElementById('bhtn-unpaid-tab')?.addEventListener('shown.bs.tab', async ()=>{
-    await window.bhtn_unpaid_wireTab?.();
-  });
-  document.getElementById('bhtn-paid-tab')?.addEventListener('shown.bs.tab', async ()=>{
-    await window.bhtn_paid_wireTab?.();
-  });
+    // Khi user click vào tab BHTN, nạp dữ liệu tương ứng
+    document.getElementById('bhtn-unpaid-tab')?.addEventListener('shown.bs.tab', async ()=>{
+      await window.bhtn_unpaid_wireTab?.();
+    });
+    document.getElementById('bhtn-paid-tab')?.addEventListener('shown.bs.tab', async ()=>{
+      await window.bhtn_paid_wireTab?.();
+    });
 
-  // Nếu muốn auto-wire khi lần đầu vào trang BHTN của admin_dashboard
-  // Hãy thêm vào hàm setActivePage('bhtn') đã có sẵn:
-  // if (page === 'bhtn') {
-  //   if (!sec.dataset.wired) { /* no-op; tabs sẽ tự wire khi được bấm */ sec.dataset.wired = '1'; }
-  //   // Tuỳ chọn: tự nạp tab đầu tiên
-  //   window.bhtn_unpaid_wireTab?.();
-  // }
-</script>
+    // Nếu muốn auto-wire khi lần đầu vào trang BHTN của admin_dashboard
+    // Hãy thêm vào hàm setActivePage('bhtn') đã có sẵn:
+    // if (page === 'bhtn') {
+    //   if (!sec.dataset.wired) { /* no-op; tabs sẽ tự wire khi được bấm */ sec.dataset.wired = '1'; }
+    //   // Tuỳ chọn: tự nạp tab đầu tiên
+    //   window.bhtn_unpaid_wireTab?.();
+    // }
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+  <!-- ====== KHỐI THỐNG KÊ (Admin) ===== -->
+  <script>
+    /** ===== THỐNG KÊ (Admin) =====
+     * Kế thừa công thức thống kê từ 2 trang GV:
+     * - BHYT: paid = (đã đóng theo bảng BHYT) + (Đối tượng khác xác định từ danh sách HS)
+     * - BHTN: paid = học sinh có so_tien>0 hoặc trang_thai=='1' trong bảng BHTN
+     * Cho phép: chọn nhiều lớp hoặc toàn trường.
+     * Nguồn tham chiếu: thong_ke_bhyt_giaovien.html, thong_ke_bhtn_giaovien.html
+     */
+
+    /* Helpers từ trang GV */
+    const pct = (num, den)=> den>0 ? (num*100/den) : 0;
+    function fmtPercent(x){ return x.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%'; }
+    const stripVN = (s)=> String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+    const keyVN   = (s)=> stripVN(String(s||'')).toLowerCase();
+    /* HS thuộc “Đối tượng khác” nếu doi_tuong_dong KHÁC 'HS' / 'Học sinh' */
+    function isOtherDoiTuongFromHS(hs){
+      const raw = (hs?.doi_tuong_dong ?? "").toString().trim();
+      if (!raw || raw.toLowerCase() === "null") return false;
+      const k = keyVN(raw);
+      return !(k === "hs" || k === "hoc sinh");
+    }
+
+    let STATS = {
+      inited: false,
+      charts: { bhyt: null, bhtn: null },
+      allHS: [],
+      classes: []
+    };
+
+    /* Khởi tạo danh sách lớp cho select multiple */
+    async function stats_buildClassList(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const res = await getAllDanhSachHocsinh(user.ma_truong||'', ''); // toàn trường
+      STATS.allHS = Array.isArray(res?.data) ? res.data : [];
+      const classes = [...new Set(STATS.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      STATS.classes = classes;
+      const sel = document.getElementById('stats-classes');
+      sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+    }
+
+    /* Lấy các lớp đang chọn (mảng) – rỗng = Toàn trường */
+    function stats_getSelectedClasses(){
+      const sel = document.getElementById('stats-classes');
+      return Array.from(sel.selectedOptions).map(o=>o.value.trim()).filter(Boolean);
+    }
+
+    /* Tải & tính KPI cho BHYT */
+    async function stats_loadBHYT(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const selected = stats_getSelectedClasses();
+      // 1) Tổng số HS theo lọc lớp
+      const allHS = STATS.allHS.filter(h => selected.length===0 || selected.includes(String(h.lop_hoc||'').trim()));
+      const total = allHS.length;
+
+      // 1b) “Đối tượng khác” lấy trực tiếp từ HS
+      const otherSet = new Set();
+      for (const hs of allHS) {
+        const id = String(hs?.so_dinh_danh || '').trim();
+        if (!id) continue;
+        if (isOtherDoiTuongFromHS(hs)) otherSet.add(id);
+      }
+      const paidOther = otherSet.size;
+
+      // 2) Danh sách BHYT – gọi toàn trường rồi lọc theo lớp
+      const resBHYT = await getDanhSachBHYT(user.ma_truong||'', '');
+      const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
+      const dsFilt = ds.filter(r => {
+        if (selected.length===0) return true;
+        const lop = String(r.lop_hoc||'').trim();
+        return selected.includes(lop);
+      });
+
+      // đã đóng theo bảng BHYT (loại trừ “đối tượng khác” để tránh đếm hai lần)
+      const paidHSSet = new Set();
+      for (const r of dsFilt) {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const isPaid = (so_tien > 0) || (trang_thai === '1');
+        if (!isPaid) continue;
+        const id = String(r.so_dinh_danh || '').trim();
+        if (!id) continue;
+        if (!otherSet.has(id)) paidHSSet.add(id);
+      }
+
+      const paidThucTe = paidHSSet.size;
+      const paidTotal  = paidThucTe + paidOther;
+      const unpaid     = Math.max(0, (total - paidThucTe) - paidOther);
+      const rate       = pct(paidTotal, total);
+
+      // Cập nhật KPI
+      document.getElementById('bhyt-kpi-total').innerText   = total.toLocaleString('vi-VN');
+      document.getElementById('bhyt-kpi-paid').innerText    = paidTotal.toLocaleString('vi-VN');
+      document.getElementById('bhyt-kpi-unpaid').innerText  = unpaid.toLocaleString('vi-VN');
+      document.getElementById('bhyt-kpi-other').innerText   = paidOther.toLocaleString('vi-VN');
+      document.getElementById('bhyt-kpi-rate').innerText    = fmtPercent(rate);
+
+      // Vẽ biểu đồ
+      const ctx = document.getElementById('bhytChart').getContext('2d');
+      if (STATS.charts.bhyt) STATS.charts.bhyt.destroy();
+      Chart.register(ChartDataLabels);
+      STATS.charts.bhyt = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Chưa đóng', 'Đã đóng'],
+          datasets: [{
+            data: [unpaid, paidTotal],
+            backgroundColor: ['#fca5a5','#86efac'],
+            borderColor: ['#ffffff','#ffffff'],
+            borderWidth: 2,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: {
+              label: (ctx)=> {
+                const v = ctx.parsed, p = total>0 ? (v*100/total):0;
+                return `${ctx.label}: ${v.toLocaleString('vi-VN')} (${p.toLocaleString('vi-VN',{maximumFractionDigits:1})}%)`;
+              }
+            }},
+            datalabels: {
+              color:'#111827', font:{weight:'700', size:12},
+              formatter: (value, context)=>{
+                const data = context.chart.data.datasets[0].data;
+                const sum = data.reduce((a,b)=>a+b,0), p = sum>0 ? value*100/sum : 0;
+                return `${p.toFixed(1)}%\n${value.toLocaleString('vi-VN')}`;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* Tải & tính KPI cho BHTN */
+    async function stats_loadBHTN(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const selected = stats_getSelectedClasses();
+
+      // Tổng HS theo lọc lớp
+      const allHS = STATS.allHS.filter(h => selected.length===0 || selected.includes(String(h.lop_hoc||'').trim()));
+      const total = allHS.length;
+
+      // Danh sách BHTN – gọi toàn trường rồi lọc lớp
+      const resBHTN = await getDanhSachBHTN(user.ma_truong||'', '');
+      const ds = Array.isArray(resBHTN?.data) ? resBHTN.data : [];
+      const dsFilt = ds.filter(r => {
+        if (selected.length===0) return true;
+        const lop = String(r.lop_hoc||'').trim();
+        return selected.includes(lop);
+      });
+
+      // paidSet: so_tien>0 hoặc trang_thai=='1'
+      const paidSet = new Set();
+      for (const r of dsFilt) {
+        const so_tien = Number(String(r.so_tien||'').replaceAll(',',''));
+        const trang_thai = String(r.trang_thai ?? '');
+        const isPaid = (so_tien > 0) || (trang_thai === '1');
+        if (isPaid && r.so_dinh_danh) paidSet.add(String(r.so_dinh_danh));
+      }
+      const paid = paidSet.size;
+      const unpaid = Math.max(0, total - paid);
+      const rate = pct(paid, total);
+
+      // KPI
+      document.getElementById('bhtn-kpi-total').innerText   = total.toLocaleString('vi-VN');
+      document.getElementById('bhtn-kpi-paid').innerText    = paid.toLocaleString('vi-VN');
+      document.getElementById('bhtn-kpi-unpaid').innerText  = unpaid.toLocaleString('vi-VN');
+      document.getElementById('bhtn-kpi-rate').innerText    = fmtPercent(rate);
+
+      // Chart
+      const ctx = document.getElementById('bhtnChart').getContext('2d');
+      if (STATS.charts.bhtn) STATS.charts.bhtn.destroy();
+      Chart.register(ChartDataLabels);
+      STATS.charts.bhtn = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Chưa đóng', 'Đã đóng'],
+          datasets: [{
+            data: [unpaid, paid],
+            backgroundColor: ['#fca5a5','#86efac'],
+            borderColor: ['#ffffff','#ffffff'],
+            borderWidth: 2,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: {
+              label: (ctx)=> {
+                const v = ctx.parsed, p = total>0 ? (v*100/total):0;
+                return `${ctx.label}: ${v.toLocaleString('vi-VN')} (${p.toLocaleString('vi-VN',{maximumFractionDigits:1})}%)`;
+              }
+            }},
+            datalabels: {
+              color:'#111827', font:{weight:'700', size:12},
+              formatter: (value, context)=>{
+                const data = context.chart.data.datasets[0].data;
+                const sum = data.reduce((a,b)=>a+b,0), p = sum>0 ? value*100/sum : 0;
+                return `${p.toFixed(1)}%\n${value.toLocaleString('vi-VN')}`;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* Sự kiện & khởi tạo 1 lần khi vào trang Thống kê */
+    async function stats_initOnce(){
+      if (STATS.inited) return;
+      STATS.inited = true;
+
+      // Build lớp
+      await stats_buildClassList();
+
+      // Nút “Toàn trường” => bỏ chọn tất cả
+      document.getElementById('stats-btn-all').addEventListener('click', ()=>{
+        const sel = document.getElementById('stats-classes');
+        Array.from(sel.options).forEach(o=>o.selected=false);
+      });
+
+      // Nút “Tải dữ liệu”
+      document.getElementById('stats-btn-load').addEventListener('click', async ()=>{
+        try{
+          showLoading();
+          await stats_loadBHYT();
+          await stats_loadBHTN();
+        } finally {
+          hideLoading();
+        }
+      });
+
+      // Tải lần đầu
+      document.getElementById('stats-btn-load').click();
+    }
+
+    /* Gắn vào điều hướng sidebar (khi bấm Thống kê) */
+    document.getElementById('sidebarMenu')?.addEventListener('click', (e)=>{
+      const item = e.target.closest('.nav-item[data-page="stats"]');
+      if (item) setTimeout(stats_initOnce, 0);
+    });
+
+    /* Nếu trang Thống kê mở sẵn (trường hợp reload ở hash), vẫn init */
+    if (!document.getElementById('page-stats')?.classList.contains('d-none')) {
+      stats_initOnce();
+    }
+  </script>
+  <!-- ====== KHỐI THỐNG KÊ (Admin) ===== -->
+
+
+
+
+
 
 
 
