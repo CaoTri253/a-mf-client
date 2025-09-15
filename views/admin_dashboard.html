@@ -5170,6 +5170,8 @@
 
   <!-- ====== KHỐI THỐNG KÊ (Admin) ===== -->
   <script>
+    (()=>{ if (window.__STATS_SCRIPT_LOADED__) return; window.__STATS_SCRIPT_LOADED__ = true;
+
     /** ===== THỐNG KÊ (Admin) =====
      * Kế thừa công thức thống kê từ 2 trang GV:
      * - BHYT: paid = (đã đóng theo bảng BHYT) + (Đối tượng khác xác định từ danh sách HS)
@@ -5178,7 +5180,7 @@
      * Nguồn tham chiếu: thong_ke_bhyt_giaovien.html, thong_ke_bhtn_giaovien.html
      */
 
-    /* Helpers từ trang GV */
+    /* Helpers (đưa vào scope cục bộ để tránh trùng tên) */
     const pct = (num, den)=> den>0 ? (num*100/den) : 0;
     function fmtPercent(x){ return x.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%'; }
     const stripVN = (s)=> String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
@@ -5206,12 +5208,13 @@
       const classes = [...new Set(STATS.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
       STATS.classes = classes;
       const sel = document.getElementById('stats-classes');
-      sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+      if (sel) sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
     }
 
     /* Lấy các lớp đang chọn (mảng) – rỗng = Toàn trường */
     function stats_getSelectedClasses(){
       const sel = document.getElementById('stats-classes');
+      if (!sel) return [];
       return Array.from(sel.selectedOptions).map(o=>o.value.trim()).filter(Boolean);
     }
 
@@ -5219,6 +5222,7 @@
     async function stats_loadBHYT(){
       const user = JSON.parse(localStorage.getItem('user')||'{}');
       const selected = stats_getSelectedClasses();
+
       // 1) Tổng số HS theo lọc lớp
       const allHS = STATS.allHS.filter(h => selected.length===0 || selected.includes(String(h.lop_hoc||'').trim()));
       const total = allHS.length;
@@ -5259,16 +5263,25 @@
       const rate       = pct(paidTotal, total);
 
       // Cập nhật KPI
-      document.getElementById('bhyt-kpi-total').innerText   = total.toLocaleString('vi-VN');
-      document.getElementById('bhyt-kpi-paid').innerText    = paidTotal.toLocaleString('vi-VN');
-      document.getElementById('bhyt-kpi-unpaid').innerText  = unpaid.toLocaleString('vi-VN');
-      document.getElementById('bhyt-kpi-other').innerText   = paidOther.toLocaleString('vi-VN');
-      document.getElementById('bhyt-kpi-rate').innerText    = fmtPercent(rate);
+      const elTotal  = document.getElementById('bhyt-kpi-total');
+      const elPaid   = document.getElementById('bhyt-kpi-paid');
+      const elUnpaid = document.getElementById('bhyt-kpi-unpaid');
+      const elOther  = document.getElementById('bhyt-kpi-other');
+      const elRate   = document.getElementById('bhyt-kpi-rate');
+      if (elTotal)  elTotal.innerText  = total.toLocaleString('vi-VN');
+      if (elPaid)   elPaid.innerText   = paidTotal.toLocaleString('vi-VN');
+      if (elUnpaid) elUnpaid.innerText = unpaid.toLocaleString('vi-VN');
+      if (elOther)  elOther.innerText  = paidOther.toLocaleString('vi-VN');
+      if (elRate)   elRate.innerText   = fmtPercent(rate);
 
       // Vẽ biểu đồ
-      const ctx = document.getElementById('bhytChart').getContext('2d');
+      const cnv = document.getElementById('bhytChart');
+      if (!cnv) return;
+      const ctx = cnv.getContext('2d');
       if (STATS.charts.bhyt) STATS.charts.bhyt.destroy();
-      Chart.register(ChartDataLabels);
+      if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      }
       STATS.charts.bhyt = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -5335,15 +5348,23 @@
       const rate = pct(paid, total);
 
       // KPI
-      document.getElementById('bhtn-kpi-total').innerText   = total.toLocaleString('vi-VN');
-      document.getElementById('bhtn-kpi-paid').innerText    = paid.toLocaleString('vi-VN');
-      document.getElementById('bhtn-kpi-unpaid').innerText  = unpaid.toLocaleString('vi-VN');
-      document.getElementById('bhtn-kpi-rate').innerText    = fmtPercent(rate);
+      const elTotal  = document.getElementById('bhtn-kpi-total');
+      const elPaid   = document.getElementById('bhtn-kpi-paid');
+      const elUnpaid = document.getElementById('bhtn-kpi-unpaid');
+      const elRate   = document.getElementById('bhtn-kpi-rate');
+      if (elTotal)  elTotal.innerText  = total.toLocaleString('vi-VN');
+      if (elPaid)   elPaid.innerText   = paid.toLocaleString('vi-VN');
+      if (elUnpaid) elUnpaid.innerText = unpaid.toLocaleString('vi-VN');
+      if (elRate)   elRate.innerText   = fmtPercent(rate);
 
       // Chart
-      const ctx = document.getElementById('bhtnChart').getContext('2d');
+      const cnv = document.getElementById('bhtnChart');
+      if (!cnv) return;
+      const ctx = cnv.getContext('2d');
       if (STATS.charts.bhtn) STATS.charts.bhtn.destroy();
-      Chart.register(ChartDataLabels);
+      if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      }
       STATS.charts.bhtn = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -5388,37 +5409,48 @@
       await stats_buildClassList();
 
       // Nút “Toàn trường” => bỏ chọn tất cả
-      document.getElementById('stats-btn-all').addEventListener('click', ()=>{
+      const btnAll = document.getElementById('stats-btn-all');
+      if (btnAll) btnAll.addEventListener('click', ()=>{
         const sel = document.getElementById('stats-classes');
+        if (!sel) return;
         Array.from(sel.options).forEach(o=>o.selected=false);
       });
 
       // Nút “Tải dữ liệu”
-      document.getElementById('stats-btn-load').addEventListener('click', async ()=>{
+      const btnLoad = document.getElementById('stats-btn-load');
+      if (btnLoad) btnLoad.addEventListener('click', async ()=>{
         try{
-          showLoading();
+          if (typeof showLoading === 'function') showLoading();
           await stats_loadBHYT();
           await stats_loadBHTN();
         } finally {
-          hideLoading();
+          if (typeof hideLoading === 'function') hideLoading();
         }
       });
 
       // Tải lần đầu
-      document.getElementById('stats-btn-load').click();
+      if (btnLoad) btnLoad.click();
     }
 
     /* Gắn vào điều hướng sidebar (khi bấm Thống kê) */
-    document.getElementById('sidebarMenu')?.addEventListener('click', (e)=>{
-      const item = e.target.closest('.nav-item[data-page="stats"]');
-      if (item) setTimeout(stats_initOnce, 0);
-    });
+    const sidebar = document.getElementById('sidebarMenu');
+    if (sidebar) {
+      sidebar.addEventListener('click', (e)=>{
+        const item = e.target.closest('.nav-item[data-page="stats"]');
+        if (item) setTimeout(stats_initOnce, 0);
+      });
+    }
 
-    /* Nếu trang Thống kê mở sẵn (trường hợp reload ở hash), vẫn init */
-    if (!document.getElementById('page-stats')?.classList.contains('d-none')) {
+    /* Nếu trang Thống kê đang hiển thị (ví dụ sau khi reload) thì vẫn init */
+    const pg = document.getElementById('page-stats');
+    if (pg && !pg.classList.contains('d-none')) {
       stats_initOnce();
     }
+
+    })();
+
   </script>
+
   <!-- ====== KHỐI THỐNG KÊ (Admin) ===== -->
 
 
