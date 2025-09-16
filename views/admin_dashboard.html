@@ -1679,8 +1679,195 @@
 
 
       
-      
-      <section id="page-rewards" class="d-none"><div class="panel"><div>Trang thù lao (đang phát triển).</div></div></section>
+      <!-- THÙ LAO (embedded, for admin) -->
+      <section id="page-rewards" class="d-none">
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
+          <div class="row g-2 align-items-center">
+            <div class="col-12 col-lg-6">
+              <label class="form-label fw-semibold">Chọn lớp (có thể chọn nhiều)</label>
+              <select id="rw-classes" class="form-select" multiple size="6" aria-label="Chọn nhiều lớp"></select>
+              <small class="text-secondary">Giữ Ctrl/Cmd để chọn nhiều; <br> Bấm nút "Toàn trường" để xem toàn bộ lớp</small>
+            </div>
+            <div class="col-12 col-lg-6 d-flex gap-2 align-items-start">
+              <button id="rw-btn-load" class="btn btn-primary">
+                <i class="bi bi-arrow-repeat"></i> Tải dữ liệu
+              </button>
+              <button id="rw-btn-all" class="btn btn-info">
+                <i class="bi bi-building"></i> Toàn trường
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="rwTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="rw-bhyt-tab" data-bs-toggle="tab"
+                    data-bs-target="#rw-bhyt" type="button" role="tab"
+                    aria-controls="rw-bhyt" aria-selected="true">
+              Thù lao BHYT
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rw-bhtn-tab" data-bs-toggle="tab"
+                    data-bs-target="#rw-bhtn" type="button" role="tab"
+                    aria-controls="rw-bhtn" aria-selected="false">
+              Thù lao BHTN
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+
+          <!-- TAB: Thù lao BHYT -->
+          <div class="tab-pane fade show active" id="rw-bhyt" role="tabpanel" aria-labelledby="rw-bhyt-tab">
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-emerald"><i class="bi bi-people-fill"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhyt-kpi-total">0</div>
+                    <div class="lbl">Tổng số học sinh</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-indigo"><i class="bi bi-journal-check"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhyt-kpi-submitted">0</div>
+                    <div class="lbl">Hồ sơ đã nộp</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-orange"><i class="bi bi-cash-coin"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhyt-kpi-money">0</div>
+                    <div class="lbl">Tổng số tiền đã thu</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-blue"><i class="bi bi-percent"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhyt-kpi-commission">0</div>
+                    <div class="lbl">Tổng thù lao</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-4">
+                <div class="kpi-card">
+                  <div class="icon ic-indigo"><i class="bi bi-3-circle-fill"></i></div>
+                  <div>
+                    <div class="val"><span id="rw-bhyt-kpi-3m-count">0</span> HS</div>
+                    <div class="lbl">Đóng 3 tháng · Thù lao: <strong id="rw-bhyt-kpi-3m-commission">0</strong></div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-4">
+                <div class="kpi-card">
+                  <div class="icon ic-amber"><i class="bi bi-6-circle-fill"></i></div>
+                  <div>
+                    <div class="val"><span id="rw-bhyt-kpi-6m-count">0</span> HS</div>
+                    <div class="lbl">Đóng 6 tháng · Thù lao: <strong id="rw-bhyt-kpi-6m-commission">0</strong></div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-4">
+                <div class="kpi-card">
+                  <div class="icon ic-blue"><i class="bi bi-123"></i></div>
+                  <div>
+                    <div class="val"><span id="rw-bhyt-kpi-12m-count">0</span> HS</div>
+                    <div class="lbl">Đóng 12 tháng · Thù lao: <strong id="rw-bhyt-kpi-12m-commission">0</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Thống kê hồ sơ & thù lao theo gói tháng (BHYT)</div>
+                <div class="text-secondary small">Đơn vị: hồ sơ / VNĐ</div>
+              </div>
+              <div style="position:relative;width:100%;height:360px">
+                <canvas id="rw-bhyt-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Thù lao BHTN -->
+          <div class="tab-pane fade" id="rw-bhtn" role="tabpanel" aria-labelledby="rw-bhtn-tab">
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-emerald"><i class="bi bi-people-fill"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhtn-kpi-total">0</div>
+                    <div class="lbl">Tổng số học sinh</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-indigo"><i class="bi bi-journal-check"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhtn-kpi-submitted">0</div>
+                    <div class="lbl">Hồ sơ đã nộp</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-orange"><i class="bi bi-cash-coin"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhtn-kpi-money">0</div>
+                    <div class="lbl">Tổng số tiền đã thu (BHTN)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card">
+                  <div class="icon ic-blue"><i class="bi bi-percent"></i></div>
+                  <div>
+                    <div class="val" id="rw-bhtn-kpi-commission">0</div>
+                    <div class="lbl">Tổng thù lao</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-4">
+                <div class="kpi-card">
+                  <div class="icon ic-blue"><i class="bi bi-123"></i></div>
+                  <div>
+                    <div class="val"><span id="rw-bhtn-kpi-12m-count">0</span> HS</div>
+                    <div class="lbl">Gói 12 tháng · Thù lao: <strong id="rw-bhtn-kpi-12m-commission">0</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Thống kê hồ sơ & thù lao (BHTN 12 tháng)</div>
+                <div class="text-secondary small">Đơn vị: hồ sơ / VNĐ</div>
+              </div>
+              <div style="position:relative;width:100%;height:360px">
+                <canvas id="rw-bhtn-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- THÙ LAO (embedded, for admin) -->
+
+
+
+
       <section id="page-profile" class="d-none"><div class="panel"><div>Thông tin cá nhân (đang phát triển).</div></div></section>
       <section id="page-settings" class="d-none"><div class="panel"><div> Cài đặt (đang phát triển).</div></div></section>
 
@@ -5506,6 +5693,279 @@
 
 
 
+
+
+
+
+
+
+  <!-- ====== KHỐI THÙ LAO (Admin) ===== -->
+  <script>
+    (()=>{ if (window.__REWARDS_SCRIPT_LOADED__) return; window.__REWARDS_SCRIPT_LOADED__ = true;
+    /** ===== THÙ LAO (Admin) =====
+     * Tabs: Thù lao BHYT & Thù lao BHTN
+     * - Chọn nhiều lớp / Toàn trường
+     * - Không trùng tên với phần khác (prefix rw- / RW)
+     * Yêu cầu có sẵn: showLoading()/hideLoading(), getAllDanhSachHocsinh(), getDanhSachBHYT(), getDanhSachBHTN(), sidebarMenu có item data-page="rewards"
+     */
+
+    const RW = { inited:false, charts:{ bhyt:null, bhtn:null }, allHS:[], classes:[] };
+
+    // Helpers (cục bộ)
+    const rw_toNum = (v) => {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') {
+        const s = v.replaceAll(',', '').replaceAll(' ', '');
+        const n = Number(s);
+        return isNaN(n) ? 0 : n;
+      }
+      return 0;
+    };
+    const rw_fmtMoney = (n) => {
+      const x = Number(n); if (!isFinite(x)) return "0";
+      return x.toLocaleString('vi-VN', { style:'currency', currency:'VND', maximumFractionDigits:0 });
+    };
+
+    function rw_getSelectedClasses(){
+      const sel = document.getElementById('rw-classes');
+      if (!sel) return [];
+      return Array.from(sel.selectedOptions).map(o=>o.value.trim()).filter(Boolean);
+    }
+
+    async function rw_buildClassList(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const res = await getAllDanhSachHocsinh(user.ma_truong||'', '');
+      RW.allHS = Array.isArray(res?.data) ? res.data : [];
+      const classes = [...new Set(RW.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      RW.classes = classes;
+      const sel = document.getElementById('rw-classes');
+      if (sel) sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+    }
+
+    /* ====== Load & render: BHYT ====== */
+    async function rw_loadBHYT(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const selected = rw_getSelectedClasses();
+
+      // Tổng HS theo lọc lớp
+      const allHS = RW.allHS.filter(h => selected.length===0 || selected.includes(String(h.lop_hoc||'').trim()));
+      const total = allHS.length;
+
+      // Danh sách BHYT toàn trường -> lọc lớp
+      const resBHYT = await getDanhSachBHYT(user.ma_truong||'', '');
+      const ds = Array.isArray(resBHYT?.data) ? resBHYT.data : [];
+      const dsFilt = ds.filter(r => {
+        if (selected.length===0) return true;
+        const lop = String(r.lop_hoc||'').trim();
+        return selected.includes(lop);
+      });
+
+      // KPI: submitted, money, commission + buckets 3/6/12
+      let submitted = 0, money = 0, commission = 0;
+      const buckets = {3:{count:0, commission:0}, 6:{count:0, commission:0}, 12:{count:0, commission:0}};
+
+      for (const r of dsFilt){
+        submitted += 1;
+        const so_tien = rw_toNum(r.so_tien);
+        const hoa_hong = rw_toNum(r.hoa_hong);
+        money += so_tien;
+        commission += hoa_hong;
+
+        const thang = Number(r.so_thang_dong) || 0;
+        if (buckets[thang] && so_tien > 0){
+          buckets[thang].count += 1;
+          buckets[thang].commission += hoa_hong;
+        }
+      }
+
+      // Update KPI
+      const $ = (id)=>document.getElementById(id);
+      $('rw-bhyt-kpi-total').innerText = total.toLocaleString('vi-VN');
+      $('rw-bhyt-kpi-submitted').innerText = submitted.toLocaleString('vi-VN');
+      $('rw-bhyt-kpi-money').innerText = rw_fmtMoney(money);
+      $('rw-bhyt-kpi-commission').innerText = rw_fmtMoney(commission);
+      $('rw-bhyt-kpi-3m-count').innerText = buckets[3].count.toLocaleString('vi-VN');
+      $('rw-bhyt-kpi-6m-count').innerText = buckets[6].count.toLocaleString('vi-VN');
+      $('rw-bhyt-kpi-12m-count').innerText = buckets[12].count.toLocaleString('vi-VN');
+      $('rw-bhyt-kpi-3m-commission').innerText = rw_fmtMoney(buckets[3].commission);
+      $('rw-bhyt-kpi-6m-commission').innerText = rw_fmtMoney(buckets[6].commission);
+      $('rw-bhyt-kpi-12m-commission').innerText = rw_fmtMoney(buckets[12].commission);
+
+      // Chart
+      const cnv = document.getElementById('rw-bhyt-chart');
+      if (cnv && typeof Chart !== 'undefined'){
+        const ctx = cnv.getContext('2d');
+        if (RW.charts.bhyt) RW.charts.bhyt.destroy();
+        RW.charts.bhyt = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['3 tháng','6 tháng','12 tháng'],
+            datasets: [
+              { label: 'Số hồ sơ (đã đóng)', data: [buckets[3].count, buckets[6].count, buckets[12].count], yAxisID: 'yCount', borderWidth: 1 },
+              { label: 'Tổng thù lao (VND)', data: [buckets[3].commission, buckets[6].commission, buckets[12].commission], yAxisID: 'yMoney', borderWidth: 1 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode:'index', intersect:false },
+            scales: {
+              yCount: { position:'left', beginAtZero:true, ticks:{ callback:v=>Number(v).toLocaleString('vi-VN') }, grid:{ drawOnChartArea:true } },
+              yMoney: { position:'right', beginAtZero:true, ticks:{ callback:v=>Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}) }, grid:{ drawOnChartArea:false } },
+              x: { grid: { display:false } }
+            },
+            plugins: {
+              legend: { position:'bottom' },
+              tooltip: { mode:'index', callbacks:{
+                label: (ctx)=>{
+                  const name = ctx.dataset.label || '';
+                  const v = ctx.parsed.y;
+                  return name.includes('VND')
+                    ? `${name}: ${Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0})}`
+                    : `${name}: ${Number(v).toLocaleString('vi-VN')}`;
+                }
+              }}
+            }
+          }
+        });
+      }
+    }
+
+    /* ====== Load & render: BHTN ====== */
+    async function rw_loadBHTN(){
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const selected = rw_getSelectedClasses();
+
+      // Tổng HS theo lọc lớp
+      const allHS = RW.allHS.filter(h => selected.length===0 || selected.includes(String(h.lop_hoc||'').trim()));
+      const total = allHS.length;
+
+      // Danh sách BHTN toàn trường -> lọc lớp
+      const resBHTN = await getDanhSachBHTN(user.ma_truong||'', '');
+      const ds = Array.isArray(resBHTN?.data) ? resBHTN.data : [];
+      const dsFilt = ds.filter(r => {
+        if (selected.length===0) return true;
+        const lop = String(r.lop_hoc||'').trim();
+        return selected.includes(lop);
+      });
+
+      // KPI
+      let submitted = 0, money = 0, commission = 0;
+      let count12 = 0, commission12 = 0;
+
+      for (const r of dsFilt){
+        submitted += 1;
+        const so_tien = rw_toNum(r.so_tien);
+        const hoa_hong = rw_toNum(r.hoa_hong);
+        money += so_tien;
+        commission += hoa_hong;
+
+        const thang = Number(r.so_thang_dong) || 0;
+        if (thang === 12 && so_tien > 0){
+          count12 += 1;
+          commission12 += hoa_hong;
+        }
+      }
+
+      // Update KPI
+      const $ = (id)=>document.getElementById(id);
+      $('rw-bhtn-kpi-total').innerText = total.toLocaleString('vi-VN');
+      $('rw-bhtn-kpi-submitted').innerText = submitted.toLocaleString('vi-VN');
+      $('rw-bhtn-kpi-money').innerText = rw_fmtMoney(money);
+      $('rw-bhtn-kpi-commission').innerText = rw_fmtMoney(commission);
+      $('rw-bhtn-kpi-12m-count').innerText = count12.toLocaleString('vi-VN');
+      $('rw-bhtn-kpi-12m-commission').innerText = rw_fmtMoney(commission12);
+
+      // Chart
+      const cnv = document.getElementById('rw-bhtn-chart');
+      if (cnv && typeof Chart !== 'undefined'){
+        const ctx = cnv.getContext('2d');
+        if (RW.charts.bhtn) RW.charts.bhtn.destroy();
+        RW.charts.bhtn = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['12 tháng'],
+            datasets: [
+              { label: 'Số hồ sơ (đã đóng)', data: [count12], yAxisID: 'yCount', borderWidth: 1 },
+              { label: 'Tổng thù lao (VND)', data: [commission12], yAxisID: 'yMoney', borderWidth: 1 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode:'index', intersect:false },
+            scales: {
+              yCount: { position:'left', beginAtZero:true, ticks:{ callback:v=>Number(v).toLocaleString('vi-VN') }, grid:{ drawOnChartArea:true } },
+              yMoney: { position:'right', beginAtZero:true, ticks:{ callback:v=>Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}) }, grid:{ drawOnChartArea:false } },
+              x: { grid: { display:false } }
+            },
+            plugins: {
+              legend: { position:'bottom' },
+              tooltip: { mode:'index', callbacks:{
+                label: (ctx)=>{
+                  const name = ctx.dataset.label || '';
+                  const v = ctx.parsed.y;
+                  return name.includes('VND')
+                    ? `${name}: ${Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0})}`
+                    : `${name}: ${Number(v).toLocaleString('vi-VN')}`;
+                }
+              }}
+            }
+          }
+        });
+      }
+    }
+
+    /* ====== Init Once ====== */
+    async function rw_initOnce(){
+      if (RW.inited) return;
+      RW.inited = true;
+
+      await rw_buildClassList();
+
+      const btnAll = document.getElementById('rw-btn-all');
+      const btnLoad = document.getElementById('rw-btn-load');
+
+      if (btnAll) btnAll.addEventListener('click', ()=>{
+        const sel = document.getElementById('rw-classes');
+        if (sel) Array.from(sel.options).forEach(o=>o.selected=false);
+        if (btnLoad) btnLoad.click(); // tải toàn trường ngay
+      });
+
+      if (btnLoad) btnLoad.addEventListener('click', async ()=>{
+        try{
+          if (typeof showLoading === 'function') showLoading();
+          await rw_loadBHYT();
+          await rw_loadBHTN();
+        } finally {
+          if (typeof hideLoading === 'function') hideLoading();
+        }
+      });
+
+      // Tải lần đầu
+      if (btnLoad) btnLoad.click();
+    }
+
+    /* ====== Bind sidebar: click "Thù lao" → show loading ngay & init ====== */
+    const sidebar = document.getElementById('sidebarMenu');
+    if (sidebar){
+      sidebar.addEventListener('click', (e)=>{
+        const item = e.target.closest('.nav-item[data-page="rewards"]');
+        if (!item) return;
+        if (!RW.inited && typeof showLoading === 'function') { showLoading(); }
+        setTimeout(rw_initOnce, 0);
+      });
+    }
+
+    /* Nếu reload đang ở trang Thù lao thì init */
+    const rwPage = document.getElementById('page-rewards');
+    if (rwPage && !rwPage.classList.contains('d-none')){
+      if (!RW.inited && typeof showLoading === 'function') { showLoading(); }
+      rw_initOnce();
+    }
+
+    })();
+  </script>
+  <!-- ====== KHỐI THÙ LAO (Admin) ===== -->
 
   
 
