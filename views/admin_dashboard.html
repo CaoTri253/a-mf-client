@@ -2175,12 +2175,20 @@
     if (maxP<totalPages) add(totalPages);
     add(ADM.page+1, false, ADM.page===totalPages, '»');
 
-    ul.addEventListener('click', e=>{
+    if (ul._handler) ul.removeEventListener('click', ul._handler);
+    ul._handler = function(e){
       const a = e.target.closest('a[data-page]'); if(!a) return;
-      e.preventDefault(); const p = Number(a.dataset.page);
+      e.preventDefault();
+      const p = Number(a.dataset.page);
       const totalPages = Math.max(1, Math.ceil(ADM.filtered.length/ADM.pageSize));
-      if (p>=1 && p<=totalPages && p!==ADM.page){ ADM.page = p; adm_renderTable(); adm_renderPagin(); }
-    }, {once:true});
+      if (p>=1 && p<=totalPages && p!==ADM.page){
+        ADM.page = p;
+        adm_renderTable();
+        adm_renderPagin();
+      }
+    };
+    ul.addEventListener('click', ul._handler);
+
   }
 
   // mở modal Thêm
@@ -3393,7 +3401,20 @@
       try{
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
-        const months = hs.so_thang_dong || '12';
+        let months = String(hs.so_thang_dong || '').trim();
+        if (!months) {
+          try {
+            const detail = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong);
+            months = String(detail?.data?.so_thang_dong || '').trim();
+          } catch (err) {
+            months = '';
+          }
+        }
+        if (!months) {
+          // fallback: nếu chưa có trong hồ sơ → lấy radio chọn nhanh (nếu có) hoặc mặc định 12
+          months = document.querySelector('input[name="bulk-thang"]:checked')?.value || '12';
+        }
+
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
