@@ -3394,83 +3394,90 @@
       });
     });
 
-    /* ===== Phiếu thu (Preview & In TRONG TRANG) ===== */
+    // ===== Phiếu thu (Preview & In TRONG TRANG) - BHYT CHƯA THU =====
     async function openPreviewReceipt(stt){
-      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt)); if(!hs) return;
+      const hs = (bhyt_lastFiltered||bhyt_allData).find(h=>String(h.stt)===String(stt));
+      if(!hs) return;
       showLoading();
       try{
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
-        let months = String(hs.so_thang_dong || '').trim();
-        if (!months) {
+
+        // 1) Lấy số tháng đóng như bên "đã thu"
+        let monthsRaw = String(hs.so_thang_dong ?? '').trim();
+        if (!monthsRaw) {
           try {
             const detail = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong);
-            months = String(detail?.data?.so_thang_dong || '').trim();
-          } catch (err) {
-            months = '';
-          }
+            monthsRaw = String(detail?.data?.so_thang_dong ?? '').trim();
+          } catch { /* bỏ qua, dùng fallback dưới */ }
         }
-        if (!months) {
-          // fallback: nếu chưa có trong hồ sơ → lấy radio chọn nhanh (nếu có) hoặc mặc định 12
-          months = document.querySelector('input[name="bulk-thang"]:checked')?.value || '12';
+        if (!monthsRaw) {
+          // fallback: radio chọn nhanh (nếu có), cuối cùng mặc định 12
+          monthsRaw = document.querySelector('input[name="bulk-thang"]:checked')?.value || '12';
         }
+        const months = parseInt(monthsRaw, 10) || 12; // <-- QUAN TRỌNG: ép số
 
-        const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+        // 2) Tính hạn dùng và số tiền theo số tháng thực tế
+        const { exp, amount } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
+        // 3) Binding vào biên lai
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
         document.getElementById('rec-class').innerText = hs.lop_hoc||'—';
         document.getElementById('rec-student-name').innerText = hs.ho_ten_hoc_sinh||'—';
         document.getElementById('rec-address').innerText = hs.dia_chi||'—';
         document.getElementById('rec-content').innerText = 'Thu Bảo hiểm y tế (BHYT) học sinh';
-        document.getElementById('rec-months').innerText = months;
-        const startDate = formatVNDate(addDaysExact(parseVNDate(hs.ngay_het_han_bhyt)||new Date(),1));
+        document.getElementById('rec-months').innerText = String(months);
+
+        const startDate = formatVNDate(
+          addDaysExact(parseVNDate(hs.ngay_het_han_bhyt) || new Date(), 1)
+        );
         document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
         document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
         document.getElementById('rec-amount-text').innerText = numberToVietnameseText(amount||0);
         document.getElementById('rec-teacher-name').innerText = bhyt_user.ho_ten || '—';
-        const t=new Date(); document.getElementById('rec-date-today').innerText = `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
-        const qrWrap = document.getElementById('receipt-qr'); 
+
+        const t = new Date();
+        document.getElementById('rec-date-today').innerText =
+          `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
+
+        // 4) QR theo payload chuẩn (đảm bảo đúng M = months & E = exp)
+        const qrWrap = document.getElementById('receipt-qr');
         qrWrap.innerHTML = "";
         const schoolName = document.getElementById('schoolName').innerText.trim();
         const classCode = hs.lop_hoc || "";
         const studentName = hs.ho_ten_hoc_sinh || "";
         const endText = exp;
 
-        
-        const primaryText = buildQRPayload(
-          bhyt_user.ma_truong,
-          schoolName,
-          classCode,
-          studentName,
-          months,
-          endText
-        );
         try {
           new QRCode(qrWrap, {
-            text: primaryText,
+            text: buildQRPayload(
+              bhyt_user.ma_truong,
+              schoolName,
+              classCode,
+              studentName,
+              String(months),
+              endText
+            ),
             width: 96,
             height: 96,
             correctLevel: QRCode.CorrectLevel.L
           });
         } catch (e) {
-          console.warn(logPrefix, "QR overflow, fallback", e);
-          const fallbackText = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(studentName)};M=${months};E=${endText}`;
+          const fb = `MT=${String(bhyt_user.ma_truong).slice(0,24)};L=${String(classCode).slice(0,12)};N=${initials(studentName)};M=${String(months)};E=${endText}`;
           try {
-            new QRCode(qrWrap, {
-              text: fallbackText,
-              width: 96,
-              height: 96,
-              correctLevel: QRCode.CorrectLevel.L
-            });
-          } catch (e2) {
+            new QRCode(qrWrap, { text: fb, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.L });
+          } catch {
             qrWrap.innerHTML = '<small>QR quá dài</small>';
           }
         }
+
+        // Mở modal
         const _mEl = document.getElementById('modalPhieuThu');
         if (_mEl && _mEl.parentElement !== document.body) document.body.appendChild(_mEl);
         new bootstrap.Modal(_mEl).show();
-
-      } finally{ hideLoading(); }
+      } finally {
+        hideLoading();
+      }
     }
 
     /* Tạo chuỗi QR theo chuẩn */
