@@ -5084,9 +5084,9 @@
         add(bhtnp_page-1, 'Trước', false, bhtnp_page===1);
         let minP = Math.max(1, bhtnp_page-2), maxP = Math.min(totalPages, bhtnp_page+2);
         if (minP > 1) add(1, '1');
-        if (minP > 2) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">.</span>'; el.appendChild(li); }
+        if (minP > 2) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; el.appendChild(li); }
         for (let p=minP; p<=maxP; p++) add(p, String(p), p===bhtnp_page, false);
-        if (maxP < totalPages-1) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">.</span>'; el.appendChild(li); }
+        if (maxP < totalPages-1) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">...</span>'; el.appendChild(li); }
         if (maxP < totalPages) add(totalPages, String(totalPages));
         add(bhtnp_page+1, 'Sau', false, bhtnp_page===totalPages);
       }
