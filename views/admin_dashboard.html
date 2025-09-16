@@ -2167,13 +2167,13 @@
       ul.insertAdjacentHTML('beforeend', `<li class="page-item ${active?'active':''} ${disabled?'disabled':''}">
         <a class="page-link" href="#" data-page="${p}">${label}</a></li>`);
     };
-    add(ADM.page-1, false, ADM.page===1, '«');
+    add(ADM.page-1, false, ADM.page===1, 'Trước');
     const minP=Math.max(1,ADM.page-2), maxP=Math.min(totalPages,ADM.page+2);
     if (minP>1){ add(1); if(minP>2) ul.insertAdjacentHTML('beforeend','<li class="page-item disabled"><span class="page-link">…</span></li>'); }
     for(let p=minP;p<=maxP;p++) add(p, ADM.page===p);
     if (maxP<totalPages-1){ ul.insertAdjacentHTML('beforeend','<li class="page-item disabled"><span class="page-link">…</span></li>'); }
     if (maxP<totalPages) add(totalPages);
-    add(ADM.page+1, false, ADM.page===totalPages, '»');
+    add(ADM.page+1, false, ADM.page===totalPages, 'Sau');
 
     if (ul._handler) ul.removeEventListener('click', ul._handler);
     ul._handler = function(e){
