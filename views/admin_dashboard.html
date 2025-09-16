@@ -1951,7 +1951,7 @@
   function adm_detectPageSize(){
     const w = window.innerWidth;
     // mobile <= 576 → 3; tablet <= 991 → 5; desktop → 10
-    ADM.pageSize = (w <= 576) ? 3 : (w <= 991) ? 5 : 10;
+    ADM.pageSize = (w <= 600) ? 3 : (w <= 999) ? 7 : 20;
   }
   window.addEventListener('resize', () => {
     const prev = ADM.pageSize;
@@ -2530,9 +2530,9 @@
       }
 
       function others_detectPageSize(){
-        const sec = document.getElementById('page-others');
-        const width = sec?.offsetWidth || window.innerWidth;
-        _others_pageSize = width <= 767 ? 3 : (width <= 1023 ? 7 : 20);
+         const sec = document.getElementById('page-others');
+         const width = sec?.offsetWidth || window.innerWidth;
+         _others_pageSize = (width <= 600) ? 3 : (width <= 999) ? 7 : 20;
       }
       // resize handler riêng cho others
       addEventListener('resize', ()=>{
@@ -3011,8 +3011,8 @@
     /* ===== Tìm kiếm – Sắp xếp – Phân trang ===== */
     function detectPageSizeBHYT(){
       const width = document.querySelector('#page-bhyt')?.offsetWidth || window.innerWidth;
-      if (width <= 767) bhyt_pageSize = 3;
-      else if (width <= 1023) bhyt_pageSize = 7;
+      if (width <= 600) bhyt_pageSize = 3;
+      else if (width <= 999) bhyt_pageSize = 7;
       else bhyt_pageSize = 20;
     }
     
@@ -4334,13 +4334,13 @@
       }
 
       // Detect page size (giống BHYT)
-      function detectPageSize(){
+      function bhtn_detectPageSize(){
         const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
-        if (width <= 767) bhtn_pageSize = 3;
-        else if (width <= 1023) bhtn_pageSize = 7;
+        if (width <= 600) bhtn_pageSize = 3;
+        else if (width <= 999) bhtn_pageSize = 7;
         else bhtn_pageSize = 20;
       }
-      addEventListener('resize',()=>{const prev=bhtn_pageSize;detectPageSize(); if(prev!==bhtn_pageSize){ bhtn_page=1; bhtn_renderAll(); }});
+      addEventListener('resize',()=>{const prev=bhtn_pageSize;bhtn_detectPageSize(); if(prev!==bhtn_pageSize){ bhtn_page=1; bhtn_renderAll(); }});
 
       // Load options lớp (multi) & fetch “chưa thu”
       async function bhtn_loadClassOptions(){
@@ -4355,7 +4355,7 @@
       async function bhtn_fetchUnpaid(){
         try{
           showLoading();
-          detectPageSize();
+          bhtn_detectPageSize();
           const el = document.getElementById('bhtn-classes');
           const selected = el ? [...el.querySelectorAll('option:checked')].map(o=>o.value) : [];
           const classes = selected.length ? selected : [""]; // "" = cả trường
@@ -5059,22 +5059,36 @@
         attachSort();
       }
 
-      function detectPageSize(){
+      function bhtnp_detectPageSize(){
         const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
-        if (width <= 999) bhtnp_pageSize = Number.MAX_SAFE_INTEGER; else bhtnp_pageSize = 20;
+        if (width <= 600) bhtn_pageSize = 3;
+        else if (width <= 999) bhtn_pageSize = 7;
+        else bhtn_pageSize = 20;
       }
-      addEventListener('resize', ()=>{ const old=bhtnp_pageSize; detectPageSize(); if (old!==bhtnp_pageSize){ bhtnp_page=1; renderAll(); } });
+      addEventListener('resize', ()=>{ const old=bhtnp_pageSize; bhtnp_detectPageSize(); if (old!==bhtnp_pageSize){ bhtnp_page=1; renderAll(); } });
 
-      function renderPagin(total){
-        const el=document.getElementById('bhtnp-pagin'); if(!el) return;
-        if (bhtnp_pageSize===Number.MAX_SAFE_INTEGER){ el.innerHTML=''; return; } // no paging on small
-        let totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
-        if (totalPages<=1){ el.innerHTML=''; return; }
-        const add=(p,lab,act=false,dis=false)=>`<li class="page-item ${act?'active':''} ${dis?'disabled':''}"><a class="page-link" href="javascript:void(0)" onclick="bhtnp_goto(${p})">${lab}</a></li>`;
-        let html=''; html += add(Math.max(1,bhtnp_page-1),'&laquo;',false,bhtnp_page===1);
-        for(let i=1;i<=totalPages;i++) html += add(i,i,bhtnp_page===i,false);
-        html += add(Math.min(totalPages,bhtnp_page+1),'&raquo;',false,bhtnp_page===totalPages);
-        el.innerHTML = html;
+      function bhtnp_renderPagin(total){
+        const totalPages = Math.max(1, Math.ceil(total / bhtnp_pageSize));
+        const el = document.getElementById('bhtnp-pagin'); if(!el) return;
+        el.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const add = (p, label, active=false, disabled=false) => {
+          const li = document.createElement('li');
+          li.className = `page-item ${active?'active':''} ${disabled?'disabled':''}`;
+          const a = document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label;
+          a.onclick = (e)=>{ e.preventDefault(); if (p<1||p>totalPages||p===bhtnp_page) return; bhtnp_page = p; renderAll(); };
+          li.appendChild(a); el.appendChild(li);
+        };
+
+        add(bhtnp_page-1, 'Trước', false, bhtnp_page===1);
+        let minP = Math.max(1, bhtnp_page-2), maxP = Math.min(totalPages, bhtnp_page+2);
+        if (minP > 1) add(1, '1');
+        if (minP > 2) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">.</span>'; el.appendChild(li); }
+        for (let p=minP; p<=maxP; p++) add(p, String(p), p===bhtnp_page, false);
+        if (maxP < totalPages-1) { const li=document.createElement('li'); li.className='page-item disabled'; li.innerHTML='<span class="page-link">.</span>'; el.appendChild(li); }
+        if (maxP < totalPages) add(totalPages, String(totalPages));
+        add(bhtnp_page+1, 'Sau', false, bhtnp_page===totalPages);
       }
       window.bhtnp_goto = (p)=>{ const totalPages = Math.max(1, Math.ceil((bhtnp_last||bhtnp_all).length / bhtnp_pageSize)); if(p<1||p>totalPages) return; bhtnp_page=p; renderAll(); };
 
@@ -5112,10 +5126,10 @@
 
         const total = data.length;
         document.getElementById('bhtnp-total').innerText = total;
-        detectPageSize();
+        bhtnp_detectPageSize();
         const start=(bhtnp_page-1)*bhtnp_pageSize;
         renderTable(data.slice(start, start+bhtnp_pageSize), start);
-        renderPagin(total);
+        bhtnp_renderPagin(total);
       }
 
       // ===== Xem thẻ / In phiếu (giữ nguyên logic trang GV, đổi selector id modal) =====
@@ -5387,13 +5401,17 @@
     /* Helpers (đưa vào scope cục bộ để tránh trùng tên) */
     const pct = (num, den)=> den>0 ? (num*100/den) : 0;
     function fmtPercent(x){ return x.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%'; }
-    const stripVN = (s)=> String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
-    const keyVN   = (s)=> stripVN(String(s||'')).toLowerCase();
+    // const stripVN = (s)=> String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+    // const keyVN   = (s)=> stripVN(String(s||'')).toLowerCase();
+    // mới: prefix stats_ để không thể trùng tên
+    const stats_stripVN = (s)=> String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+    const stats_keyVN   = (s)=> stats_stripVN(String(s||'')).toLowerCase().trim();
+
     /* HS thuộc “Đối tượng khác” nếu doi_tuong_dong KHÁC 'HS' / 'Học sinh' */
     function isOtherDoiTuongFromHS(hs){
       const raw = (hs?.doi_tuong_dong ?? "").toString().trim();
       if (!raw || raw.toLowerCase() === "null") return false;
-      const k = keyVN(raw);
+      const k = stats_keyVN(raw);
       return !(k === "hs" || k === "hoc sinh");
     }
 
