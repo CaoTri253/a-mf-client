@@ -3403,22 +3403,31 @@
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
 
-        // 1) Lấy số tháng đóng như bên "đã thu"
+        // 1) Lấy số tháng đóng (ưu tiên giống tab "ĐÃ THU")
         let monthsRaw = String(hs.so_thang_dong ?? '').trim();
         if (!monthsRaw) {
           try {
             const detail = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong);
             monthsRaw = String(detail?.data?.so_thang_dong ?? '').trim();
-          } catch { /* bỏ qua, dùng fallback dưới */ }
+          } catch { /* fallback bên dưới */ }
         }
         if (!monthsRaw) {
-          // fallback: radio chọn nhanh (nếu có), cuối cùng mặc định 12
           monthsRaw = document.querySelector('input[name="bulk-thang"]:checked')?.value || '12';
         }
-        const months = parseInt(monthsRaw, 10) || 12; // <-- QUAN TRỌNG: ép số
+        const months = parseInt(monthsRaw, 10) || 12; // ép kiểu số cho chắc
 
-        // 2) Tính hạn dùng và số tiền theo số tháng thực tế
-        const { exp, amount } = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
+        // 2) Căn cứ hạn cũ như bên "ĐÃ THU"
+        const baseEndStudent = (hs.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || "").trim();
+        let exp, amount, note = "";
+        if (baseEndStudent) {
+          const c = computeAmountAndExp(baseEndStudent, months, g?.gia_tien);
+          exp = c.exp; amount = c.amount; note = "";
+        } else {
+          const currentEnd = (hs.han_su_dung_bhyt_moi || hs.ngay_het_han_bhyt_moi || "").trim();
+          amount = (parseInt(g?.gia_tien || 0, 10) || 0) * (parseInt(months || 0, 10));
+          exp = currentEnd ? bhytp_displayDate(currentEnd) : "(không xác định)";
+          note = "Thiếu hạn cũ trong hồ sơ BHYT. Vui lòng bổ sung ngay_het_han_bhyt_cu để tính chuẩn.";
+        }
 
         // 3) Binding vào biên lai
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
@@ -3429,7 +3438,7 @@
         document.getElementById('rec-months').innerText = String(months);
 
         const startDate = formatVNDate(
-          addDaysExact(parseVNDate(hs.ngay_het_han_bhyt) || new Date(), 1)
+          addDaysExact(parseVNDate(baseEndStudent) || new Date(), 1)
         );
         document.getElementById('rec-range').innerText = `từ ngày ${startDate} đến ngày ${exp}`;
         document.getElementById('rec-amount').innerText = (amount||0).toLocaleString('vi-VN');
@@ -3440,14 +3449,13 @@
         document.getElementById('rec-date-today').innerText =
           `Ngày ${t.getDate()} tháng ${t.getMonth()+1} năm ${t.getFullYear()}`;
 
-        // 4) QR theo payload chuẩn (đảm bảo đúng M = months & E = exp)
+        // 4) QR: đảm bảo months & exp đúng
         const qrWrap = document.getElementById('receipt-qr');
         qrWrap.innerHTML = "";
         const schoolName = document.getElementById('schoolName').innerText.trim();
         const classCode = hs.lop_hoc || "";
         const studentName = hs.ho_ten_hoc_sinh || "";
         const endText = exp;
-
         try {
           new QRCode(qrWrap, {
             text: buildQRPayload(
@@ -3471,7 +3479,7 @@
           }
         }
 
-        // Mở modal
+        // 5) Mở modal
         const _mEl = document.getElementById('modalPhieuThu');
         if (_mEl && _mEl.parentElement !== document.body) document.body.appendChild(_mEl);
         new bootstrap.Modal(_mEl).show();
