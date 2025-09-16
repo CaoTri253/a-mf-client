@@ -3393,7 +3393,7 @@
       try{
         const school = await getTenTruong(bhyt_user.ma_truong);
         const g = await ensureGiaBHYT();
-        const months = '12';
+        const months = hs.so_thang_dong || '12';
         const {exp, amount} = computeAmountAndExp(hs.ngay_het_han_bhyt, months, g?.gia_tien);
 
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
