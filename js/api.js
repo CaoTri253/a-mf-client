@@ -296,3 +296,27 @@ async function suaHoSoBHTN(payload) {
   const res = await fetch(url);
   return await res.json();
 }
+
+
+
+
+// Xóa hồ sơ BHTN theo so_dinh_danh + ma_truong + lop_hoc (dùng cho "Chưa thu" khi hồ sơ đang chờ duyệt)
+async function deleteBHTNByKey({ so_dinh_danh, ma_truong, lop_hoc, phan_quyen = "" }) {
+  const url = `${API_BASE}?func=DeleteBHTN`
+    + `&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa hồ sơ BHTN theo stt (dùng cho “ĐÃ THU”)
+async function deleteBHTNByStt(stt, phan_quyen = "") {
+  const url = `${API_BASE}?func=DeleteBHTNByStt`
+    + `&stt=${encodeURIComponent(stt)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
