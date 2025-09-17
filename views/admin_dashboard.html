@@ -3105,7 +3105,14 @@
           <td><input type="checkbox" class="chk-bulk-row" data-stt="${hs.stt}" onchange="onSelectRowBulk('${hs.stt}', this)" ${hs._bhyt_trangthai===0 ? 'disabled' : ''}></td>
           <td>
             <div class="action-btns">
-              <button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>
+              
+              ${
+                hs._bhyt_trangthai === 0
+                  ? '<span class="text-success fw-semibold">Chờ duyệt</span>'
+                  : `<button class="btn btn-success btn-sm"
+                            onclick="showNopHoSoModal('${hs.stt}')"
+                            ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+              }
               ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
               ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
                 <button class="btn btn-warning btn-sm" onclick="suaHoSo('${hs.stt}')" title="Sửa hồ sơ">
@@ -3407,7 +3414,12 @@
         let monthsRaw = String(hs.so_thang_dong ?? '').trim();
         if (!monthsRaw) {
           try {
-            const detail = await getHosoBHYTByHS(hs.so_dinh_danh, bhyt_user.ma_truong);
+            const detail = await getHosoBHYTByHS(
+              hs.so_dinh_danh,
+              bhyt_user.ma_truong,
+              hs.lop_hoc || ""
+            );
+
             monthsRaw = String(detail?.data?.so_thang_dong ?? '').trim();
           } catch { /* fallback bên dưới */ }
         }
@@ -3415,7 +3427,15 @@
           monthsRaw = document.querySelector('input[name="bulk-thang"]:checked')?.value || '12';
         }
         const months = parseInt(monthsRaw, 10) || 12; // ép kiểu số cho chắc
-
+        // Log nguồn số tháng (để xác định monthsRaw đến từ đâu và có rỗng không)
+        console.debug("[BHYT-UNPAID][openPreviewReceipt] months source", {
+          stt,
+          sdd: hs.so_dinh_danh,
+          lop: hs.lop_hoc || "",
+          monthsRaw,
+          months,
+          baseEndStudent: (hs.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || "").trim()
+        });
         // 2) Căn cứ hạn cũ như bên "ĐÃ THU"
         const baseEndStudent = (hs.ngay_het_han_bhyt_cu || hs.ngay_het_han_bhyt || "").trim();
         let exp, amount, note = "";
@@ -3428,6 +3448,15 @@
           exp = currentEnd ? bhytp_displayDate(currentEnd) : "(không xác định)";
           note = "Thiếu hạn cũ trong hồ sơ BHYT. Vui lòng bổ sung ngay_het_han_bhyt_cu để tính chuẩn.";
         }
+
+        // Trước khi binding vào biên lai (sau khi đã tính exp/amount/note)
+        console.debug("[BHYT-UNPAID][openPreviewReceipt] computed", {
+          months,
+          exp,
+          amount,
+          note
+        });
+
 
         // 3) Binding vào biên lai
         document.getElementById('rec-school').innerText = school || (bhyt_user.ten_truong||'—');
@@ -3486,11 +3515,6 @@
       } finally {
         hideLoading();
       }
-    }
-
-    /* Tạo chuỗi QR theo chuẩn */
-    function buildQRPayload(maTruong, school, lop, ten, thang, hanSuDung) {
-      return `MT=${maTruong};S=${stripVN(school)};L=${lop};N=${stripVN(ten)};M=${thang};E=${hanSuDung}`;
     }
 
 
