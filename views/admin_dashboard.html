@@ -3789,10 +3789,10 @@
         const st=Number(row.trang_thai??-1), shs=bhytp_getSoHoSo(row);
         if (st===1 && shs){
           return `<div class="action-btns">
+            <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button><br/>
             <button class="btn btn-warning btn-sm" onclick="showSuaHoSoModal_DaThu('${row.stt}')" title="Sửa hồ sơ">
               <i class="bi bi-pencil-square"></i>
             </button>
-            <button class="btn btn-sm btn-info" onclick="bhytp_onViewCardIdx(${i})">Xem thẻ</button>
             <button class="btn btn-primary btn-sm" onclick="bhytp_onPrintReceiptIdx(${i})" title="In phiếu thu">
               <i class="bi bi-printer"></i>
             </button>
