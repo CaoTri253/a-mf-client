@@ -2115,8 +2115,8 @@
         html += `<tr>
           <td><input type="checkbox" class="adm-chk" value="${r.stt}"></td>
           <td class="text-nowrap">
-            <button class="btn btn-sm btn-warning me-1" data-action="edit" data-idx="${i}">Sửa</button>
-            <button class="btn btn-sm btn-danger" data-action="del" data-id="${r.stt}">Xóa</button>
+            <button class="btn btn-sm btn-warning me-1" data-action="edit" data-idx="${i}" title="Sửa thông tin học sinh"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-sm btn-danger" data-action="del" data-id="${r.stt}" title="Xóa học sinh"><i class="bi bi-trash"></i></button>
           </td>
           <td>${r.ma_so_bhxh||''}</td>
           <td>${r.ho_ten_hoc_sinh||''}</td>
@@ -3124,7 +3124,7 @@
               ` : ``}
               ${(hs._bhyt_trangthai === 0) ? `
                 <button class="btn btn-danger btn-sm" onclick="bhyt_cancelPending('${hs.stt}')" title="Hủy hồ sơ chờ duyệt">
-                  <i class="bi bi-x-circle"></i>
+                  <i class="bi bi-trash"></i>
                 </button>
               ` : ``}
             </div>
