@@ -2739,11 +2739,17 @@
         document.getElementById('others-btn-filter')?.addEventListener('click', ()=>{
           showLoading?.(); Promise.resolve(others_fetchData()).finally(()=>hideLoading?.());
         });
+        // document.getElementById('others-btn-all')?.addEventListener('click', ()=>{
+        //   const sel = document.getElementById('others-classes'); if(!sel) return;
+        //   [...sel.options].forEach(o=>o.selected=false);
+        //   showLoading?.(); Promise.resolve(others_fetchData()).finally(()=>hideLoading?.());
+        // });
         document.getElementById('others-btn-all')?.addEventListener('click', ()=>{
           const sel = document.getElementById('others-classes'); if(!sel) return;
-          [...sel.options].forEach(o=>o.selected=false);
+          Array.from(sel.options).forEach(o => o.selected = false);
           showLoading?.(); Promise.resolve(others_fetchData()).finally(()=>hideLoading?.());
         });
+
         document.getElementById('others-search')?.addEventListener('input', ()=>{
           _others_page=1; others_doSearch();
         });
@@ -3688,12 +3694,20 @@
 
 
     /* NEW: nút chọn toàn trường – bỏ chọn tất cả lớp và tải toàn trường */
+    // document.getElementById('bhyt-btn-all')?.addEventListener('click', ()=>{
+    //   const sel = document.getElementById('bhyt-classes');
+    //   if (!sel) return;
+    //   [...sel.options].forEach(o => o.selected = false);
+    //   fetchChuaThuHocsinh();
+    // });
+
     document.getElementById('bhyt-btn-all')?.addEventListener('click', ()=>{
-      const sel = document.getElementById('bhyt-classes');
-      if (!sel) return;
-      [...sel.options].forEach(o => o.selected = false);
+      const sel = document.getElementById('bhyt-classes'); if(!sel) return;
+      Array.from(sel.options).forEach(o => o.selected = false);
       fetchChuaThuHocsinh();
     });
+
+
 
     /* Hook modal để tránh kẹt màn mờ khi đóng mà chưa nộp */
     hookModalUnlock('modalBulkNopHoSo');
@@ -4367,11 +4381,17 @@
       function bhyt_paid_bindUI(){
         document.getElementById('bhytp-btn-reload')?.addEventListener('click', bhytp_fetchPaidBHYT);
         document.getElementById('bhytp-search')?.addEventListener('input', bhytp_doSearch);
+        // document.getElementById('bhytp-btn-all')?.addEventListener('click', ()=>{
+        //   const sel = document.getElementById('bhytp-classes'); if(!sel) return;
+        //   [...sel.options].forEach(o=>o.selected=false);
+        //   bhytp_fetchPaidBHYT();
+        // });
         document.getElementById('bhytp-btn-all')?.addEventListener('click', ()=>{
           const sel = document.getElementById('bhytp-classes'); if(!sel) return;
-          [...sel.options].forEach(o=>o.selected=false);
+          Array.from(sel.options).forEach(o => o.selected = false);
           bhytp_fetchPaidBHYT();
         });
+
       }
 
       window.bhyt_paid_wireTab = async function(){
@@ -5099,11 +5119,17 @@
       function bhtn_bindUI(){
         document.getElementById('bhtn-btn-reload')?.addEventListener('click', bhtn_fetchUnpaid);
         document.getElementById('bhtn-search')?.addEventListener('input', bhtn_doSearch);
+        // document.getElementById('bhtn-btn-all')?.addEventListener('click', ()=>{
+        //   const sel = document.getElementById('bhtn-classes'); if(!sel) return;
+        //   [...sel.options].forEach(o => o.selected = false);
+        //   bhtn_fetchUnpaid();
+        // });
         document.getElementById('bhtn-btn-all')?.addEventListener('click', ()=>{
           const sel = document.getElementById('bhtn-classes'); if(!sel) return;
-          [...sel.options].forEach(o => o.selected = false);
+          Array.from(sel.options).forEach(o => o.selected = false);
           bhtn_fetchUnpaid();
         });
+
       }
 
       // Router/tab loader
@@ -5552,11 +5578,17 @@
       function bind(){
         document.getElementById('bhtnp-btn-reload')?.addEventListener('click', bhtnp_fetchPaid);
         document.getElementById('bhtnp-search')?.addEventListener('input', bhtnp_doSearchPaid);
+        // document.getElementById('bhtnp-btn-all')?.addEventListener('click', ()=>{
+        //   const sel = document.getElementById('bhtnp-classes'); if(!sel) return;
+        //   [...sel.options].forEach(o=>o.selected=false);
+        //   bhtnp_fetchPaid();
+        // });
         document.getElementById('bhtnp-btn-all')?.addEventListener('click', ()=>{
           const sel = document.getElementById('bhtnp-classes'); if(!sel) return;
-          [...sel.options].forEach(o=>o.selected=false);
+          Array.from(sel.options).forEach(o => o.selected = false);
           bhtnp_fetchPaid();
         });
+
       }
 
       window.bhtn_paid_wireTab = async function(){
@@ -5577,36 +5609,60 @@
 
   <!-- Hiển thị Modal xác nhận BHTN (dùng chung cho 2 tab chưa thu và đã thu) -->
   <script>
+    // function showBHTNConfirm(message, onConfirm) {
+    //   // Bơm nội dung
+    //   const bodyEl = document.getElementById('bhtnConfirmBody');
+    //   if (bodyEl) bodyEl.innerHTML = message;
+
+    //   // Tìm và làm mới nút Đồng ý
+    //   const btn = document.getElementById('bhtnConfirmBtn');
+    //   if (!btn) {
+    //     // Không có nút => fallback confirm
+    //     if (window.confirm(String(message).replace(/<[^>]+>/g, ''))) {
+    //       if (typeof onConfirm === 'function') onConfirm();
+    //     }
+    //     return;
+    //   }
+    //   const newBtn = btn.cloneNode(true);
+    //   btn.parentNode.replaceChild(newBtn, btn);
+
+    //   // Gắn sự kiện click
+    //   newBtn.addEventListener('click', function () {
+    //     const modalEl = document.getElementById('bhtnModalConfirm');
+    //     const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    //     modal.hide();
+    //     if (typeof onConfirm === 'function') onConfirm();
+    //   });
+
+    //   // Hiển thị modal
+    //   const modalEl = document.getElementById('bhtnModalConfirm');
+    //   const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    //   modal.show();
+    // }
+
+
+
     function showBHTNConfirm(message, onConfirm) {
-      // Bơm nội dung
       const bodyEl = document.getElementById('bhtnConfirmBody');
       if (bodyEl) bodyEl.innerHTML = message;
 
-      // Tìm và làm mới nút Đồng ý
       const btn = document.getElementById('bhtnConfirmBtn');
-      if (!btn) {
-        // Không có nút => fallback confirm
-        if (window.confirm(String(message).replace(/<[^>]+>/g, ''))) {
-          if (typeof onConfirm === 'function') onConfirm();
-        }
-        return;
-      }
+      if (!btn) { if (window.confirm(String(message).replace(/<[^>]+>/g,''))) onConfirm?.(); return; }
+
       const newBtn = btn.cloneNode(true);
       btn.parentNode.replaceChild(newBtn, btn);
 
-      // Gắn sự kiện click
       newBtn.addEventListener('click', function () {
         const modalEl = document.getElementById('bhtnModalConfirm');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.hide();
-        if (typeof onConfirm === 'function') onConfirm();
+        onConfirm?.();
       });
 
-      // Hiển thị modal
       const modalEl = document.getElementById('bhtnModalConfirm');
-      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-      modal.show();
+      (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
     }
+
 
   </script>
 
