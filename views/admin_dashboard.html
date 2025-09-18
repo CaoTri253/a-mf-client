@@ -5578,15 +5578,23 @@
   <!-- Hiển thị Modal xác nhận BHTN (dùng chung cho 2 tab chưa thu và đã thu) -->
   <script>
     function showBHTNConfirm(message, onConfirm) {
-      // Set nội dung modal
-      document.getElementById('bhtnConfirmBody').innerHTML = message;
+      // Bơm nội dung
+      const bodyEl = document.getElementById('bhtnConfirmBody');
+      if (bodyEl) bodyEl.innerHTML = message;
 
-      // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
+      // Tìm và làm mới nút Đồng ý
       const btn = document.getElementById('bhtnConfirmBtn');
+      if (!btn) {
+        // Không có nút => fallback confirm
+        if (window.confirm(String(message).replace(/<[^>]+>/g, ''))) {
+          if (typeof onConfirm === 'function') onConfirm();
+        }
+        return;
+      }
       const newBtn = btn.cloneNode(true);
       btn.parentNode.replaceChild(newBtn, btn);
 
-      // Gán sự kiện mới
+      // Gắn sự kiện click
       newBtn.addEventListener('click', function () {
         const modalEl = document.getElementById('bhtnModalConfirm');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
