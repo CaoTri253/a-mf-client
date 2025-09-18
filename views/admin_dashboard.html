@@ -5466,8 +5466,7 @@
         const r = bhtnp_getRowByIdx(i);
         if (!r) return;
 
-        const confirmFn = (typeof showBHYTConfirm === 'function')
-          ? showBHYTConfirm
+        const confirmFn = (typeof showBHTNConfirm === 'function') ? showBHTNConfirm
           : (msg, ok) => { if (window.confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
 
         confirmFn(
