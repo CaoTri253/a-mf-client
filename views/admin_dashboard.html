@@ -2131,7 +2131,8 @@
       const resp = await getAllDanhSachHocsinh(user.ma_truong||'', ''); // lop_hoc = '' → toàn trường
       ADM.all = Array.isArray(resp?.data) ? resp.data : [];
       // build datalist lớp
-      const classes = [...new Set(ADM.all.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      //const classes = [...new Set(ADM.all.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      const classes = Array.from(new Set(ADM.all.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))).sort();
       $('#admClassList').innerHTML = classes.map(c=>`<option value="${c}">`).join('');
       adm_detectPageSize();      // << thêm dòng này
       adm_applyFilters();
@@ -2638,7 +2639,8 @@
         const el = document.getElementById('others-classes');
         if (!el) return; el.innerHTML="";
         if (res?.success && Array.isArray(res.data)){
-          [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+          // [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+          Array.from(new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean)))
             .sort()
             .forEach(cls=>{
               const opt=document.createElement('option');
@@ -3786,7 +3788,8 @@
           const res = await getAllHocsinhByClass(bhyt_user.ma_truong, "");
           const el = document.getElementById('bhytp-classes'); if(!el) return; el.innerHTML="";
           if(res?.success && Array.isArray(res.data)){
-            [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+            //[...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+            Array.from(new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean)))
               .sort()
               .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
           }
@@ -4511,7 +4514,8 @@
         const res = await getAllDanhSachHocsinh(bhtn_user.ma_truong, "");
         const el = document.getElementById('bhtn-classes'); if(!el) return; el.innerHTML="";
         if(res?.success && Array.isArray(res.data)){
-          [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+          //[...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+          Array.from(new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))).sort()
             .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
         }
       }
@@ -5188,7 +5192,8 @@
           const res = await getAllDanhSachHocsinh(bhtnp_user.ma_truong, "");
           const el = document.getElementById('bhtnp-classes'); if(!el) return; el.innerHTML="";
           if(res?.success && Array.isArray(res.data)){
-            [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+            //[...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))]
+              Array.from(new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean)))
               .sort()
               .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
           }
@@ -5854,7 +5859,8 @@
       const user = JSON.parse(localStorage.getItem('user')||'{}');
       const res = await getAllDanhSachHocsinh(user.ma_truong||'', ''); // toàn trường
       STATS.allHS = Array.isArray(res?.data) ? res.data : [];
-      const classes = [...new Set(STATS.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      //const classes = [...new Set(STATS.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      const classes = Array.from(new Set(STATS.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))).sort();
       STATS.classes = classes;
       const sel = document.getElementById('stats-classes');
       if (sel) sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -6172,7 +6178,8 @@
       const user = JSON.parse(localStorage.getItem('user')||'{}');
       const res = await getAllDanhSachHocsinh(user.ma_truong||'', '');
       RW.allHS = Array.isArray(res?.data) ? res.data : [];
-      const classes = [...new Set(RW.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+     //const classes = [...new Set(RW.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))].sort();
+      const classes = Array.from(new Set(RW.allHS.map(r => String(r.lop_hoc||'').trim()).filter(Boolean))).sort();
       RW.classes = classes;
       const sel = document.getElementById('rw-classes');
       if (sel) sel.innerHTML = classes.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -6568,7 +6575,8 @@
 
         renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
-        const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
+        //const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
+        const classes = Array.from(new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))).sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
@@ -6872,7 +6880,8 @@
 
         renderKPIs(studentsTotal, bhytPaidAdjusted, bhtnPaidCount, otherCount);
 
-        const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
+        //const classes = [...new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))].sort();
+        const classes = Array.from(new Set(students.map(s => String(s.lop_hoc||'').trim()).filter(Boolean))).sort();
         const sel = $('#filterClass');
         sel.innerHTML = '<option value="">-- Chọn lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
