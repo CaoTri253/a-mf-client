@@ -3072,7 +3072,8 @@
       const res = await getAllHocsinhByClass(bhyt_user.ma_truong, "");
       const el = document.getElementById('bhyt-classes'); if(!el) return; el.innerHTML="";
       if(res?.success && Array.isArray(res.data)){
-        [...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+        //[...new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))].sort()
+        Array.from(new Set(res.data.map(x=>String(x.lop_hoc||"").trim()).filter(Boolean))).sort()
           .forEach(cls=>{ const opt=document.createElement('option'); opt.value=cls; opt.textContent=cls; el.appendChild(opt); });
       }
     }
