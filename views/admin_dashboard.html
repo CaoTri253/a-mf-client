@@ -1481,6 +1481,27 @@
 
 
 
+
+
+      <!-- Modal xác nhận xóa cho BHTN -->
+      <div class="modal fade" id="bhtnModalConfirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title" id="bhtnConfirmTitle">Xác nhận</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="bhtnConfirmBody"></div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button id="bhtnConfirmBtn" class="btn btn-danger">Đồng ý</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
     
 
 
@@ -4569,18 +4590,14 @@
               <div class="action-btns">
                 ${
                   (hs._bhtn_trangthai === 0)
-                    ? `<span class="text-success fw-semibold">Chờ duyệt</span>
-                      <button class="btn btn-outline-danger btn-sm ms-1"
-                              onclick="bhtn_cancelPending('${hs.stt}')"
-                              title="Hủy hồ sơ chờ duyệt">
-                        <i class="bi bi-trash"></i>
-                      </button>`
+                    ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
                     : `<button class="btn btn-success btn-sm"
                               onclick="bhtn_openNop('${hs.stt}')"
                               ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
                 }
 
                 ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn cũ (BHTN)</div>' : ''}
+
                 ${(hs._bhtn_trangthai===0 || hs._bhtn_trangthai===1) ? `
                   <button class="btn btn-warning btn-sm" onclick="bhtn_openSua('${hs.stt}')" title="Sửa hồ sơ">
                     <i class="bi bi-pencil-square"></i>
@@ -4588,8 +4605,15 @@
                   <button class="btn btn-primary btn-sm" onclick="bhtn_inPhieu('${hs.stt}')" title="In phiếu thu">
                     <i class="bi bi-printer"></i>
                   </button>
+                  ${(hs._bhtn_trangthai === 0) ? `
+                    <button class="btn btn-danger btn-sm"
+                            onclick="bhtn_cancelPending('${hs.stt}')"
+                            title="Hủy hồ sơ chờ duyệt">
+                      <i class="bi bi-trash"></i>
+                    </button>` : ``}
                 ` : ``}
               </div>
+
             </td>
             <td>${hs.ho_ten_hoc_sinh||""}</td>
             <td>${displayNgaySinh(hs.ngay_sinh)||""}</td>
@@ -4862,8 +4886,8 @@
           const hs = list.find(h => String(h.stt) === String(stt));
           if (!hs) return;
 
-          const confirmFn = (typeof showBHYTConfirm === 'function')
-            ? showBHYTConfirm
+          const confirmFn = (typeof showBHTNConfirm === 'function')
+            ? showBHTNConfirm
             : (msg, ok) => { if (window.confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
 
           confirmFn(
@@ -5531,6 +5555,42 @@
       window.bhtn_paid_reload = bhtnp_fetchPaid;
     })();
   </script>
+
+
+
+
+
+
+  <!-- Hiển thị Modal xác nhận BHTN (dùng chung cho 2 tab chưa thu và đã thu) -->
+  <script>
+    function showBHTNConfirm(message, onConfirm) {
+      // Set nội dung modal
+      document.getElementById('bhtnConfirmBody').innerHTML = message;
+
+      // Gỡ sự kiện cũ để tránh bị gọi nhiều lần
+      const btn = document.getElementById('bhtnConfirmBtn');
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+
+      // Gán sự kiện mới
+      newBtn.addEventListener('click', function () {
+        const modalEl = document.getElementById('bhtnModalConfirm');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+
+      // Hiển thị modal
+      const modalEl = document.getElementById('bhtnModalConfirm');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+
+  </script>
+
+
+
+
 
 
 
