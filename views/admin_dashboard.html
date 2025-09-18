@@ -5643,6 +5643,14 @@
 
 
     function showBHTNConfirm(message, onConfirm) {
+
+      // Nếu thiếu Bootstrap → fallback confirm()
+      if (!(window.bootstrap && bootstrap.Modal)) {
+        if (window.confirm(String(message).replace(/<[^>]+>/g, ""))) onConfirm?.();
+        return;
+      }
+
+
       const bodyEl = document.getElementById('bhtnConfirmBody');
       if (bodyEl) bodyEl.innerHTML = message;
 
