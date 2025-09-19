@@ -4500,6 +4500,14 @@
         return { so_tien, hoa_hong };
       }
 
+
+
+      // THÊM 2 DÒNG NÀY để xuất ra global cho tab ĐÃ THU dùng:
+      window.ensureGiaBHTN = ensureGiaBHTN;
+      window.calcAmountCommissionByCategory = calcAmountCommissionByCategory;
+
+
+
       // Detect page size (giống BHYT)
       function bhtn_detectPageSize(){
         const width = document.querySelector('#page-bhtn')?.offsetWidth || window.innerWidth;
@@ -4922,6 +4930,7 @@
       // HỦY hồ sơ chờ duyệt
       window.bhtn_cancelPending = async function(stt){
         try{
+          // Dùng LIST cục bộ đúng scope
           const list = (bhtn_lastFiltered || bhtn_allData) || [];
           const hs = list.find(h => String(h.stt) === String(stt));
           if (!hs) return;
@@ -4935,15 +4944,17 @@
             async () => {
               showLoading();
               try{
+                // LẤY ĐÚNG NGUỒN user TRONG IIFE
                 const res = await deleteBHTNByKey({
                   so_dinh_danh: hs.so_dinh_danh,
-                  ma_truong: bhtn_user.ma_truong || '',
+                  ma_truong: bhtn_user?.ma_truong || '',
                   lop_hoc: hs.lop_hoc || '',
-                  phan_quyen: bhtn_user.phan_quyen || ''
+                  phan_quyen: bhtn_user?.phan_quyen || ''
                 });
+
                 if (res?.success){
                   showToast?.('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
-                  // reload đúng
+                  // Reload đúng hàm (đã export sẵn là bhtn_unpaid_reload)
                   await (window.bhtn_unpaid_reload ? window.bhtn_unpaid_reload() : bhtn_fetchUnpaid());
                   await window.bhtn_paid_reload?.();
                 } else {
@@ -5483,7 +5494,7 @@
           const res = await suaHoSoBHTN({
             stt: hs.stt, // backend có thể dùng để định danh nhanh record đã thu
             so_dinh_danh: hs.so_dinh_danh,
-            ma_truong: bhtnp_user.ma_truong || '',
+            ma_truong: bhtnp_user?.ma_truong || '',
             lop_hoc: hs.lop_hoc || '',
             doi_tuong_dong: selected,
             so_tien, hoa_hong,
@@ -5515,7 +5526,7 @@
           async () => {
             showLoading();
             try{
-              const rs = await deleteBHTNByStt(r.stt, (window.bhtn_user||{}).phan_quyen || '');
+              const rs = await deleteBHTNByStt(r.stt, bhtnp_user?.phan_quyen || '');
               if (rs?.success){
                 if (typeof showToast === 'function') showToast('Đã xóa hồ sơ!', 'success');
                 await window.bhtn_paid_reload?.();
