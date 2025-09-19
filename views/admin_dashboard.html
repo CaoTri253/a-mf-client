@@ -5422,10 +5422,18 @@
 
       // Mảng view hiện tại của BHTN ĐÃ THU thường giữ trong _bhtnpView hoặc dữ liệu đã lọc/paginate.
       function bhtnp_getRowByIdx(i){
-        return (window._bhtnpView && window._bhtnpView[i])
-            || (window.bhtnp_filtered && window.bhtnp_filtered[i])
-            || (window.bhtnp_all && window.bhtnp_all[i])
-            || null;
+        const st = (window.BHTNP && BHTNP.state) ? BHTNP.state : {};
+        const candidates = [
+          st.filtered,
+          st.all,
+          window._bhtnpView,      // fallback nếu còn nơi cũ set biến này
+          window.bhtnp_last,
+          window.bhtnp_all
+        ];
+        for (const arr of candidates){
+          if (Array.isArray(arr) && arr[i] !== undefined) return arr[i];
+        }
+        return null;
       }
 
       // Mở modal sửa (ĐÃ THU)
@@ -5474,7 +5482,7 @@
           const res = await suaHoSoBHTN({
             stt: hs.stt, // backend có thể dùng để định danh nhanh record đã thu
             so_dinh_danh: hs.so_dinh_danh,
-            ma_truong: (window.bhtn_user||{}).ma_truong || '',
+            ma_truong: bhtnp_user.ma_truong || '',
             lop_hoc: hs.lop_hoc || '',
             doi_tuong_dong: selected,
             so_tien, hoa_hong,
