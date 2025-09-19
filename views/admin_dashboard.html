@@ -4776,10 +4776,10 @@
         showLoading();
         try{
           const hs = (bhtn_lastFiltered||bhtn_allData).find(h=>String(h.stt)===String(stt));
-          if (!hs || hs._bhtn_trangthai !== 0){
-            if (typeof showToast === 'function') showToast("Chỉ sửa được hồ sơ đang chờ duyệt!", 'warning');
-            hideLoading(); return;
-          }
+          // if (!hs || hs._bhtn_trangthai !== 0){
+          //   if (typeof showToast === 'function') showToast("Chỉ sửa được hồ sơ đang chờ duyệt!", 'warning');
+          //   hideLoading(); return;
+          // }
           _curHS_Sua = hs;
           document.getElementById('bhtn-shs-hoten').value = hs.ho_ten_hoc_sinh || "";
           document.getElementById('bhtn-shs-ngaysinh').value = displayNgaySinh(hs.ngay_sinh || "");
@@ -4945,12 +4945,22 @@
               showLoading();
               try{
                 // LẤY ĐÚNG NGUỒN user TRONG IIFE
+
+                // Lấy "lop_hoc" thực tế từ bảng BHTN để tạo khóa xóa chính xác
+                const hosoRes = await getHosoBHTNByHS(
+                  hs.so_dinh_danh,
+                  bhtn_user?.ma_truong || '',
+                  hs.lop_hoc || ''
+                );
+                const lopKey = hosoRes?.data?.lop_hoc || hs.lop_hoc || '';
+
                 const res = await deleteBHTNByKey({
                   so_dinh_danh: hs.so_dinh_danh,
                   ma_truong: bhtn_user?.ma_truong || '',
-                  lop_hoc: hs.lop_hoc || '',
+                  lop_hoc: lopKey,
                   phan_quyen: bhtn_user?.phan_quyen || ''
                 });
+
 
                 if (res?.success){
                   showToast?.('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
