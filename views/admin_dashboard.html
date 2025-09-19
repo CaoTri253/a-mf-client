@@ -4922,7 +4922,7 @@
       // HỦY hồ sơ chờ duyệt
       window.bhtn_cancelPending = async function(stt){
         try{
-          const list = (window.bhtn_lastFiltered || window.bhtn_allData) || [];
+          const list = (bhtn_lastFiltered || bhtn_allData) || [];
           const hs = list.find(h => String(h.stt) === String(stt));
           if (!hs) return;
 
@@ -4937,23 +4937,24 @@
               try{
                 const res = await deleteBHTNByKey({
                   so_dinh_danh: hs.so_dinh_danh,
-                  ma_truong: (window.bhtn_user||{}).ma_truong || '',
+                  ma_truong: bhtn_user.ma_truong || '',
                   lop_hoc: hs.lop_hoc || '',
-                  phan_quyen: (window.bhtn_user||{}).phan_quyen || ''
+                  phan_quyen: bhtn_user.phan_quyen || ''
                 });
                 if (res?.success){
-                  if (typeof showToast === 'function') showToast('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
-                  await window.bhtn_fetchUnpaid?.();
+                  showToast?.('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
+                  // reload đúng
+                  await (window.bhtn_unpaid_reload ? window.bhtn_unpaid_reload() : bhtn_fetchUnpaid());
                   await window.bhtn_paid_reload?.();
                 } else {
-                  if (typeof showToast === 'function') showToast(res?.message || 'Không thể hủy hồ sơ', 'danger');
+                  showToast?.(res?.message || 'Không thể hủy hồ sơ', 'danger');
                 }
               } finally { hideLoading(); }
             }
           );
         } catch(e){
           console.error(e);
-          if (typeof showToast === 'function') showToast('Có lỗi khi hủy hồ sơ', 'danger');
+          showToast?.('Có lỗi khi hủy hồ sơ', 'danger');
           hideLoading();
         }
       };
