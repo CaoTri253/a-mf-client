@@ -2850,7 +2850,7 @@
         const _origWire = window.others_wirePage;
         window.others_wirePage = async function(){
           await _origWire?.();
-          document.getElementById('others-btn-export')?.addEventListener('click', others_exportExcel_Mau);
+          document.getElementById('others-btn-export')?.addEventListener('click', others_exportExcel);
         };
       })();
 
