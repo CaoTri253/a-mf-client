@@ -4599,13 +4599,9 @@
                 ${
                   (hs._bhtn_trangthai === 0)
                     ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
-                    : `<button class="btn btn-success btn-sm"
-                              onclick="bhtn_openNop('${hs.stt}')"
-                              ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                    : `<button class="btn btn-success btn-sm" onclick="bhtn_openNop('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
                 }
-                              
                 ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn cũ (BHTN)</div>' : ''}
-
                 ${(hs._bhtn_trangthai===0 || hs._bhtn_trangthai===1) ? `
                   <button class="btn btn-warning btn-sm" onclick="bhtn_openSua('${hs.stt}')" title="Sửa hồ sơ">
                     <i class="bi bi-pencil-square"></i>
@@ -4613,12 +4609,6 @@
                   <button class="btn btn-primary btn-sm" onclick="bhtn_inPhieu('${hs.stt}')" title="In phiếu thu">
                     <i class="bi bi-printer"></i>
                   </button>
-                  ${(hs._bhtn_trangthai === 0) ? `
-                    <button class="btn btn-danger btn-sm"
-                            onclick="bhtn_cancelPending('${hs.stt}')"
-                            title="Hủy hồ sơ chờ duyệt">
-                      <i class="bi bi-trash"></i>
-                    </button>` : ``}
                 ` : ``}
 
               </div>
