@@ -4599,9 +4599,13 @@
                 ${
                   (hs._bhtn_trangthai === 0)
                     ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
-                    : `<button class="btn btn-success btn-sm" onclick="bhtn_openNop('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                    : `<button class="btn btn-success btn-sm"
+                              onclick="bhtn_openNop('${hs.stt}')"
+                              ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
                 }
+
                 ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn cũ (BHTN)</div>' : ''}
+
                 ${(hs._bhtn_trangthai===0 || hs._bhtn_trangthai===1) ? `
                   <button class="btn btn-warning btn-sm" onclick="bhtn_openSua('${hs.stt}')" title="Sửa hồ sơ">
                     <i class="bi bi-pencil-square"></i>
@@ -4609,9 +4613,15 @@
                   <button class="btn btn-primary btn-sm" onclick="bhtn_inPhieu('${hs.stt}')" title="In phiếu thu">
                     <i class="bi bi-printer"></i>
                   </button>
+                  ${(hs._bhtn_trangthai === 0) ? `
+                    <button class="btn btn-outline-danger btn-sm ms-1"
+                            onclick="bhtn_cancelPending('${hs.stt}')"
+                            title="Hủy hồ sơ chờ duyệt">
+                      <i class="bi bi-trash"></i>
+                    </button>` : ``}
                 ` : ``}
-
               </div>
+
             </td>
             <td>${hs.ho_ten_hoc_sinh||""}</td>
             <td>${displayNgaySinh(hs.ngay_sinh)||""}</td>
@@ -5357,109 +5367,6 @@
           e=String(endDate||"").slice(0,10);
         return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
       }
-
-
-
-
-      // Mảng view hiện tại của BHTN ĐÃ THU thường giữ trong _bhtnpView hoặc dữ liệu đã lọc/paginate.
-      function bhtnp_getRowByIdx(i){
-        return (window._bhtnpView && window._bhtnpView[i])
-            || (window.bhtnp_filtered && window.bhtnp_filtered[i])
-            || (window.bhtnp_all && window.bhtnp_all[i])
-            || null;
-      }
-
-      // Mở modal sửa (ĐÃ THU)
-      window.bhtnp_openEditIdx = async function(i){
-        const r = bhtnp_getRowByIdx(i);
-        if (!r) return;
-
-        window._bhtnpEdit = r; // giữ tạm để submit
-        document.getElementById('bhtnp-shs-hoten').value    = r.ho_ten_hoc_sinh || '';
-        document.getElementById('bhtnp-shs-ngaysinh').value = (typeof displayNgaySinh==='function') ? displayNgaySinh(r.ngay_sinh||'') : (r.ngay_sinh||'');
-        document.getElementById('bhtnp-shs-error').innerText = '';
-
-        // set radio theo r.doi_tuong_dong
-        const catLower = String(r.doi_tuong_dong || 'Học sinh').trim().toLowerCase();
-        document.getElementById('bhtnp-shs-cat-cn').checked = (catLower==='cận nghèo' || catLower==='can ngheo');
-        document.getElementById('bhtnp-shs-cat-hs').checked = !document.getElementById('bhtnp-shs-cat-cn').checked;
-
-        // preview tiền
-        const gia = await ensureGiaBHTN();
-        const refresh = ()=>{
-          const isCN = document.getElementById('bhtnp-shs-cat-cn').checked;
-          const { so_tien } = calcAmountCommissionByCategory(gia, isCN?'Cận nghèo':'Học sinh');
-          document.getElementById('bhtnp-shs-amount').innerText = (Number(so_tien)||0).toLocaleString('vi-VN');
-        };
-        refresh();
-        document.getElementById('bhtnp-shs-cat-hs')?.addEventListener('change', refresh, { once:false });
-        document.getElementById('bhtnp-shs-cat-cn')?.addEventListener('change', refresh, { once:false });
-
-        // bind submit
-        document.getElementById('bhtnp-btn-save').onclick = bhtnp_submitSuaPaid;
-
-        new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
-      };
-
-      // Submit sửa (ĐÃ THU)
-      window.bhtnp_submitSuaPaid = async function(){
-        const hs = window._bhtnpEdit;
-        if (!hs) return;
-        showLoading();
-        try{
-          const gia = await ensureGiaBHTN();
-          const selected = document.getElementById('bhtnp-shs-cat-cn').checked ? 'Cận nghèo' : 'Học sinh';
-          const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, selected);
-
-          // Gửi về backend: ưu tiên theo stt để đảm bảo đúng bản ghi “đã thu”
-          const res = await suaHoSoBHTN({
-            stt: hs.stt, // backend có thể dùng để định danh nhanh record đã thu
-            so_dinh_danh: hs.so_dinh_danh,
-            ma_truong: (window.bhtn_user||{}).ma_truong || '',
-            lop_hoc: hs.lop_hoc || '',
-            doi_tuong_dong: selected,
-            so_tien, hoa_hong,
-            // KHÔNG set trang_thai=0 để tránh chuyển về chờ duyệt!
-          });
-
-          if (res?.success){
-            bootstrap.Modal.getInstance(document.getElementById('modalSuaHoSoBHTN_DaThu'))?.hide();
-            if (typeof showToast === 'function') showToast('Đã cập nhật hồ sơ BHTN (đã thu)!', 'success');
-            await window.bhtn_paid_reload?.();
-          } else {
-            document.getElementById('bhtnp-shs-error').innerText = res?.message || 'Cập nhật thất bại!';
-          }
-        } catch(err){
-          document.getElementById('bhtnp-shs-error').innerText = err?.message || 'Có lỗi xảy ra!';
-        } finally { hideLoading(); }
-      };
-
-      // Xóa hồ sơ BHTN ĐÃ THU
-      window.bhtnp_deleteIdx = async function(i){
-        const r = bhtnp_getRowByIdx(i);
-        if (!r) return;
-
-        const confirmFn = (typeof showBHYTConfirm === 'function')
-          ? showBHYTConfirm
-          : (msg, ok) => { if (window.confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
-
-        confirmFn(
-          `Bạn chắc chắn muốn <b>xóa hồ sơ BHTN</b> đã thu của <b>${r.ho_ten_hoc_sinh || ''}</b>?`,
-          async () => {
-            showLoading();
-            try{
-              const rs = await deleteBHTNByStt(r.stt, (window.bhtn_user||{}).phan_quyen || '');
-              if (rs?.success){
-                if (typeof showToast === 'function') showToast('Đã xóa hồ sơ!', 'success');
-                await window.bhtn_paid_reload?.();
-              } else {
-                if (typeof showToast === 'function') showToast(rs?.message || 'Không thể xóa hồ sơ', 'danger');
-              }
-            } finally { hideLoading(); }
-          }
-        );
-      };
-
 
       window.bhtnp_onViewCardIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onViewCard(row),50); };
       window.bhtnp_onPrintReceiptIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onPrintReceipt(row),50); };
