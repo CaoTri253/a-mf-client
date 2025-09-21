@@ -3101,6 +3101,8 @@
         const hasOld = !!parseVNDate(hs.ngay_het_han_bhyt);
         const nopDisabled = (hs._bhyt_trangthai === 0) || !hasOld;
         const nopLabel = (hs._bhyt_trangthai === 0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
+        const isHS = hs.doi_tuong_dong;
+
         html += `<tr>
           <td><input type="checkbox" class="chk-bulk-row" data-stt="${hs.stt}" onchange="onSelectRowBulk('${hs.stt}', this)" ${hs._bhyt_trangthai===0 ? 'disabled' : ''}></td>
           <td>
