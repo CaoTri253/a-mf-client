@@ -3106,12 +3106,18 @@
           <td>
             <div class="action-btns">
               
+              
               ${
-                hs._bhyt_trangthai === 0
-                  ? '<span class="text-success fw-semibold">Chờ duyệt</span>'
-                  : `<button class="btn btn-success btn-sm"
-                            onclick="showNopHoSoModal('${hs.stt}')"
-                            ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                (hs._bhyt_trangthai === 0)
+                  // Đang chờ duyệt: giữ nguyên
+                  ? `<span class="text-success fw-semibold">Chờ duyệt</span>`
+                  : (
+                      // KHÔNG phải Học sinh => hiển thị nhãn đỏ in đậm (không có nút nộp)
+                      !isHS
+                        ? nonHSLabel
+                        // Là Học sinh => logic nút nộp như cũ
+                        : `<button class="btn btn-success btn-sm" onclick="showNopHoSoModal('${hs.stt}')" ${nopDisabled ? 'disabled' : ''}>${nopLabel}</button>`
+                    )
               }
               ${!hasOld ? '<div class="text-danger small mt-1">Chưa có ngày hết hạn thẻ cũ</div>' : ''}
               ${(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1) ? `
