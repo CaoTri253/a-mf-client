@@ -4610,6 +4610,7 @@
                     <i class="bi bi-printer"></i>
                   </button>
                 ` : ``}
+
               </div>
             </td>
             <td>${hs.ho_ten_hoc_sinh||""}</td>
@@ -4793,6 +4794,45 @@
         } catch(err){
           document.getElementById('bhtn-shs-error').innerText = err?.message || "Có lỗi xảy ra!";
         } finally { hideLoading(); }
+      };
+
+      // Xóa hồ sơ chờ duyệt
+      window.bhtn_cancelPending = async function(stt){
+        try{
+          const list = (window.bhtn_lastFiltered || window.bhtn_allData) || [];
+          const hs = list.find(h => String(h.stt) === String(stt));
+          if (!hs) return;
+
+          const confirmFn = (typeof showBHYTConfirm === 'function')
+            ? showBHYTConfirm
+            : (msg, ok) => { if (window.confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
+
+          confirmFn(
+            `Bạn có chắc muốn <b>hủy hồ sơ BHTN</b> đang chờ duyệt của học sinh <b>${hs.ho_ten_hoc_sinh || ''}</b>?`,
+            async () => {
+              showLoading();
+              try{
+                const res = await deleteBHTNByKey({
+                  so_dinh_danh: hs.so_dinh_danh,
+                  ma_truong: (window.bhtn_user||{}).ma_truong || '',
+                  lop_hoc: hs.lop_hoc || '',
+                  phan_quyen: (window.bhtn_user||{}).phan_quyen || ''
+                });
+                if (res?.success){
+                  if (typeof showToast === 'function') showToast('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
+                  await window.bhtn_fetchUnpaid?.();
+                  await window.bhtn_paid_reload?.();
+                } else {
+                  if (typeof showToast === 'function') showToast(res?.message || 'Không thể hủy hồ sơ', 'danger');
+                }
+              } finally { hideLoading(); }
+            }
+          );
+        } catch(e){
+          console.error(e);
+          if (typeof showToast === 'function') showToast('Có lỗi khi hủy hồ sơ', 'danger');
+          hideLoading();
+        }
       };
 
       // Nộp nhiều hồ sơ
@@ -5140,19 +5180,33 @@
         if (st===1 && shs) return `<div><span class="status-badge status-active">Đã kích hoạt</span><span class="hoso-text">${shs}</span></div>`;
         return `<span class="status-badge status-pending">Đang xử lý</span>`;
       }
-      function actionsCell(i,row){
-        const st = toTrangThai(row.trang_thai);
+      // function actionsCell(i,row){
+      //   const st = toTrangThai(row.trang_thai);
+      //   const shs = getSoHoSo(row);
+      //   if (st===1 && shs){
+      //     return `<div class="action-btns">
+      //       <button class="btn btn-sm btn-info" onclick="bhtnp_onViewCardIdx(${i})">Xem thẻ</button>
+      //       <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+      //     </div>`;
+      //   }
+      //   return `<div class="action-btns">
+      //     <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+      //   </div>`;
+      // }
+
+      function actionsCell(i, row){
+        const st  = toTrangThai(row.trang_thai);
         const shs = getSoHoSo(row);
-        if (st===1 && shs){
-          return `<div class="action-btns">
-            <button class="btn btn-sm btn-info" onclick="bhtnp_onViewCardIdx(${i})">Xem thẻ</button>
-            <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
-          </div>`;
-        }
         return `<div class="action-btns">
-          <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+          <button class="btn btn-sm btn-warning me-1" onclick="bhtnp_openEditIdx(${i})" title="Sửa hồ sơ"><i class="bi bi-pencil-square"></i></button>
+          ${ (st===1 && shs)
+              ? `<button class="btn btn-sm btn-info me-1" onclick="bhtnp_onViewCardIdx(${i})">Xem thẻ</button>`
+              : `` }
+          <button class="btn btn-sm btn-primary me-1" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="bhtnp_deleteIdx(${i})" title="Xóa hồ sơ"><i class="bi bi-trash"></i></button>
         </div>`;
       }
+
 
       function buildHead(){
         return `<thead><tr>
