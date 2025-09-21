@@ -3101,7 +3101,7 @@
         const hasOld = !!parseVNDate(hs.ngay_het_han_bhyt);
         const nopDisabled = (hs._bhyt_trangthai === 0) || !hasOld;
         const nopLabel = (hs._bhyt_trangthai === 0) ? "Chờ duyệt" : (!hasOld ? "Thiếu hạn cũ" : "Nộp hồ sơ");
-        const isHS = hs.doi_tuong_dong;
+        const isHS = window.isHocSinh(hs.doi_tuong_dong);
 
         html += `<tr>
           <td><input type="checkbox" class="chk-bulk-row" data-stt="${hs.stt}" onchange="onSelectRowBulk('${hs.stt}', this)" ${hs._bhyt_trangthai===0 ? 'disabled' : ''}></td>
@@ -3145,6 +3145,14 @@
       html += `</tbody></table>`;
       wrap.innerHTML = html;
     }
+
+
+    // Nhận diện đối tượng "Học sinh" (có/không dấu, viết tắt HS)
+    function isHocSinh(v){
+      const s = String(v || '').trim().toLowerCase();
+      return s === 'hs' || s === 'học sinh' || s === 'hoc sinh';
+    }
+
 
     /* ===== Bulk select ===== */
     function getSelectedRowsData(){ const map={}; (bhyt_lastFiltered||bhyt_allData).forEach(h=>{ map[String(h.stt)]=h; }); return bulkSelected.map(stt=>map[String(stt)]).filter(Boolean).filter(hs => !(hs._bhyt_trangthai === 0 || hs._bhyt_trangthai === 1)); }
