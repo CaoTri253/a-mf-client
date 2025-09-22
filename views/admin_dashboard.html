@@ -6830,7 +6830,7 @@
         return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); });
       }
       try{
-        const base64 = await loadImage('assets/image/baoviet-logo.png');
+        const base64 = await loadImage('/assets/image/baoviet-logo.png');
         const id = wb.addImage({base64, extension:'png'});
         ws.addImage(id, 'A1:C3'); // mở rộng hơn chút để giống mẫu
       }catch(_){}
