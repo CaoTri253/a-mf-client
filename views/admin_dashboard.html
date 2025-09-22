@@ -6717,201 +6717,305 @@
   <script>
     // ===== Xuất Excel: Danh sách BHTN Học sinh (Chờ duyệt) =====
     async function bhtnp_exportExcelHSChoDuyet(){
-      try{
-        if (typeof ExcelJS === 'undefined') {
-          alert('Thiếu ExcelJS. Vui lòng kiểm tra <script src="exceljs">'); return;
-        }
+      if (typeof ExcelJS === 'undefined'){ alert('Thiếu ExcelJS'); return; }
 
-        // ======= Helpers =======
-        const FONT = 'Times New Roman';
-        const thin   = { style:'thin', color:{argb:'FF808080'} };
-        const medium = { style:'medium', color:{argb:'FF000000'} };
-        const cellAlignCenter = { vertical:'middle', horizontal:'center', wrapText:true };
-        const cellAlignLeft   = { vertical:'middle', horizontal:'left',   wrapText:true };
-
-        const stripVN = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
-        const isHocSinh = v => {
-          const k = stripVN(v).toLowerCase().trim();
-          return k === 'hs' || k === 'hoc sinh' || k === 'học sinh';
-        };
-        const toTrangThai = v => { const n = Number(String(v||'').replace(/^'/,'')); return isNaN(n) ? undefined : n; };
-        const fmtDate = raw => {
-          if(!raw) return '';
-          // Hỗ trợ cả 'dd/mm/yyyy' lẫn ISO -> dd/mm/yyyy
-          if (typeof raw === 'string') {
-            const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-            if (m) return raw;
-            if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-              const d = new Date(raw); return d.toLocaleDateString('vi-VN');
-            }
-            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-              const [y,m,d] = raw.split('-'); return `${d}/${m}/${y}`;
-            }
+      // ---------- Helpers ----------
+      const FONT = 'Times New Roman';
+      const thin = {style:'thin', color:{argb:'FF000000'}};
+      const medium = {style:'medium', color:{argb:'FF000000'}};
+      const center = { vertical:'middle', horizontal:'center', wrapText:true };
+      const left   = { vertical:'middle', horizontal:'left',   wrapText:true };
+      const right  = { vertical:'middle', horizontal:'right',  wrapText:true };
+      const stripVN = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+      const isHS = v => { const k = stripVN(v).toLowerCase().trim(); return k==='hs' || k==='hoc sinh' || k==='học sinh'; };
+      const toTrangThai = v => { const n = Number(String(v??'').replace(/^'/,'')); return isNaN(n) ? undefined : n; };
+      const fmtDMY = raw => {
+        if(!raw) return '';
+        if (raw instanceof Date) return raw.toLocaleDateString('vi-VN');
+        const s = String(raw);
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+        if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return new Date(s).toLocaleDateString('vi-VN');
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
+        return s;
+      };
+      const money = v => {
+        const n = Number(String(v??'').replace(/[^\d.-]/g,''));
+        return isNaN(n) ? 0 : n;
+      };
+      // VN number to words (đủ tới nghìn tỷ)
+      function groupToWords(num){
+        const dv=['không','một','hai','ba','bốn','năm','sáu','bảy','tám','chín'];
+        let [tr, ch, dvn] = [Math.floor(num/100), Math.floor((num%100)/10), num%10];
+        let s='';
+        if(tr) s += dv[tr] + ' trăm';
+        if(ch){
+          s += (s?' ':'') + (ch===1?'mười':dv[ch]+' mươi');
+          if(dvn===1 && ch>1) s += ' mốt';
+          else if(dvn===5 && ch>0) s += ' lăm';
+          else if(dvn) s += ' ' + dv[dvn];
+        }else{
+          if(dvn){
+            s += (s?' ':'') + 'lẻ';
+            if(dvn===5 && s) s += ' năm'; else s += ' ' + dv[dvn];
           }
-          return String(raw);
-        };
-        const money = v => {
-          const n = Number(String(v||'').replace(/[^\d.-]/g,''));
-          return isNaN(n) ? '' : n;
-        };
-
-        // ======= Lấy nguồn dữ liệu của tab "BHTN ĐÃ THU" =======
-        const rowsSrc = (window.BHTNP?.state?.filtered || window.bhtnp_last || window.bhtnp_all || []);
-        const rows = rowsSrc.filter(r => isHocSinh(r.doi_tuong_dong) && toTrangThai(r.trang_thai) === 0);
-
-        if (!rows.length){ alert('Không có hồ sơ Học sinh ở trạng thái Chờ duyệt để xuất.'); return; }
-
-        // ======= Thông tin đơn vị / ngày =======
-        const user = JSON.parse(localStorage.getItem('user')||'{}');
-        const unitName = user.ten_truong || user.tenDonVi || user.truong || '';
-        const unitCode = user.ma_don_vi || user.ma_truong || '';
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2,'0');
-        const mm = String(today.getMonth()+1).padStart(2,'0');
-        const yyyy = today.getFullYear();
-
-        // ======= Tạo workbook/worksheet =======
-        const wb = new ExcelJS.Workbook();
-        const ws = wb.addWorksheet('DS_BHTN_HS');
-
-        // Đặt chiều rộng cột tham khảo “đúng mẫu”
-        // (bạn có thể tinh chỉnh số width ở đây nếu muốn khớp pixel)
-        const widths = [
-          6,   // 0 STT
-          16,  // 1 Mã số BHTN
-          28,  // 2 Họ tên học sinh
-          12,  // 3 Ngày sinh
-          10,  // 4 Giới tính
-          35,  // 5 Địa chỉ
-          16,  // 6 Ngày hết hạn BHTN cũ
-          18,  // 7 Hạn sử dụng BHTN mới
-          12,  // 8 Số tháng đóng
-          10,  // 9 Lớp học
-          16,  // 10 SĐT liên hệ
-          20,  // 11 Số định danh
-          24,  // 12 Tên cha/mẹ
-          16,  // 13 Đối tượng đóng
-          24,  // 14 Ghi chú
-          16,  // 15 Số tiền
-          14,  // 16 Hoa hồng
-          14,  // 17 Trạng thái
-          20,  // 18 Số hồ sơ
-          16   // 19 Mã trường
-        ];
-        ws.columns = widths.map((w,i)=>({ key:`c${i}`, width:w }));
-
-        const cell = (r,c)=>ws.getCell(r,c);
-        const merge = (r1,c1,r2,c2,v,opt={})=>{
-          ws.mergeCells(r1,c1,r2,c2);
-          const cl = cell(r1,c1);
-          cl.value = v ?? '';
-          cl.font  = { name: FONT, size: (opt.font?.size||11), bold: !!opt.font?.bold, italic: !!opt.font?.italic };
-          cl.alignment = opt.alignment || { vertical:'middle' };
-        };
-
-        // ======= Logo (góc trái) =======
-        async function loadImageAsDataURL(url){
-          const res = await fetch(url); const blob = await res.blob();
-          return await new Promise(resolve=>{ const fr=new FileReader(); fr.onload=()=>resolve(fr.result); fr.readAsDataURL(blob); });
         }
-        try{
-          const logoDataUrl = await loadImageAsDataURL('assets/image/baoviet-logo.png');
-          const imgId = wb.addImage({ base64: logoDataUrl, extension:'png' });
-          ws.addImage(imgId, 'A1:B3'); // A1:B3 giống bố cục mẫu
-        }catch(_){ /* Thiếu logo vẫn chạy tiếp */ }
-
-        // ======= Tiêu đề/đầu trang (theo tinh thần file mẫu) =======
-        merge(1,3,1,10, 'DANH SÁCH BHTN HỌC SINH', { font:{size:16,bold:true}, alignment:{horizontal:'center',vertical:'middle'} });
-        merge(2,3,2,10, `Tên đơn vị: ${unitName}`, { font:{bold:true} });
-        merge(3,3,3,10, `Mã đơn vị: ${unitCode}`, { });
-        merge(4,3,4,10, `Ngày lập: ${dd}/${mm}/${yyyy}`, { font:{italic:true} });
-
-        ws.addRow([]);
-
-        // ======= Header bảng: KHỚP THỨ TỰ CỘT CỦA MODEL =======
-        const startRow = 6;
-        const header = [
-          'STT','Mã số BHTN','Họ tên học sinh','Ngày sinh','Giới tính','Địa chỉ',
-          'Ngày hết hạn BHTN cũ','Hạn sử dụng BHTN mới','Số tháng đóng','Lớp học',
-          'SĐT liên hệ','Số định danh','Tên cha/mẹ','Đối tượng đóng','Ghi chú',
-          'Số tiền','Hoa hồng','Trạng thái','Số hồ sơ','Mã trường'
-        ];
-        ws.getRow(startRow).values = header;
-        ws.getRow(startRow).font = { name: FONT, size: 11, bold: true };
-        ws.getRow(startRow).alignment = cellAlignCenter;
-        ws.getRow(startRow).height = 22;
-
-        for (let c=1;c<=header.length;c++){
-          const cl = cell(startRow, c);
-          cl.border = { top:thin, left:thin, bottom:thin, right:thin };
-          cl.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFEFEFEF'} };
-        }
-
-        // ======= Body =======
-        let r = startRow + 1;
-        let stt = 1;
-        for (const row of rows){
-          // mapping theo Controller (chắc chắn đủ key)
-          const record = [
-            stt,
-            row.ma_so_bhtn || '',
-            row.ho_ten_hoc_sinh || '',
-            fmtDate(row.ngay_sinh) || '',
-            row.gioi_tinh || '',
-            row.dia_chi || '',
-            fmtDate(row.ngay_het_han_bhtn_cu) || '',
-            fmtDate(row.han_su_dung_bhtn_moi) || '',
-            row.so_thang_dong || '',
-            row.lop_hoc || '',
-            row.sdt_lienhe || '',
-            row.so_dinh_danh || '',
-            row.ten_cha_me || '',
-            row.doi_tuong_dong || '',
-            row.ghi_chu || '',
-            money(row.so_tien),
-            money(row.hoa_hong),
-            'Chờ duyệt',              // vì đã lọc trạng_thái = 0
-            row.so_ho_so || '',
-            row.ma_truong || ''
-          ];
-
-          ws.getRow(r).values = record;
-          // căn giữa cho một số cột
-          [1,4,8,9,10,16,17,18,20].forEach(ci=>{ cell(r,ci).alignment = cellAlignCenter; });
-          // còn lại căn trái
-          [2,3,5,6,7,11,12,13,14,15,19].forEach(ci=>{ cell(r,ci).alignment = cellAlignLeft; });
-
-          for (let c=1;c<=header.length;c++){
-            cell(r,c).font  = { name: FONT, size: 11 };
-            cell(r,c).border= { top:thin, left:thin, bottom:thin, right:thin };
-          }
-          r++; stt++;
-        }
-
-        // ======= Viền ngoài dày hơn (tuỳ chọn) =======
-        ws.eachRow({ includeEmpty:false }, (row,rowNumber)=>{
-          if (rowNumber < startRow || rowNumber > r-1) return;
-          row.getCell(1).border.left   = medium;
-          row.getCell(header.length).border.right = medium;
-        });
-        for (let c=1;c<=header.length;c++){
-          cell(startRow,c).border.top = medium;
-        }
-        for (let c=1;c<=header.length;c++){
-          cell(r-1,c).border.bottom = medium;
-        }
-
-        // ======= Xuất file =======
-        const buf = await wb.xlsx.writeBuffer();
-        const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Danh_sach_BHTN_HocSinh_ChoDuyet_${yyyy}${mm}${dd}.xlsx`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }catch(err){
-        console.error(err);
-        alert('Không thể xuất Excel. Vui lòng thử lại.');
+        return s.trim();
       }
+      function toVnWords(n){
+        if(n===0) return 'không đồng';
+        const units=['',' nghìn',' triệu',' tỷ',' nghìn tỷ',' triệu tỷ'];
+        let s='', i=0;
+        while(n>0){
+          const g = n%1000;
+          if(g){
+            const gw = groupToWords(g);
+            s = gw + units[i] + (s?' '+s:'');
+          }
+          n = Math.floor(n/1000); i++;
+        }
+        // Viết hoa chữ cái đầu + thêm "đồng"
+        s = s.replace(/\s+/g,' ').trim();
+        return s.charAt(0).toUpperCase()+s.slice(1) + ' đồng';
+      }
+
+      // ---------- Lấy dữ liệu từ tab ĐÃ THU ----------
+      const src = (window.BHTNP?.state?.filtered || window.bhtnp_last || window.bhtnp_all || []);
+      const data = src.filter(r => isHS(r.doi_tuong_dong) && toTrangThai(r.trang_thai)===0);
+      if(!data.length){ alert('Không có HS ở trạng thái Chờ duyệt để xuất.'); return; }
+
+      // thông tin đơn vị / lớp / thời gian (lấy từ user + từ bản ghi đầu)
+      const user = JSON.parse(localStorage.getItem('user')||'{}');
+      const truong  = user.ten_truong || user.tenDonVi || user.truong || '';
+      const maTruong= user.ma_don_vi || user.ma_truong || '';
+      const lop     = (data[0].lop_hoc || '').toString();
+      const ngayNop = fmtDMY(data[0].ngay_thu || data[0].ngay_nop || data[0].han_su_dung_bhtn_moi); // fallback
+      const thangNam= (()=>{ // THÁNG: 9/2025
+        const d = new Date();
+        const m = String((d.getMonth()+1)).padStart(2,'0');
+        return `${Number(m)}/${d.getFullYear()}`;
+      })();
+      const dotNop  = (data[0].dot_nop || 1);
+      const today   = new Date();
+      const namHoc  = (()=>{ const y=today.getMonth()>=7 ? today.getFullYear() : today.getFullYear()-1; return `${y} - ${y+1}`; })();
+
+      // ---------- Workbook / Worksheet ----------
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Ds_BHTN_Hocsinh');
+
+      // Cột A..H (A để chừa lề trái)
+      ws.columns = [
+        {key:'A', width:2},
+        {key:'B', width:6},   // STT
+        {key:'C', width:32},  // Họ tên HS
+        {key:'D', width:32},  // Họ tên Cha/Mẹ
+        {key:'E', width:14},  // Số phí
+        {key:'F', width:16},  // Ngày, tháng nộp
+        {key:'G', width:12},  // Ghi chú (Lớp)
+        {key:'H', width:2},   // lề phải
+      ];
+
+      const c=(r,c)=>ws.getCell(r,c);
+      const merge=(r1,c1,r2,c2,val,opt={})=>{
+        ws.mergeCells(r1,c1,r2,c2);
+        const cl=ws.getCell(r1,c1);
+        cl.value=val??'';
+        cl.font={ name:FONT, size:(opt.font?.size||11), bold:!!opt.font?.bold, italic:!!opt.font?.italic };
+        cl.alignment=opt.alignment||{vertical:'middle'};
+      };
+
+      // ======= Header: logo & tiêu ngữ =======
+      // Logo trái (A1:B3)
+      async function loadImage(url){
+        const res = await fetch(url); const blob = await res.blob();
+        return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); });
+      }
+      try{
+        const base64 = await loadImage('assets/image/baoviet-logo.png');
+        const id = wb.addImage({base64, extension:'png'});
+        ws.addImage(id, 'A1:C3'); // mở rộng hơn chút để giống mẫu
+      }catch(_){}
+
+      // Tiêu ngữ phải (D1:G2)
+      merge(1,4,1,7,'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',{font:{size:12,bold:true}, alignment:center});
+      merge(2,4,2,7,'Độc lập - Tự do - Hạnh phúc',{font:{size:11,italic:true}, alignment:center});
+
+      // Dòng đơn vị (trái, dưới logo)
+      merge(3,2,3,4,'CÔNG TY BẢO VIỆT AN GIANG',{font:{size:11,bold:true}});
+      merge(4,2,4,4,'PHÒNG CHÂU PHÚ',{font:{size:11}});
+
+      // Tiêu đề
+      merge(5,2,5,7,'DANH SÁCH HỌC SINH THAM GIA BẢO HIỂM',{font:{size:14,bold:true}, alignment:center});
+      merge(6,2,6,7,`NĂM HỌC: ${namHoc}`,{font:{size:12,bold:true}, alignment:center});
+
+      // Khối info trường/lớp/đợt/tháng/địa bàn
+      merge(7,2,7,4,`Trường: ${truong}`,{alignment:left,font:{size:11,bold:true}});
+      merge(7,5,7,5,`Đợt nộp: ${dotNop}`,{alignment:left});
+      merge(7,6,7,7,`THÁNG: ${thangNam}`,{alignment:left});
+      merge(8,2,8,2,`Lớp: ${lop}`,{alignment:left});
+      merge(8,3,8,4,`Huyện/thị: ${user.huyen || ''}`,{alignment:left});
+      merge(8,5,8,7,`Phường, xã: ${user.phuong_xa || ''}`,{alignment:left});
+
+      // ======= Bảng tiêu đề 2 tầng (viền dày ngoài) =======
+      const headerRow1 = 10, headerRow2 = 11;
+      // khung ngoài (B..G)
+      for(let r=headerRow1;r<=headerRow2;r++){
+        for(let col=2; col<=7; col++){
+          c(r,col).border={top:thin,left:thin,bottom:thin,right:thin};
+          c(r,col).font={name:FONT,size:11,bold:true};
+          c(r,col).alignment=center;
+          c(r,col).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFEFEF'}};
+        }
+      }
+      // Hàng 1
+      c(headerRow1,2).value='STT';
+      c(headerRow1,3).value='Họ và Tên Học sinh';
+      c(headerRow1,4).value='Họ và Tên Cha/Mẹ';
+      merge(headerRow1,5,headerRow1,6,'Phí Bảo hiểm học sinh',{alignment:center,font:{size:11,bold:true}});
+      c(headerRow1,7).value='CHI CHÚ';
+
+      // Hàng 2 (sub)
+      c(headerRow2,5).value='Số phí';
+      c(headerRow2,6).value='Ngày, tháng nộp';
+      // giữ nguyên STT/HS/ChaMẹ/Chú thích spanning 2 dòng
+      merge(headerRow1,2,headerRow2,2,'STT',{alignment:center,font:{bold:true}});
+      merge(headerRow1,3,headerRow2,3,'Họ và Tên Học sinh',{alignment:center,font:{bold:true}});
+      merge(headerRow1,4,headerRow2,4,'Họ và Tên Cha/Mẹ',{alignment:center,font:{bold:true}});
+      merge(headerRow1,7,headerRow2,7,'CHI CHÚ',{alignment:center,font:{bold:true}});
+
+      // viền dày ngoài
+      for(let col=2;col<=7;col++){ c(headerRow1,col).border.top=medium; c(headerRow2,col).border.bottom=medium; }
+      c(headerRow1,2).border.left=medium; c(headerRow2,2).border.left=medium;
+      c(headerRow1,7).border.right=medium; c(headerRow2,7).border.right=medium;
+
+      // ======= Ghi dữ liệu =======
+      let row = headerRow2+1;
+      let stt = 1;
+      const moneyCol = [];
+      const feeModeCheck = new Map();
+
+      for(const item of data){
+        const soPhi = money(item.so_tien);
+        moneyCol.push({r:row, n:soPhi});
+        feeModeCheck.set(soPhi, (feeModeCheck.get(soPhi)||0)+1);
+
+        // STT
+        c(row,2).value = stt;          c(row,2).alignment=center;
+
+        // Họ tên HS (kèm gạch chấm: dùng border dotted dưới để giống mẫu)
+        c(row,3).value = item.ho_ten_hoc_sinh || '';
+        c(row,3).alignment=left;
+        c(row,3).border = {top:thin,left:thin,bottom:{style:'dotted'},right:thin};
+
+        // Họ tên Cha/Mẹ
+        c(row,4).value = item.ten_cha_me || '';
+        c(row,4).alignment=left;
+        c(row,4).border = {top:thin,left:thin,bottom:{style:'dotted'},right:thin};
+
+        // Số phí (định dạng tiền)
+        c(row,5).value = soPhi;
+        c(row,5).numFmt = '#,##0';
+        c(row,5).alignment=right;
+
+        // Ngày, tháng nộp
+        c(row,6).value = fmtDMY(item.ngay_thu || item.ngay_nop || ngayNop);
+        c(row,6).alignment=center;
+
+        // Ghi chú: để Lớp
+        c(row,7).value = item.lop_hoc || lop;
+        c(row,7).alignment=center;
+
+        // viền hàng
+        for(let col=2; col<=7; col++){
+          const cur = ws.getCell(row,col);
+          // giữ dotted cho C/D; còn lại thin
+          if(col!==3 && col!==4){
+            cur.border = {top:thin,left:thin,bottom:thin,right:thin};
+          }
+          cur.font={name:FONT,size:11};
+        }
+        row++; stt++;
+      }
+
+      // viền dày ngoài cho khối dữ liệu
+      for(let col=2; col<=7; col++){
+        ws.getCell(headerRow2+1, col).border.top = medium;
+        ws.getCell(row-1, col).border.bottom = medium;
+      }
+      ws.getCell(headerRow2+1, 2).border.left = medium;
+      ws.getCell(row-1, 2).border.left = medium;
+      ws.getCell(headerRow2+1, 7).border.right = medium;
+      ws.getCell(row-1, 7).border.right = medium;
+
+      // ======= Dòng TỔNG CỘNG =======
+      const totalRow = row;
+      // Merge "TỔNG CỘNG" (B..D)
+      ws.mergeCells(totalRow,2,totalRow,4);
+      c(totalRow,2).value = 'TỔNG CỘNG';
+      c(totalRow,2).font  = {name:FONT,size:11,bold:true};
+      c(totalRow,2).alignment = center;
+      // Tổng tiền ở E (merge E..F)
+      ws.mergeCells(totalRow,5,totalRow,6);
+      c(totalRow,5).value = { formula: `SUM(E${headerRow2+1}:E${row-1})` };
+      c(totalRow,5).numFmt = '#,##0';
+      c(totalRow,5).alignment = right;
+      // Cột ghi chú giữ nguyên
+      c(totalRow,7).value = '';
+      // Viền dày
+      for(let col=2; col<=7; col++){
+        c(totalRow,col).border = {top:medium,left:medium,bottom:medium,right:medium};
+        c(totalRow,col).fill   = {type:'pattern',pattern:'solid',fgColor:{argb:'FFF8F8F8'}};
+      }
+
+      // ======= Khối diễn giải dưới bảng =======
+      const count = data.length;
+      const totalVal = moneyCol.reduce((s,x)=>s+x.n,0);
+      // đơn giá nếu đồng nhất
+      let unitFee = 0, unitLabel='';
+      if (feeModeCheck.size===1){ unitFee = [...feeModeCheck.keys()][0]; unitLabel = unitFee.toLocaleString('vi-VN'); }
+      const belowStart = totalRow + 2;
+
+      // Dòng: "Số phí bảo hiểm: 10 học sinh × 275.000 đ = 2.750.000 đ."
+      merge(belowStart,2,belowStart,6,
+            `Số phí bảo hiểm: ${count} học sinh${unitLabel?` × ${unitLabel} đ`:''} = ${totalVal.toLocaleString('vi-VN')} đ.`,
+            {alignment:left});
+
+      // Dòng: "Tổng cộng: 10 học sinh = 2.750.000 đ."
+      merge(belowStart+1,2,belowStart+1,6,
+            `Tổng cộng: ${count} học sinh = ${totalVal.toLocaleString('vi-VN')} đ.`,
+            {alignment:left});
+
+      // Dòng: "Bằng chữ: ..."
+      merge(belowStart+2,2,belowStart+2,6, `Bằng chữ: ${toVnWords(totalVal)}.`, {alignment:left, font:{italic:true}});
+
+      // ======= Khối ngày tháng & chữ ký 2 bên =======
+      const d=today.getDate(), m=today.getMonth()+1, y=today.getFullYear();
+      merge(belowStart+4,2,belowStart+4,3, `Ngày ${String(d).padStart(2,'0')} tháng ${String(m).padStart(2,'0')} năm ${y}`, {alignment:center});
+      merge(belowStart+4,5,belowStart+4,6, `Ngày ${String(d).padStart(2,'0')} tháng ${String(m).padStart(2,'0')} năm ${y}`, {alignment:center});
+
+      merge(belowStart+5,2,belowStart+5,3, 'Ban Giám Hiệu', {alignment:center, font:{bold:true}});
+      merge(belowStart+5,5,belowStart+5,6, 'Người lập bảng', {alignment:center, font:{bold:true}});
+
+      merge(belowStart+6,2,belowStart+6,3, '(ký, ghi rõ họ tên)', {alignment:center, font:{italic:true}});
+      merge(belowStart+6,5,belowStart+6,6, '(ký, ghi rõ họ tên)', {alignment:center, font:{italic:true}});
+
+      // tên người lập bảng (nếu có cấu hình)
+      if (user.nguoi_lap_bang){
+        merge(belowStart+10,5,belowStart+10,6, user.nguoi_lap_bang, {alignment:center, font:{bold:true}});
+      }
+
+      // ======= Footline địa chỉ (nhỏ, kéo dài) =======
+      merge(belowStart+12,1,belowStart+12,8,
+            '1159 Trần Hưng Đạo, P.Mỹ Bình, An Giang | Tel. (076)3845610 | Fax (076)3844749 | Email: ag-pnt@baoviet.com',
+            {alignment:center, font:{size:9, italic:true}});
+
+      // Xuất file
+      const dstr = `${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Ds_BHTN_Hocsinh_${dstr}.xlsx`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
   </script>
   <!-- ===== Xuất Excel: Danh sách BHTN Học sinh (Chờ duyệt) ===== -->
