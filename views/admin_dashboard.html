@@ -6762,20 +6762,39 @@
         return s.trim();
       }
       function toVnWords(n){
-        if(n===0) return 'không đồng';
-        const units=['',' nghìn',' triệu',' tỷ',' nghìn tỷ',' triệu tỷ'];
-        let s='', i=0;
-        while(n>0){
-          const g = n%1000;
-          if(g){
-            const gw = groupToWords(g);
-            s = gw + units[i] + (s?' '+s:'');
+        const VI_DIGITS=["không","một","hai","ba","bốn","năm","sáu","bảy","tám","chín"];
+        function readTriple(num){
+          let tr=Math.floor(num/100), ch=Math.floor((num%100)/10), dv=num%10, s="";
+          if(tr>0){ s += VI_DIGITS[tr]+" trăm"; if(ch==0 && dv>0) s+=" lẻ"; }
+          if(ch>1){
+            s += (s?" ":"")+VI_DIGITS[ch]+" mươi";
+            if(dv==1) s+=" mốt";
+            else if(dv==5) s+=" lăm";
+            else if(dv>0) s+=" "+VI_DIGITS[dv];
           }
-          n = Math.floor(n/1000); i++;
+          else if(ch==1){
+            s += (s?" ":"")+"mười";
+            if(dv==5) s+=" lăm";
+            else if(dv>0) s+=" "+VI_DIGITS[dv];
+          }
+          else if(ch==0 && dv>0){
+            s += (s?" ":"")+VI_DIGITS[dv];
+          }
+          return s.trim();
         }
-        // Viết hoa chữ cái đầu + thêm "đồng"
-        s = s.replace(/\s+/g,' ').trim();
-        return s.charAt(0).toUpperCase()+s.slice(1) + ' đồng';
+        n = Math.round(Number(n)||0);
+        if (n===0) return "Không đồng";
+        const units=[""," nghìn"," triệu"," tỷ"," nghìn tỷ"," triệu tỷ"];
+        let i=0,str="";
+        while(n>0 && i<units.length){
+          const block=n%1000;
+          if(block>0){
+            const part=readTriple(block);
+            str = part+units[i]+(str?" "+str:"");
+          }
+          n=Math.floor(n/1000); i++;
+        }
+        return (str.charAt(0).toUpperCase()+str.slice(1)+" đồng").replace(/\s+/g," ").trim();
       }
 
       // ---------- Lấy dữ liệu từ tab ĐÃ THU ----------
@@ -6832,7 +6851,7 @@
       try{
         const base64 = await loadImage('/assets/image/baoviet-logo.png');
         const id = wb.addImage({base64, extension:'png'});
-        ws.addImage(id, 'A1:C3'); // mở rộng hơn chút để giống mẫu
+        ws.addImage(id, 'A1:C2'); // mở rộng hơn chút để giống mẫu
       }catch(_){}
 
       // Tiêu ngữ phải (D1:G2)
@@ -6953,11 +6972,17 @@
       c(totalRow,2).value = 'TỔNG CỘNG';
       c(totalRow,2).font  = {name:FONT,size:11,bold:true};
       c(totalRow,2).alignment = center;
-      // Tổng tiền ở E (merge E..F)
-      ws.mergeCells(totalRow,5,totalRow,6);
-      c(totalRow,5).value = { formula: `SUM(E${headerRow2+1}:E${row-1})` };
-      c(totalRow,5).numFmt = '#,##0';
-      c(totalRow,5).alignment = right;
+
+      // Tổng tiền chỉ ở cột E (không gộp E..F)
+      c(totalRow,5).value    = { formula: `SUM(E${headerRow2+1}:E${row-1})` };
+      c(totalRow,5).numFmt   = '#,##0';
+      c(totalRow,5).alignment= center;
+
+      // Để cột F trống (vẫn có viền như các ô khác)
+      c(totalRow,6).value    = '';
+      c(totalRow,6).numFmt   = '@';
+      c(totalRow,6).alignment= center;
+
       // Cột ghi chú giữ nguyên
       c(totalRow,7).value = '';
       // Viền dày
