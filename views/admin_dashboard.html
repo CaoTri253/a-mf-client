@@ -4817,8 +4817,8 @@
           const hs = list.find(h => String(h.stt) === String(stt));
           if (!hs) return;
 
-          const confirmFn = (typeof showBHYTConfirm === 'function')
-            ? showBHYTConfirm
+          const confirmFn = (typeof showBHTNConfirm === 'function')
+            ? showBHTNConfirm
             : (msg, ok) => { if (window.confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
 
           confirmFn(
@@ -5372,6 +5372,100 @@
         return `MT=${_mt};S=${s};L=${c};N=${n};M=${m};E=${e}`;
       }
 
+
+
+      // Mở modal Sửa BHTN Đã thu
+      // Lấy hàng theo index từ bộ dữ liệu "Đã thu"
+      function bhtnp_getRow(i){
+        // Ưu tiên state lọc hiện tại nếu có
+        const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
+        return src[i];
+      }
+
+      // Mở modal Sửa hồ sơ (Đã thu)
+      window.bhtnp_openEditIdx = function(i){
+        const row = bhtnp_getRow(i);
+        if (!row) return;
+
+        // TODO: map đúng ID input ở form sửa của bạn:
+        // ví dụ:
+        (document.getElementById('bhtnp-shs-hoten')   || {}).value = row.ho_ten_hoc_sinh || '';
+        (document.getElementById('bhtnp-shs-ngaysinh')|| {}).value = row.ngay_sinh || '';
+        (document.getElementById('bhtnp-shs-exp')     || {}).textContent = row.ngay_het_han_bhtn || '—';
+        (document.getElementById('bhtnp-shs-amount')  || {}).textContent = (row.so_tien || '').toString();
+
+        // Radio đối tượng
+        const cat = (row.doi_tuong_dong || 'Học sinh').trim();
+        const rHs = document.getElementById('bhtnp-shs-cat-hs');
+        const rCn = document.getElementById('bhtnp-shs-cat-cn');
+        if (rHs && rCn){ rHs.checked = (cat === 'Học sinh'); rCn.checked = (cat === 'Cận nghèo'); }
+
+        // Lưu STT tạm để submit
+        window.__bhtnp_edit_stt = row.stt || row.STT;
+
+        new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
+      };
+
+      // Submit lưu thay đổi
+      window.bhtn_submitSua_Dathu = async function(){
+        try {
+          const stt = window.__bhtnp_edit_stt;
+          if (!stt) { showToast && showToast('Thiếu STT hồ sơ', 'warning'); return; }
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+          const cat = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
+          // Nếu bạn có input số tiền/ghi chú… thì lấy thêm ở đây
+          showLoading && showLoading();
+          const rs = await suaHoSoBHTN({
+            stt,
+            doi_tuong_dong: cat,
+            phan_quyen: user.phan_quyen || ''
+          });
+          if (rs?.success) {
+            showToast && showToast('Đã lưu thay đổi hồ sơ', 'success');
+            if (typeof window.bhtnp_reload === 'function') window.bhtnp_reload();
+            else location.reload();
+          } else {
+            showToast && showToast(rs?.message || 'Lưu không thành công', 'danger');
+          }
+        } catch (e) {
+          console.error(e);
+          showToast && showToast('Có lỗi khi lưu', 'danger');
+        } finally {
+          hideLoading && hideLoading();
+        }
+      };
+
+
+
+      window.bhtnp_deleteIdx = function(i){
+        const row = bhtnp_getRow(i);
+        if (!row) return;
+        const name = row.ho_ten_hoc_sinh || '(Không tên)';
+
+        showBHTNConfirm(`Bạn muốn xóa hồ sơ BHTN (đã thu) của "${name}"?`, async ()=>{
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const stt = row.stt || row.STT;
+          if (!stt) { showToast && showToast('Không tìm thấy STT hồ sơ để xóa', 'warning'); return; }
+          try {
+            showLoading && showLoading();
+            const rs = await deleteBHTNByStt(stt, user.phan_quyen || '');
+            if (rs?.success) {
+              showToast && showToast('Đã xóa hồ sơ BHTN', 'success');
+              if (typeof window.bhtnp_reload === 'function') window.bhtnp_reload();
+              else location.reload();
+            } else {
+              showToast && showToast(rs?.message || 'Xóa không thành công', 'danger');
+            }
+          } catch (e) {
+            console.error(e);
+            showToast && showToast('Có lỗi khi xóa', 'danger');
+          } finally {
+            hideLoading && hideLoading();
+          }
+        });
+      };
+
       window.bhtnp_onViewCardIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onViewCard(row),50); };
       window.bhtnp_onPrintReceiptIdx = (i)=>{ const row=(BHTNP?.state?.filtered||bhtnp_last||bhtnp_all)[i]; if(!row) return; showLoading(); setTimeout(()=>bhtnp_onPrintReceipt(row),50); };
 
@@ -5459,6 +5553,58 @@
       window.bhtn_paid_reload = bhtnp_fetchPaid;
     })();
   </script>
+
+
+
+  <!-- MỞ MODAL CONFIRM CHO BẢO HIỂM TAI NẠN (Dùng chung cho chưa thu và đã thu)-->
+  <script>
+    // Helper: mở modal confirm BHTN (không dùng modal BHYT, không dùng global)
+    function showBHTNConfirm(message, onOk) {
+      const modalEl = document.getElementById('bhtnModalConfirm');
+      const titleEl = document.getElementById('bhtnConfirmTitle');
+      const bodyEl  = document.getElementById('bhtnConfirmBody');
+      const okBtn   = document.getElementById('bhtnConfirmBtn');
+
+      if (!modalEl || !bodyEl || !okBtn) {
+        console.error('[BHTN] Confirm modal not found');
+        // fallback an toàn
+        if (confirm(message || 'Bạn chắc chắn?')) onOk && onOk();
+        return;
+      }
+
+      // Nội dung
+      titleEl && (titleEl.textContent = 'Xác nhận');
+      bodyEl.textContent = message || 'Bạn chắc chắn?';
+
+      // Cleanup listener cũ để tránh “bấm 1 lần chạy nhiều lần”
+      const newOkBtn = okBtn.cloneNode(true);
+      okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+      newOkBtn.addEventListener('click', async () => {
+        try { onOk && await onOk(); }
+        finally {
+          const inst = bootstrap.Modal.getInstance(modalEl);
+          inst && inst.hide();
+        }
+      });
+
+      const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+      inst.show();
+    }
+  </script>
+  <!-- MỞ MODAL CONFIRM CHO BẢO HIỂM TAI NẠN (Dùng chung cho chưa thu và đã thu)-->
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
