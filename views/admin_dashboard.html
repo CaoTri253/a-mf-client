@@ -4811,11 +4811,31 @@
       };
 
       // Xóa hồ sơ chờ duyệt
-      window.bhtn_cancelPending = async function(stt){
+      window.bhtn_cancelPending = async function(stt, ev){
         try{
-          const list = (window.bhtn_lastFiltered || window.bhtn_allData) || [];
-          const hs = list.find(h => String(h.stt) === String(stt));
-          if (!hs) return;
+          ev?.preventDefault?.();
+          ev?.stopPropagation?.();
+
+          // Ưu tiên đúng tập dữ liệu của tab "Chưa thu" nếu bạn có
+          const list = window.bhtn_unpaidFiltered
+                    || window.bhtn_lastFiltered
+                    || window.bhtn_unpaidAll
+                    || window.bhtn_allData
+                    || [];
+
+          // Hỗ trợ nhiều kiểu khóa thường gặp
+          const hs = list.find(h => {
+            const key = String(
+              h?.stt ?? h?.STT ?? h?.id ?? h?.so_thu_tu ?? h?.so_dinh_danh
+            );
+            return key === String(stt);
+          });
+
+          if (!hs) {
+            console.warn('[BHTN] Không tìm thấy hồ sơ theo stt:', stt);
+            if (typeof showToast === 'function') showToast('Không tìm thấy hồ sơ để hủy', 'warning');
+            return;
+          }
 
           const confirmFn = (typeof showBHTNConfirm === 'function')
             ? showBHTNConfirm
@@ -4824,28 +4844,32 @@
           confirmFn(
             `Bạn có chắc muốn <b>hủy hồ sơ BHTN</b> đang chờ duyệt của học sinh <b>${hs.ho_ten_hoc_sinh || ''}</b>?`,
             async () => {
-              showLoading();
+              showLoading?.();
               try{
+                const user = window.bhtn_user || JSON.parse(localStorage.getItem('user') || '{}');
                 const res = await deleteBHTNByKey({
                   so_dinh_danh: hs.so_dinh_danh,
-                  ma_truong: (window.bhtn_user||{}).ma_truong || '',
-                  lop_hoc: hs.lop_hoc || '',
-                  phan_quyen: (window.bhtn_user||{}).phan_quyen || ''
+                  ma_truong:    user.ma_truong   || '',
+                  lop_hoc:      hs.lop_hoc       || '',
+                  phan_quyen:   user.phan_quyen  || ''
                 });
                 if (res?.success){
-                  if (typeof showToast === 'function') showToast('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
-                  await window.bhtn_fetchUnpaid?.();
-                  await window.bhtn_paid_reload?.();
+                  showToast?.('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
+                  await window.bhtn_fetchUnpaid?.();   // reload “Chưa thu”
+                  await window.bhtn_paid_reload?.();   // nếu bạn có reload “Đã thu”
                 } else {
-                  if (typeof showToast === 'function') showToast(res?.message || 'Không thể hủy hồ sơ', 'danger');
+                  showToast?.(res?.message || 'Không thể hủy hồ sơ', 'danger');
                 }
-              } finally { hideLoading(); }
+              } catch(e){
+                console.error(e);
+                showToast?.('Có lỗi khi hủy hồ sơ', 'danger');
+              } finally { hideLoading?.(); }
             }
           );
         } catch(e){
           console.error(e);
-          if (typeof showToast === 'function') showToast('Có lỗi khi hủy hồ sơ', 'danger');
-          hideLoading();
+          showToast?.('Có lỗi khi hủy hồ sơ', 'danger');
+          hideLoading?.();
         }
       };
 
