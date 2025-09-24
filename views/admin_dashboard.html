@@ -4619,7 +4619,7 @@
                   </button>
                   ${(hs._bhtn_trangthai === 0) ? `
                     <button class="btn btn-danger btn-sm"
-                            onclick="bhtn_cancelPending('${hs.stt}')"
+                            onclick="bhtn_cancelPending('${hs.stt}', event)"
                             title="Hủy hồ sơ chờ duyệt">
                       <i class="bi bi-trash"></i>
                     </button>` : ``}
@@ -5426,6 +5426,39 @@
 
         // Lưu STT tạm để submit
         window.__bhtnp_edit_stt = row.stt || row.STT;
+
+
+        (async function setupBhtnPreview() {
+          const row = bhtnp_getRow(i);
+          if (!row) return;
+
+          async function recompute() {
+            // 1) Hạn dự kiến từ hạn cũ (12 tháng)
+            const oldExp = row.ngay_het_han_bhtn || "";
+            const { exp, note } = computeExp12M(oldExp) || {};
+            (document.getElementById('bhtnp-shs-exp')||{}).textContent = exp || '—';
+
+            // 2) Giá tiền theo đối tượng
+            const gia = await ensureGiaBHTN(); // trả về {gia_tien, ...}
+            let price = Number(String(gia?.gia_tien || 0).replace(/[^\d]/g,'')) || 0;
+
+            // Nếu bạn có đơn giá khác cho Cận nghèo, xử lý tại đây (ví dụ gia?.gia_tien_cn)
+            const isCN = document.getElementById('bhtnp-shs-cat-cn')?.checked;
+            if (isCN && gia?.gia_tien_cn) {
+              price = Number(String(gia.gia_tien_cn).replace(/[^\d]/g,'')) || price;
+            }
+            (document.getElementById('bhtnp-shs-amount')||{}).textContent = price.toLocaleString('vi-VN');
+
+            // (Nếu muốn hiện ghi chú) document.getElementById('bhtnp-shs-expnote')?.textContent = note || '';
+          }
+
+          // Preview lần đầu
+          await recompute();
+
+          // Gắn sự kiện khi đổi đối tượng
+          document.getElementById('bhtnp-shs-cat-hs')?.addEventListener('change', recompute);
+          document.getElementById('bhtnp-shs-cat-cn')?.addEventListener('change', recompute);
+        })();
 
         new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
       };
