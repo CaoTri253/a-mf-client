@@ -5397,6 +5397,13 @@
       
       // Mở modal Sửa BHTN Đã thu
       // ===== Helpers cho Sửa BHTN Đã thu =====
+
+      function bhtnp_getRow(i){
+        const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
+        return src[i];
+      }
+
+
       // ===== Helpers số & rate =====
       const toNum = v => Number(String(v ?? '').replace(/[^\d.-]/g,'')) || 0;
 
