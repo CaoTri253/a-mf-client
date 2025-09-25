@@ -5398,11 +5398,6 @@
       // Mở modal Sửa BHTN Đã thu
       // ===== Helpers cho Sửa BHTN Đã thu =====
 
-      function bhtnp_getRow(i){
-        const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
-        return src[i];
-      }
-
 
       // ===== Helpers số & rate =====
       const toNum = v => Number(String(v ?? '').replace(/[^\d.-]/g,'')) || 0;
@@ -5527,6 +5522,14 @@
 
       // ======= Xóa Hồ sơ BHTN (Đã thu) =======
       // ===== 3) XÓA HỒ SƠ (BHTN – ĐÃ THU) & RELOAD CẢ 2 TAB =====
+
+      //Lấy dòng để xóa
+      function bhtnp_getRow(i){
+        const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
+        return src[i];
+      }
+
+
       window.bhtnp_deleteIdx = function(i){
         const row = bhtnp_getRow(i); if(!row) return;
         const name = row.ho_ten_hoc_sinh || '(Không tên)';
