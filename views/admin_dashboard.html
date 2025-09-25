@@ -5682,7 +5682,7 @@
 
       // Nội dung
       titleEl && (titleEl.textContent = 'Xác nhận');
-      bodyEl.textContent = message || 'Bạn chắc chắn?';
+      bodyEl.innerHTML = message || 'Bạn chắc chắn?';
 
       // Cleanup listener cũ để tránh “bấm 1 lần chạy nhiều lần”
       const newOkBtn = okBtn.cloneNode(true);
