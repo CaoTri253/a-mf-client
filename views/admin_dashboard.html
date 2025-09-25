@@ -5431,6 +5431,8 @@
       // ===== 3) Sửa modal Sửa BHTN (ĐÃ THU): hiển thị đúng tiền & đóng modal sau khi Lưu =====
       window.bhtnp_openEditIdx = (function(prev){
         return async function(i) {
+          showLoading();
+
           // Lấy dòng theo DS hiện tại
           const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
           const row = src[i];
@@ -5475,7 +5477,9 @@
           rHs?.addEventListener('change', recompute);
           rCn?.addEventListener('change', recompute);
 
+          // Hiển thị modal
           new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
+          hideLoading();
         };
       })(window.bhtnp_openEditIdx);
 
