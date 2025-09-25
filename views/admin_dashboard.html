@@ -4824,50 +4824,44 @@
 
       // Xóa hồ sơ chờ duyệt
       // ===== HỦY HỒ SƠ CHỜ DUYỆT (BHTN – Chưa thu) =====
-      // ===== HỦY HỒ SƠ CHỜ DUYỆT (BHTN – Chưa thu) =====
-      window.bhtn_cancelPending = async function(key, ev){
-        try{
-          ev?.preventDefault?.(); ev?.stopPropagation?.();
+      window.bhtn_cancelPending = function(stt, ev){
+        try{ ev?.stopPropagation?.(); }catch(_){}
+        const hs = (window.bhtn_lastFiltered || window.bhtn_allData || []).find(h=>String(h?.stt)===String(stt));
+        if (!hs){ showToast?.('Không xác định được hồ sơ.', 'warning'); return; }
 
-          const list = window.bhtn_unpaidFiltered
-                    || window.bhtn_lastFiltered
-                    || window.bhtn_unpaidAll
-                    || window.bhtn_allData
-                    || [];
+        const name = hs.ho_ten_hoc_sinh || '(Không tên)';
+        const ask  = (typeof showBHTNConfirm==='function')
+          ? showBHTNConfirm
+          : (msg, ok)=>{ if (confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
 
-          const hs = list.find(h=>{
-            const k = String(h?.stt ?? h?.STT ?? h?.id ?? h?.so_thu_tu ?? h?.so_dinh_danh);
-            return k === String(key);
-          });
-          if (!hs){ showToast?.('Không tìm thấy hồ sơ để hủy', 'warning'); return; }
+        ask(`Bạn muốn xóa hồ sơ BHTN đang chờ duyệt của "<strong>${name}</strong>"?`, async ()=>{
+          try{
+            showLoading?.();
+            const user = JSON.parse(localStorage.getItem('user')||'');
 
-          const ask = typeof showBHTNConfirm==='function'
-            ? showBHTNConfirm
-            : (msg, ok)=>{ if (confirm(msg.replace(/<[^>]+>/g,''))) ok(); };
+            // Dò STT thực trong bảng BHTN (trạng thái 0), dò toàn trường để tránh lệch lớp
+            const sdd = String(hs.so_dinh_danh||'').replace(/^'/,'').trim();
+            let sttReal = null;
+            try{
+              const resp = await getDanhSachBHTN(user.ma_truong||'', ''); // "" = toàn trường
+              const rows = Array.isArray(resp?.data) ? resp.data : [];
+              const row  = rows.find(r => String(r.so_dinh_danh).replace(/^'/,'').trim() === sdd && String(r.trang_thai)==='0');
+              sttReal    = row?.stt || row?.STT || null;
+            }catch(_){}
 
-          ask(
-            `Bạn có chắc muốn <b>hủy hồ sơ BHTN</b> đang chờ duyệt của <b>${hs.ho_ten_hoc_sinh||''}</b>?`,
-            async ()=>{
-              showLoading?.();
-              try{
-                const user = window.bhtn_user || JSON.parse(localStorage.getItem('user')||'{}');
-                const rs = await deleteBHTNByKey({
-                  so_dinh_danh: hs.so_dinh_danh,
-                  ma_truong:    user.ma_truong||'',
-                  lop_hoc:      hs.lop_hoc||'',
-                  phan_quyen:   user.phan_quyen||''
-                });
-                if (rs?.success){
-                  showToast?.('Đã hủy hồ sơ BHTN chờ duyệt!', 'success');
-                  await window.bhtn_unpaid_reload?.();  // ✅ reload tab “Chưa thu”
-                  await window.bhtn_paid_reload?.();    // ✅ reload tab “Đã thu” (đồng bộ)
-                } else {
-                  showToast?.(rs?.message || 'Không thể hủy hồ sơ', 'danger');
-                }
-              } finally { hideLoading?.(); }
+            if (!sttReal){ showToast?.('Không tìm thấy hồ sơ chờ duyệt để xóa.', 'warning'); return; }
+
+            const rs = await deleteBHTNByStt(sttReal, user.phan_quyen||'');
+            if (rs?.success){
+              showToast?.('Đã xóa hồ sơ chờ duyệt', 'success');
+              await (window.bhtnp_reload?.() || window.bhtn_unpaid_reload?.());
+            } else {
+              showToast?.(rs?.message || 'Xóa không thành công', 'danger');
             }
-          );
-        }catch(e){ console.error(e); showToast?.('Có lỗi khi hủy hồ sơ', 'danger'); }
+          } catch(e){
+            console.error(e); showToast?.('Có lỗi khi xóa', 'danger');
+          } finally { hideLoading?.(); }
+        });
       };
 
 
@@ -5403,114 +5397,120 @@
       
       // Mở modal Sửa BHTN Đã thu
       // ===== Helpers cho Sửa BHTN Đã thu =====
-      const toNum = v => Number(String(v||'').replace(/[^\d]/g,'')) || 0;
-      function parseVN(s){ if(!s) return null;
-        if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){ const [d,m,y]=s.split('/').map(Number); return new Date(y,m-1,d); }
-        if(/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
-        return null;
-      }
-      function fmtVN(d){ if(!(d instanceof Date)) return ''; const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
-      function computeExp12M(oldEnd){
-        const e=parseVN(oldEnd);
-        if(!e) return {exp:'', note:'Chưa có ngày hết hạn cũ'};
-        const start = new Date(e.getFullYear(), e.getMonth(), e.getDate()+1);
-        const end   = new Date(start.getFullYear(), start.getMonth()+12, start.getDate()-1);
-        return { exp: fmtVN(end), note: `Hiệu lực 12 tháng từ ${fmtVN(start)} đến ${fmtVN(end)}` };
-      }
+      // ===== Helpers số & rate =====
+      const toNum = v => Number(String(v ?? '').replace(/[^\d.-]/g,'')) || 0;
 
-      // Dùng cache chung như BHYT
-      async function ensureGiaBHTN(){
-        if (window.__GIA_BHTN__) return window.__GIA_BHTN__;
-        try{
-          const rs = await getGiaBHTN();       // API đã có sẵn
-          const data = rs?.data || rs || {};
-          window.__GIA_BHTN__ = data;
+      // ===== 1) Gộp & sửa ensureGiaBHTN (luôn unwrap mảng -> object) =====
+      async function ensureGiaBHTN_Fixed() {
+        if (window.__GIA_BHTN_FIXED__) return window.__GIA_BHTN_FIXED__;
+        try {
+          const rs = await (typeof getGiaBHTN === 'function' ? getGiaBHTN() : Promise.resolve({}));
+          let data = rs?.data ?? rs ?? {};
+          if (Array.isArray(data)) data = data[0] || {};
+          window.__GIA_BHTN_FIXED__ = data;
           return data;
-        }catch(e){ return {}; }
+        } catch(e) { return {}; }
       }
-      function _rate12m(g){ const s=String(g?.hoa_hong_12_thang||'').trim().replace(',','.'); const n=parseFloat(s); return isNaN(n)?0:n; }
-      function calcAmountCommissionByCategory(gia, cat){
-        const isCN = String(cat||'').toLowerCase().includes('cận');
-        const price = isCN ? (toNum(gia?.gia_tien_cn) || toNum(gia?.gia_tien)) : toNum(gia?.gia_tien);
-        const rate  = _rate12m(gia);
-        const hh    = Math.round(price * rate);
-        return { so_tien: price, hoa_hong: hh };
-      }
+      // Ghi đè hàm cũ (nếu có)
+      window.ensureGiaBHTN = ensureGiaBHTN_Fixed;
 
+      // ===== 2) Hàm tính tiền chấp nhận cả gia_tien_can_ngheo & gia_tien_cn =====
+      window.calcAmountCommissionByCategory = function(gia, cat) {
+        const isCN = String(cat || '').toLowerCase().includes('cận');
+        const base = toNum(gia?.gia_tien);
+        const cn   = toNum(gia?.gia_tien_can_ngheo ?? gia?.gia_tien_cn);
+        const price = isCN ? (cn || base) : base;
+        const rateRaw = String(gia?.hoa_hong_12_thang ?? '').replace(',','.');
+        const rate = (()=>{ const n=parseFloat(rateRaw); if (!isFinite(n) || n<=0) return 0; return n>1 ? n/100 : n; })();
+        const hoa_hong = Math.round(price * rate);
+        return { so_tien: price, hoa_hong };
+      };
 
-      // ===== SỬA HỒ SƠ (BHTN – ĐÃ THU) =====
-      function bhtnp_getRow(i){
-        const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
-        return src[i];
-      }
+      // ===== 3) Sửa modal Sửa BHTN (ĐÃ THU): hiển thị đúng tiền & đóng modal sau khi Lưu =====
+      window.bhtnp_openEditIdx = (function(prev){
+        return async function(i) {
+          // Lấy dòng theo DS hiện tại
+          const src = (window.BHTNP?.state?.filtered) || window.bhtnp_last || window.bhtnp_all || [];
+          const row = src[i];
+          if (!row) return;
 
-      window.bhtnp_openEditIdx = function(i){
-        const row = bhtnp_getRow(i); if (!row) return;
+          // Map field cơ bản
+          (document.getElementById('bhtnp-shs-hoten')||{}).value   = row.ho_ten_hoc_sinh || '';
+          (document.getElementById('bhtnp-shs-ngaysinh')||{}).value= row.ngay_sinh || '';
 
-        (document.getElementById('bhtnp-shs-hoten')   || {}).value       = row.ho_ten_hoc_sinh || '';
-        (document.getElementById('bhtnp-shs-ngaysinh')|| {}).value       = row.ngay_sinh || '';
+          // Hạn dự kiến 12T từ ngày hết hạn cũ (+1 ngày)
+          function parseVN(s){ if(!s) return null; if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){ const [d,m,y]=s.split('/').map(Number); return new Date(y,m-1,d); } if(/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s); return null; }
+          function fmtVN(d){ if(!(d instanceof Date)) return ''; const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
+          (function(){
+            const e = parseVN(row.ngay_het_han_bhtn || '');
+            if (e) {
+              const start = new Date(e.getFullYear(), e.getMonth(), e.getDate()+1);
+              const end   = new Date(start.getFullYear(), start.getMonth()+12, start.getDate()-1);
+              (document.getElementById('bhtnp-shs-exp')||{}).textContent = fmtVN(end);
+            } else {
+              (document.getElementById('bhtnp-shs-exp')||{}).textContent = row.han_su_dung_bhtn_moi || '—';
+            }
+          })();
 
-        // 1) Hạn sử dụng dự kiến:
-        const plan = computeExp12M(row.ngay_het_han_bhtn || "");
-        const expText = (plan?.exp && plan.exp.trim())
-                      ? plan.exp
-                      : (row.han_su_dung_bhtn_moi || ''); // fallback theo hạn mới có sẵn
-        (document.getElementById('bhtnp-shs-exp')     || {}).textContent = expText || '—';
-        (document.getElementById('bhtnp-shs-expnote') || {}).textContent = plan?.exp ? (plan.note || '') : '';
+          // Radio theo đối tượng
+          const cat0 = (row.doi_tuong_dong || 'Học sinh').trim();
+          const rHs  = document.getElementById('bhtnp-shs-cat-hs');
+          const rCn  = document.getElementById('bhtnp-shs-cat-cn');
+          if (rHs && rCn) { rHs.checked = (cat0 === 'Học sinh'); rCn.checked = (cat0 === 'Cận nghèo'); }
 
-        // 2) Set default radio theo hồ sơ hiện tại
-        const cat = (row.doi_tuong_dong || 'Học sinh').trim();
-        const rHs = document.getElementById('bhtnp-shs-cat-hs');
-        const rCn = document.getElementById('bhtnp-shs-cat-cn');
-        if (rHs && rCn) { rHs.checked = (cat === 'Học sinh'); rCn.checked = (cat === 'Cận nghèo'); }
+          // Lưu row cho submit
+          window.__bhtnp_edit_row = row;
 
-        // 3) Preview tiền theo đối tượng (và gắn change)
-        window.__bhtnp_edit_row = row;
-        (async ()=>{
-          async function recomputeAmount(){
+          // Preview tiền bền vững (kể cả khi API trả mảng)
+          const amountEl = document.getElementById('bhtnp-shs-amount');
+          async function recompute(){
             const gia = await ensureGiaBHTN();
-            const sel = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
-            const { so_tien } = calcAmountCommissionByCategory(gia, sel);
-            (document.getElementById('bhtnp-shs-amount')||{}).textContent = (Number(so_tien)||0).toLocaleString('vi-VN');
+            const cat = (document.getElementById('bhtnp-shs-cat-cn')?.checked) ? 'Cận nghèo' : 'Học sinh';
+            const { so_tien } = window.calcAmountCommissionByCategory(gia, cat);
+            if (amountEl) amountEl.textContent = (Number(so_tien)||0).toLocaleString('vi-VN');
           }
-          await recomputeAmount();
-          document.getElementById('bhtnp-shs-cat-hs')?.addEventListener('change', recomputeAmount);
-          document.getElementById('bhtnp-shs-cat-cn')?.addEventListener('change', recomputeAmount);
-        })();
+          await recompute();
+          rHs?.addEventListener('change', recompute);
+          rCn?.addEventListener('change', recompute);
 
-        new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
-      };
+          new bootstrap.Modal(document.getElementById('modalSuaHoSoBHTN_DaThu')).show();
+        };
+      })(window.bhtnp_openEditIdx);
 
-      window.bhtn_submitSua_Dathu = async function(){
-        try{
-          const row  = window.__bhtnp_edit_row || {};
-          const user = JSON.parse(localStorage.getItem('user')||'{}');
-          const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
+      window.bhtn_submitSua_Dathu = (function(){
+        return async function(){
+          try{
+            const row  = window.__bhtnp_edit_row || {};
+            const user = JSON.parse(localStorage.getItem('user')||'{}');
+            if (!row?.so_dinh_danh || !row?.lop_hoc){ showToast?.('Thiếu khóa hồ sơ (số định danh / lớp).','warning'); return; }
+            const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
 
-          if (!row?.so_dinh_danh || !row?.lop_hoc){ showToast?.('Thiếu khóa hồ sơ (số định danh / lớp).','warning'); return; }
+            showLoading?.();
+            const gia = await ensureGiaBHTN();
+            const { so_tien, hoa_hong } = window.calcAmountCommissionByCategory(gia, cat);
 
-          showLoading?.();
-          const gia = await ensureGiaBHTN();
-          const { so_tien, hoa_hong } = calcAmountCommissionByCategory(gia, cat);
+            const rs = await suaHoSoBHTN({
+              so_dinh_danh: row.so_dinh_danh,
+              ma_truong:    user.ma_truong || '',
+              lop_hoc:      row.lop_hoc || '',
+              doi_tuong_dong: cat,
+              so_tien, hoa_hong,
+              phan_quyen:   user.phan_quyen || ''
+            });
 
-          const rs = await suaHoSoBHTN({
-            so_dinh_danh: row.so_dinh_danh,
-            ma_truong:    user.ma_truong || '',
-            lop_hoc:      row.lop_hoc || '',
-            doi_tuong_dong: cat,
-            so_tien, hoa_hong,
-            phan_quyen:   user.phan_quyen || ''
-          });
-
-          if (rs?.success){
-            showToast?.('Đã lưu thay đổi hồ sơ', 'success');
-            await window.bhtnp_reload?.();
-          } else {
-            showToast?.(rs?.message || 'Lưu không thành công', 'danger');
-          }
-        }catch(e){ console.error(e); showToast?.('Có lỗi khi lưu', 'danger'); }
-        finally{ hideLoading?.(); }
-      };
+            if (rs?.success){
+              showToast?.('Đã lưu thay đổi hồ sơ', 'success');
+              // ĐÓNG MODAL sau khi lưu thành công
+              const modalEl = document.getElementById('modalSuaHoSoBHTN_DaThu');
+              bootstrap.Modal.getInstance(modalEl)?.hide();
+              await window.bhtnp_reload?.();
+            } else {
+              showToast?.(rs?.message || 'Lưu không thành công', 'danger');
+            }
+          } catch(e) { console.error(e); showToast?.('Có lỗi khi lưu', 'danger'); }
+          finally { hideLoading?.(); }
+        };
+      })();
 
 
 
