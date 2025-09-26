@@ -5497,7 +5497,7 @@
           const matheEl = document.getElementById('bhtnp-shs-mathe');
           const shsEl   = document.getElementById('bhtnp-shs-sohoso');
 
-          if (actEl)   actEl.checked = (String(row.trang_thai ?? '') === '1') || !!norm(row.so_ho_so);
+          if (actEl)   actEl.checked = (String(row.trang_thai ?? '') === '1');
           if (matheEl) matheEl.value = norm(row.ma_so_bhtn);
           if (shsEl)   shsEl.value   = norm(row.so_ho_so);
 
