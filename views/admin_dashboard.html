@@ -5533,8 +5533,8 @@
 
             // NEW: đọc 3 input mới
             const isActive = document.getElementById('bhtnp-shs-active')?.checked ? '1' : '0';
-            const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
-            const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
+            const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || 'null').trim();
+            const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || 'null').trim();
 
             showLoading?.();
             const gia = await ensureGiaBHTN();
