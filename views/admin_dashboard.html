@@ -1408,14 +1408,14 @@
                   <div class="form-check form-switch mt-3">
                     <input class="form-check-input" type="checkbox" id="bhtnp-shs-active">
                     <label class="form-check-label" for="bhtnp-shs-active">
-                      Nếu đã nộp tiền BHTN, hãy bật công tắc này để đánh dấu đã nộp.
+                      Kích hoạt hồ sơ (đánh dấu đã thu)
                     </label>
+                    <div class="form-text">
+                      Bật công tắc sẽ lưu <code>trang_thai = 1</code> trong DanhSach_BHTN.
+                    </div>
                   </div>
 
                   <div class="row g-2 mt-2">
-                    <div class="text-danger">
-                      Nếu đã kích hoạt, vui lòng nhập đầy đủ thông tin bên dưới.
-                    </div>
                     <div class="col-md-6">
                       <label class="form-label">Mã thẻ BHTN</label>
                       <input class="form-control" id="bhtnp-shs-mathe" placeholder="Nhập mã thẻ BHTN">
@@ -5497,9 +5497,9 @@
           const matheEl = document.getElementById('bhtnp-shs-mathe');
           const shsEl   = document.getElementById('bhtnp-shs-sohoso');
 
-          if (actEl)   actEl.checked = (String(row.trang_thai ?? '') === '1');
-          if (matheEl) matheEl.value = norm(row.ma_so_bhtn);
-          if (shsEl)   shsEl.value   = norm(row.so_ho_so);
+          if (actEl)   actEl.checked = (String(row.trang_thai ?? '0') === '1');
+          if (matheEl) matheEl.value = row.ma_so_bhtn;
+          if (shsEl)   shsEl.value   = row.so_ho_so;
 
 
           // Lưu row cho submit
@@ -5530,6 +5530,11 @@
             const user = JSON.parse(localStorage.getItem('user')||'{}');
             if (!row?.so_dinh_danh || !row?.lop_hoc){ showToast?.('Thiếu khóa hồ sơ (số định danh / lớp).','warning'); return; }
             const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
+
+            // NEW: đọc 3 input mới
+            // const isActive = document.getElementById('bhtnp-shs-active')?.checked ? 1 : 0;
+            // const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
+            // const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
 
             showLoading?.();
             const gia = await ensureGiaBHTN();
