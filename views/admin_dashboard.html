@@ -4086,13 +4086,13 @@
           if (activeEl) activeEl.checked = trangThai;
 
           // NEW: đồng bộ UI theo công tắc
-          const syncActiveUI = () => {
+          const syncActiveUIBHYT = () => {
             const on = !!activeEl?.checked;
             sohosoEl.disabled = !on;
             if (!on) sohosoEl.value = ''; // clear khi OFF
           };
-          syncActiveUI();
-          activeEl?.addEventListener('change', syncActiveUI);
+          syncActiveUIBHYT();
+          activeEl?.addEventListener('change', syncActiveUIBHYT);
 
 
           // Months: ưu tiên trên dòng BHYT, fallback API chi tiết nếu thiếu, mặc định 12
