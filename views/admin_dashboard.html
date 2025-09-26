@@ -1403,16 +1403,18 @@
                     </div>
                   </div>
 
-
+                  <hr style="margin-top:1.5rem;margin-bottom:1.5rem">
+                  
                   <!-- CÔNG TẮC KÍCH HOẠT + MÃ THẺ + SỐ HỒ SƠ BHTN -->
                   <div class="form-check form-switch mt-3">
                     <input class="form-check-input" type="checkbox" id="bhtnp-shs-active">
                     <label class="form-check-label" for="bhtnp-shs-active">
-                      Kích hoạt hồ sơ (đánh dấu đã thu)
+                      Đánh dấu đã nộp tiền BHTN vể trên (chờ kích hoạt thẻ)
                     </label>
-                    <div class="form-text">
-                      Bật công tắc sẽ lưu <code>trang_thai = 1</code> trong DanhSach_BHTN.
-                    </div>
+                  </div>
+
+                  <div class="text-danger">
+                    Nếu hồ sơ đã kích hoạt thẻ BHTN, hãy nhập đúng Mã thẻ và Số hồ sơ BHTN bên dưới.
                   </div>
 
                   <div class="row g-2 mt-2">
@@ -5498,9 +5500,26 @@
           const shsEl   = document.getElementById('bhtnp-shs-sohoso');
 
           if (actEl)   actEl.checked = (String(row.trang_thai ?? '0') === '1');
-          if (matheEl) matheEl.value = row.ma_so_bhtn;
-          if (shsEl)   shsEl.value   = row.so_ho_so;
+          if (matheEl) matheEl.value = row.ma_so_bhtn || '';
+          if (shsEl)   shsEl.value   = row.so_ho_so   || '';
 
+
+          // Hàm đồng bộ UI theo công tắc
+          const syncActiveUI = () => {
+            const on = !!actEl?.checked;
+            if (matheEl) {
+              matheEl.disabled = !on;
+              if (!on) matheEl.value = '';
+            }
+            if (shsEl) {
+              shsEl.disabled = !on;
+              if (!on) shsEl.value = '';
+            }
+          };
+          syncActiveUI();
+          actEl?.addEventListener('change', syncActiveUI);
+
+          
 
           // Lưu row cho submit
           window.__bhtnp_edit_row = row;
