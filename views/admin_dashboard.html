@@ -1135,11 +1135,20 @@
                     <div><strong>Số tiền cần đóng:</strong> <span id="shspaid-amount-preview" class="fw-bold text-danger">—</span></div>
                   </div>
                   <hr>
+
+                  <!-- NEW: Công tắc kích hoạt hồ sơ (đánh dấu đã thu) -->
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="shspaid-active">
+                    <label class="form-check-label" for="shspaid-active">
+                      Đánh dấu hồ sơ này là đã nộp về trên (chờ kích hoạt)
+                    </label>
+                  </div>
+
                   <div class="mb-3">
                     <label for="shspaid-sohoso" class="form-label">Số hồ sơ</label>
                     <input type="text" class="form-control" id="shspaid-sohoso" placeholder="">
                     <div class="form-text text-danger" style="font-weight: bold;">
-                      Nếu mã hồ sơ đã kích hoạt thì nhập mã hồ sơ vào đây
+                      Nếu hồ sơ đã kích hoạt thì nhập mã hồ sơ vào đây
                     </div>
                   </div>
                   <div id="shspaid-error" class="text-danger" style="min-height:18px"></div>
@@ -4062,8 +4071,28 @@
           document.getElementById('shspaid-hoten').value    = hs.ho_ten_hoc_sinh || "";
           document.getElementById('shspaid-ngaysinh').value = bhytp_displayDate(hs.ngay_sinh || "");
           document.getElementById('shspaid-noikham').value  = hs.noi_kham_bhyt || "";
-          // Hiển thị Số hồ sơ (nếu null hoặc undefined thì để rỗng)
-          document.getElementById('shspaid-sohoso').value = hs.so_ho_so && hs.so_ho_so !== 'null' ? hs.so_ho_so : '';
+
+
+          // Số hồ sơ
+          const sohosoEl = document.getElementById('shspaid-sohoso');
+          const activeEl = document.getElementById('shspaid-active');
+
+          
+          const soHoSoVal = (hs.so_ho_so && hs.so_ho_so !== 'null') ? hs.so_ho_so : '';
+          sohosoEl.value = soHoSoVal;
+    
+          // NEW: trạng thái công tắc theo dữ liệu cũ
+          const trangThai = String(hs.trang_thai ?? '0') === '1';
+          if (activeEl) activeEl.checked = trangThai;
+
+          // NEW: đồng bộ UI theo công tắc
+          const syncActiveUI = () => {
+            const on = !!activeEl?.checked;
+            sohosoEl.disabled = !on;
+            if (!on) sohosoEl.value = ''; // clear khi OFF
+          };
+          syncActiveUI();
+          activeEl?.addEventListener('change', syncActiveUI);
 
 
           // Months: ưu tiên trên dòng BHYT, fallback API chi tiết nếu thiếu, mặc định 12
@@ -4155,15 +4184,22 @@
 
           const rate   = getRateByMonths(g, months);
           const hh     = parseFloat((amount * rate).toFixed(2));
+
+
+          // NEW: đọc trạng thái công tắc & giá trị số hồ sơ
+          const activeOn = activeEl?.checked ? '1' : '0';
+          const soHoSo   = activeOn === '1' ? (sohosoEl.value.trim()) : '';
+
+
           //const so_ho_so = bhytp_getSoHoSo(hs) || 'null';
-          const stt      = hs.stt || '';
-          const sohosoVal = document.getElementById('shspaid-sohoso').value.trim();
-          let trang_thai = 0;
-          let so_ho_so = null;
-          if (sohosoVal) {
-            trang_thai = 1;
-            so_ho_so = sohosoVal;
-          }
+          // const stt      = hs.stt || '';
+          // const sohosoVal = document.getElementById('shspaid-sohoso').value.trim();
+          // let trang_thai = 0;
+          // let so_ho_so = null;
+          // if (sohosoVal) {
+          //   trang_thai = 1;
+          //   so_ho_so = sohosoVal;
+          // }
 
 
           log('Submit edit (PAID):', {
@@ -4173,8 +4209,9 @@
 
           const res = await suaHoSoBHYTApi({
             stt,
-            so_ho_so, // đã set ở trên
-            trang_thai, // mới thêm
+            // ✅ gửi đúng theo công tắc
+            so_ho_so:   soHoSo,
+            trang_thai: activeOn,
             so_dinh_danh: hs.so_dinh_danh,
             ma_truong: bhyt_user.ma_truong,
             lop_hoc: hs.lop_hoc || "",
