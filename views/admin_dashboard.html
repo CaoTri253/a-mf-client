@@ -1408,14 +1408,14 @@
                   <div class="form-check form-switch mt-3">
                     <input class="form-check-input" type="checkbox" id="bhtnp-shs-active">
                     <label class="form-check-label" for="bhtnp-shs-active">
-                      Kích hoạt hồ sơ (đánh dấu đã thu)
+                      Nếu đã nộp tiền BHTN, hãy bật công tắc này để đánh dấu đã nộp.
                     </label>
-                    <div class="form-text">
-                      Bật công tắc sẽ lưu <code>trang_thai = 1</code> trong DanhSach_BHTN.
-                    </div>
                   </div>
 
                   <div class="row g-2 mt-2">
+                    <div class="text-danger">
+                      Nếu đã kích hoạt, vui lòng nhập đầy đủ thông tin bên dưới.
+                    </div>
                     <div class="col-md-6">
                       <label class="form-label">Mã thẻ BHTN</label>
                       <input class="form-control" id="bhtnp-shs-mathe" placeholder="Nhập mã thẻ BHTN">
@@ -5488,6 +5488,20 @@
           const rCn  = document.getElementById('bhtnp-shs-cat-cn');
           if (rHs && rCn) { rHs.checked = (cat0 === 'Học sinh'); rCn.checked = (cat0 === 'Cận nghèo'); }
 
+
+
+          // Mặc định checkbox Active nếu có số hồ sơ
+          const norm = v => String(v ?? '').replace(/^'/,'').trim();
+
+          const actEl   = document.getElementById('bhtnp-shs-active');
+          const matheEl = document.getElementById('bhtnp-shs-mathe');
+          const shsEl   = document.getElementById('bhtnp-shs-sohoso');
+
+          if (actEl)   actEl.checked = (String(row.trang_thai ?? '') === '1') || !!norm(row.so_ho_so);
+          if (matheEl) matheEl.value = norm(row.ma_so_bhtn);
+          if (shsEl)   shsEl.value   = norm(row.so_ho_so);
+
+
           // Lưu row cho submit
           window.__bhtnp_edit_row = row;
 
@@ -5517,11 +5531,6 @@
             if (!row?.so_dinh_danh || !row?.lop_hoc){ showToast?.('Thiếu khóa hồ sơ (số định danh / lớp).','warning'); return; }
             const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
 
-            // NEW: đọc 3 input mới
-            const isActive = document.getElementById('bhtnp-shs-active')?.checked ? 1 : 0;
-            const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
-            const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
-
             showLoading?.();
             const gia = await ensureGiaBHTN();
             const { so_tien, hoa_hong } = window.calcAmountCommissionByCategory(gia, cat);
@@ -5533,9 +5542,9 @@
               doi_tuong_dong: cat,
               so_tien, 
               hoa_hong,
-              ma_so_bhtn:   maThe,
-              so_ho_so:     soHoSo,
-              trang_thai:   isActive,
+              ma_so_bhtn:   row.ma_so_bhtn, // giữ nguyên mã số cũ nếu có
+              so_ho_so:     row.so_ho_so, // giữ nguyên số hồ sơ cũ nếu có
+              trang_thai:   row.trang_thai, // giữ nguyên trạng thái cũ nếu có
               phan_quyen:   user.phan_quyen || ''
             });
 
