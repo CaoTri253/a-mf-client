@@ -5532,9 +5532,9 @@
             const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
 
             // NEW: đọc 3 input mới
-            // const isActive = document.getElementById('bhtnp-shs-active')?.checked ? 1 : 0;
-            // const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
-            // const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
+            const isActive = document.getElementById('bhtnp-shs-active')?.checked ? '1' : '0';
+            const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
+            const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
 
             showLoading?.();
             const gia = await ensureGiaBHTN();
@@ -5547,9 +5547,9 @@
               doi_tuong_dong: cat,
               so_tien, 
               hoa_hong,
-              ma_so_bhtn:   row.ma_so_bhtn, // giữ nguyên mã số cũ nếu có
-              so_ho_so:     row.so_ho_so, // giữ nguyên số hồ sơ cũ nếu có
-              trang_thai:   row.trang_thai, // giữ nguyên trạng thái cũ nếu có
+              ma_so_bhtn:   maThe, // giữ nguyên mã số cũ nếu có
+              so_ho_so:     soHoSo, // giữ nguyên số hồ sơ cũ nếu có
+              trang_thai:   isActive, // giữ nguyên trạng thái cũ nếu có
               phan_quyen:   user.phan_quyen || ''
             });
 
