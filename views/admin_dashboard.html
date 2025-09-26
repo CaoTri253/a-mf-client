@@ -1402,6 +1402,32 @@
                       <label class="form-check-label" for="bhtnp-shs-cat-cn">Cận nghèo</label>
                     </div>
                   </div>
+
+
+                  <!-- CÔNG TẮC KÍCH HOẠT + MÃ THẺ + SỐ HỒ SƠ BHTN -->
+                  <div class="form-check form-switch mt-3">
+                    <input class="form-check-input" type="checkbox" id="bhtnp-shs-active">
+                    <label class="form-check-label" for="bhtnp-shs-active">
+                      Kích hoạt hồ sơ (đánh dấu đã thu)
+                    </label>
+                    <div class="form-text">
+                      Bật công tắc sẽ lưu <code>trang_thai = 1</code> trong DanhSach_BHTN.
+                    </div>
+                  </div>
+
+                  <div class="row g-2 mt-2">
+                    <div class="col-md-6">
+                      <label class="form-label">Mã thẻ BHTN</label>
+                      <input class="form-control" id="bhtnp-shs-mathe" placeholder="Nhập mã thẻ BHTN">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Số hồ sơ BHTN</label>
+                      <input class="form-control" id="bhtnp-shs-sohoso" placeholder="Nhập số hồ sơ BHTN">
+                    </div>
+                  </div>
+                  <!-- /NEW -->
+
+
                   <div id="bhtnp-shs-error" class="text-danger" style="min-height:18px"></div>
                 </div>
                 <div class="modal-footer">
@@ -5491,6 +5517,11 @@
             if (!row?.so_dinh_danh || !row?.lop_hoc){ showToast?.('Thiếu khóa hồ sơ (số định danh / lớp).','warning'); return; }
             const cat  = document.getElementById('bhtnp-shs-cat-cn')?.checked ? 'Cận nghèo' : 'Học sinh';
 
+            // NEW: đọc 3 input mới
+            const isActive = document.getElementById('bhtnp-shs-active')?.checked ? 1 : 0;
+            const maThe    = (document.getElementById('bhtnp-shs-mathe')?.value || '').trim();
+            const soHoSo   = (document.getElementById('bhtnp-shs-sohoso')?.value || '').trim();
+
             showLoading?.();
             const gia = await ensureGiaBHTN();
             const { so_tien, hoa_hong } = window.calcAmountCommissionByCategory(gia, cat);
@@ -5500,7 +5531,11 @@
               ma_truong:    user.ma_truong || '',
               lop_hoc:      row.lop_hoc || '',
               doi_tuong_dong: cat,
-              so_tien, hoa_hong,
+              so_tien, 
+              hoa_hong,
+              ma_so_bhtn:   maThe,
+              so_ho_so:     soHoSo,
+              trang_thai:   isActive,
               phan_quyen:   user.phan_quyen || ''
             });
 
