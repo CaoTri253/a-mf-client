@@ -4166,11 +4166,9 @@
           const months  = document.querySelector('input[name="shspaid-thang"]:checked')?.value || '12';
           const noikham = document.getElementById('shspaid-noikham').value.trim();
 
-          
-          const sohosoEl = document.getElementById('shspaid-sohoso');
           const activeEl = document.getElementById('shspaid-active');
-
-
+          const sohosoEl = document.getElementById('shspaid-sohoso');
+          
           const g       = await ensureGiaBHYT();
 
           const hs = _currentHS_Sua_Paid;
