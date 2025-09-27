@@ -3,80 +3,80 @@ const API_BASE = "https://script.google.com/macros/s/AKfycbwfsTcpgpduAP6bsQnDu1v
 
 
 // --- Drop-in limiter for fetch: queue + retry + small cache ---
-(() => {
-  const origFetch = window.fetch.bind(window);
+// (() => {
+//   const origFetch = window.fetch.bind(window);
 
-  // Cấu hình nhẹ
-  const MAX_CONCURRENCY = 3;     // chạy song song tối đa
-  const MIN_INTERVAL_MS = 150;   // giãn cách giữa 2 lượt lấy từ hàng đợi
-  const RETRIES = 2;             // retry khi lỗi mạng / 429
-  const RETRY_BASE_MS = 400;     // backoff cơ bản
-  const CACHE_TTL_MS = 30_000;   // cache GET 30s để chống gọi lặp
+//   // Cấu hình nhẹ
+//   const MAX_CONCURRENCY = 3;     // chạy song song tối đa
+//   const MIN_INTERVAL_MS = 150;   // giãn cách giữa 2 lượt lấy từ hàng đợi
+//   const RETRIES = 2;             // retry khi lỗi mạng / 429
+//   const RETRY_BASE_MS = 400;     // backoff cơ bản
+//   const CACHE_TTL_MS = 30_000;   // cache GET 30s để chống gọi lặp
 
-  const cache = new Map(); // key: URL, val: {ts, jsonPromise}
-  const q = [];
-  let active = 0, lastDeq = 0;
+//   const cache = new Map(); // key: URL, val: {ts, jsonPromise}
+//   const q = [];
+//   let active = 0, lastDeq = 0;
 
-  async function limitedFetch(input, init) {
-    // Cache GET trong 30s (login/register là GET hiện tại)
-    const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
-    const url = (typeof input === 'string' ? input : input.url);
+//   async function limitedFetch(input, init) {
+//     // Cache GET trong 30s (login/register là GET hiện tại)
+//     const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
+//     const url = (typeof input === 'string' ? input : input.url);
 
-    if (method === 'GET' && CACHE_TTL_MS > 0) {
-      const c = cache.get(url);
-      const now = Date.now();
-      if (c && (now - c.ts) < CACHE_TTL_MS) return c.jsonPromise.then(data => new Response(new Blob([JSON.stringify(data)]), {headers: {'Content-Type':'application/json'}}));
-    }
+//     if (method === 'GET' && CACHE_TTL_MS > 0) {
+//       const c = cache.get(url);
+//       const now = Date.now();
+//       if (c && (now - c.ts) < CACHE_TTL_MS) return c.jsonPromise.then(data => new Response(new Blob([JSON.stringify(data)]), {headers: {'Content-Type':'application/json'}}));
+//     }
 
-    // Đưa vào hàng đợi
-    return new Promise((resolve, reject) => {
-      q.push({ input, init, resolve, reject, attempt: 0 });
-      pump();
-    });
+//     // Đưa vào hàng đợi
+//     return new Promise((resolve, reject) => {
+//       q.push({ input, init, resolve, reject, attempt: 0 });
+//       pump();
+//     });
 
-    function pump() {
-      if (!q.length) return;
-      const now = Date.now();
-      if (active >= MAX_CONCURRENCY || (now - lastDeq) < MIN_INTERVAL_MS) {
-        setTimeout(pump, MIN_INTERVAL_MS);
-        return;
-      }
-      lastDeq = now;
-      const task = q.shift();
-      active++;
-      doFetch(task).finally(() => { active--; pump(); });
-    }
+//     function pump() {
+//       if (!q.length) return;
+//       const now = Date.now();
+//       if (active >= MAX_CONCURRENCY || (now - lastDeq) < MIN_INTERVAL_MS) {
+//         setTimeout(pump, MIN_INTERVAL_MS);
+//         return;
+//       }
+//       lastDeq = now;
+//       const task = q.shift();
+//       active++;
+//       doFetch(task).finally(() => { active--; pump(); });
+//     }
 
-    async function doFetch(task) {
-      try {
-        const res = await origFetch(task.input, task.init);
-        // Thử backoff mềm nếu bị 429 hoặc lỗi tạm thời
-        if ((res.status === 429 || res.status === 503) && task.attempt < RETRIES) {
-          task.attempt++;
-          const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
-          await new Promise(r => setTimeout(r, wait));
-          return doFetch(task);
-        }
-        // Cache JSON của GET
-        if (method === 'GET' && res.ok && res.headers.get('Content-Type')?.includes('application/json')) {
-          const jsonPromise = res.clone().json();
-          cache.set(url, { ts: Date.now(), jsonPromise });
-        }
-        task.resolve(res);
-      } catch (err) {
-        if (task.attempt < RETRIES) {
-          task.attempt++;
-          const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
-          await new Promise(r => setTimeout(r, wait));
-          return doFetch(task);
-        }
-        task.reject(err);
-      }
-    }
-  }
+//     async function doFetch(task) {
+//       try {
+//         const res = await origFetch(task.input, task.init);
+//         // Thử backoff mềm nếu bị 429 hoặc lỗi tạm thời
+//         if ((res.status === 429 || res.status === 503) && task.attempt < RETRIES) {
+//           task.attempt++;
+//           const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
+//           await new Promise(r => setTimeout(r, wait));
+//           return doFetch(task);
+//         }
+//         // Cache JSON của GET
+//         if (method === 'GET' && res.ok && res.headers.get('Content-Type')?.includes('application/json')) {
+//           const jsonPromise = res.clone().json();
+//           cache.set(url, { ts: Date.now(), jsonPromise });
+//         }
+//         task.resolve(res);
+//       } catch (err) {
+//         if (task.attempt < RETRIES) {
+//           task.attempt++;
+//           const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
+//           await new Promise(r => setTimeout(r, wait));
+//           return doFetch(task);
+//         }
+//         task.reject(err);
+//       }
+//     }
+//   }
 
-  window.fetch = limitedFetch;
-})();
+//   window.fetch = limitedFetch;
+// })();
 
 
 
