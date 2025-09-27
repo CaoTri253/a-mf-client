@@ -1,1 +1,403 @@
-const _0x1e29d6=_0x1281;(function(_0x6d9fee,_0x1f57d7){const _0x522b45=_0x1281,_0x2d16da=_0x6d9fee();while(!![]){try{const _0x39ef8c=-parseInt(_0x522b45(0x1b4))/0x1+-parseInt(_0x522b45(0x1ad))/0x2+parseInt(_0x522b45(0x1a2))/0x3+parseInt(_0x522b45(0x1cc))/0x4*(-parseInt(_0x522b45(0x199))/0x5)+-parseInt(_0x522b45(0x1a4))/0x6*(-parseInt(_0x522b45(0x1b6))/0x7)+parseInt(_0x522b45(0x1da))/0x8*(-parseInt(_0x522b45(0x1ac))/0x9)+parseInt(_0x522b45(0x1de))/0xa;if(_0x39ef8c===_0x1f57d7)break;else _0x2d16da['push'](_0x2d16da['shift']());}catch(_0x4c1ba0){_0x2d16da['push'](_0x2d16da['shift']());}}}(_0x1059,0x35092));const API_BASE=_0x1e29d6(0x1c3);async function login(_0xc99bb8,_0x14bc79){const _0x2d8b0b=_0x1e29d6,_0x159548=API_BASE+'?func=Login&sdt='+encodeURIComponent(_0xc99bb8)+_0x2d8b0b(0x1a6)+encodeURIComponent(_0x14bc79),_0x2c54ba=await fetch(_0x159548);return await _0x2c54ba[_0x2d8b0b(0x1c1)]();}function _0x1059(){const _0x46d2be=['?func=Register&ho_ten=','?func=GetDanhSachBHYT&ma_truong=','ma_truong','?func=GetDanhSachBHTN&ma_truong=','json','gioi_tinh','https://script.google.com/macros/s/AKfycbwfsTcpgpduAP6bsQnDu1vsUTzMrtYNRMyZLsqKDJu-5j910xP69GXmdS1OaOAdKbNJ/exec','map','ma_so_bhxh','ngay_het_han_bhyt','&ngay_het_han_bhtn=','success','&dia_chi=','so_dinh_danh','dia_chi','760CjQoug','lop_hoc','entries','&ghi_chu=','?func=ForgotPassword&sdt=','ho_ten_hoc_sinh','?func=DeleteBHYT','ngay_sinh','null','&doi_tuong_dong=','&ma_so_bhxh=','&ma_truong=','&start=','join','32FtEecu','?func=DeleteBHTNByStt','&ten_cha_me=','&ngay_het_han_bhyt=','8913700ldSAyT','ten_cha_me','&sortDir=','doi_tuong_dong','&sdt=','sdt','?func=GetHosoBHTNByHS&so_dinh_danh=','?func=NopBHYTHoSo','?func=DeleteManyHocsinh&ids=','?func=GetGiaBHTN','&sortField=','noi_kham_bhyt','?func=GetBHYTStatus&so_dinh_danh=','1585MZVAHf','?func=NopHoSoBHTN&','&query=','application/json','&loai_user=','stringify','ngay_het_han_bhtn','&so_dinh_danh=','POST','1292724czQZoa','&ho_ten_hoc_sinh=','102AViNLv','&phan_quyen=','&password=','&noi_kham_bhyt=','?func=SuaHoSoBHYT&','&stt=','?func=SuaHoSoBHTN&','?func=ThemHocsinh','937485lnDcJw','543922qSNNja','stt','?func=GetBHTNStatus&so_dinh_danh=','ghi_chu','sdt_lienhe','&gioi_tinh=','message','383631GzOEDT','&ngay_sinh=','11298Tcohpt','&sdt_lienhe=','data','?func=GetDanhSachHocsinhPaginated','&lop_hoc=','?func=GetAllDanhSachHocsinh&ma_truong=','loai_user'];_0x1059=function(){return _0x46d2be;};return _0x1059();}async function register(_0x3fc59f){const _0x524748=_0x1e29d6,_0x289f28=API_BASE+_0x524748(0x1bd)+encodeURIComponent(_0x3fc59f['ho_ten'])+_0x524748(0x1e2)+encodeURIComponent(_0x3fc59f[_0x524748(0x1e3)])+_0x524748(0x1a6)+encodeURIComponent(_0x3fc59f['password'])+_0x524748(0x1d7)+encodeURIComponent(_0x3fc59f[_0x524748(0x1bf)])+_0x524748(0x19d)+encodeURIComponent(_0x3fc59f[_0x524748(0x1bc)]),_0xb7d3ed=await fetch(_0x289f28);return await _0xb7d3ed[_0x524748(0x1c1)]();}async function forgotPassword(_0x38f7bc){const _0x3b0da5=_0x1e29d6,_0x56b6df=API_BASE+_0x3b0da5(0x1d0)+encodeURIComponent(_0x38f7bc),_0x1a090a=await fetch(_0x56b6df);return await _0x1a090a['json']();}async function getAllDanhSachHocsinh(_0x5a9a0a,_0x3d8795){const _0x2abca4=_0x1e29d6,_0x5377bc=API_BASE+_0x2abca4(0x1bb)+encodeURIComponent(_0x5a9a0a)+_0x2abca4(0x1ba)+encodeURIComponent(_0x3d8795),_0x4d562a=await fetch(_0x5377bc);return await _0x4d562a['json']();}async function getDanhSachHocsinhPaginated(_0x1f0bd3,_0x1cc832,_0x134cd1=0x0,_0x5d932f=0xa,_0x4d0241='',_0x555d8b='',_0x3fd2f3=0x1){const _0xb2252c=_0x1e29d6,_0x402980=API_BASE+_0xb2252c(0x1b9)+(_0xb2252c(0x1d7)+encodeURIComponent(_0x1f0bd3))+(_0xb2252c(0x1ba)+encodeURIComponent(_0x1cc832))+(_0xb2252c(0x1d8)+_0x134cd1)+('&limit='+_0x5d932f)+(_0xb2252c(0x19b)+encodeURIComponent(_0x4d0241))+(_0xb2252c(0x196)+encodeURIComponent(_0x555d8b))+(_0xb2252c(0x1e0)+_0x3fd2f3),_0x528e4c=await fetch(_0x402980);return await _0x528e4c['json']();}async function themHocsinh(_0x26b0ac){const _0x170199=_0x1e29d6,_0x40e058=API_BASE+_0x170199(0x1ab)+(_0x170199(0x1d6)+encodeURIComponent(_0x26b0ac['ma_so_bhxh']))+('&ho_ten_hoc_sinh='+encodeURIComponent(_0x26b0ac['ho_ten_hoc_sinh']))+(_0x170199(0x1b5)+encodeURIComponent(_0x26b0ac[_0x170199(0x1d3)]))+(_0x170199(0x1b2)+encodeURIComponent(_0x26b0ac[_0x170199(0x1c2)]))+(_0x170199(0x1c9)+encodeURIComponent(_0x26b0ac[_0x170199(0x1cb)]))+('&ngay_het_han_bhyt='+encodeURIComponent(_0x26b0ac['ngay_het_han_bhyt']))+(_0x170199(0x1c7)+encodeURIComponent(_0x26b0ac[_0x170199(0x19f)]))+(_0x170199(0x1ba)+encodeURIComponent(_0x26b0ac[_0x170199(0x1cd)]))+(_0x170199(0x1b7)+encodeURIComponent(_0x26b0ac[_0x170199(0x1b1)]))+(_0x170199(0x1a0)+encodeURIComponent(_0x26b0ac['so_dinh_danh']))+(_0x170199(0x1a7)+encodeURIComponent(_0x26b0ac[_0x170199(0x197)]))+('&ten_cha_me='+encodeURIComponent(_0x26b0ac[_0x170199(0x1df)]))+('&doi_tuong_dong='+encodeURIComponent(_0x26b0ac[_0x170199(0x1e1)]??_0x170199(0x1d4)))+(_0x170199(0x1cf)+encodeURIComponent(_0x26b0ac['ghi_chu']??'null'))+(_0x170199(0x1d7)+encodeURIComponent(_0x26b0ac['ma_truong'])),_0x4ff9f8=await fetch(_0x40e058);return await _0x4ff9f8[_0x170199(0x1c1)]();}async function importDanhSachHocsinh(_0x1367f0){const _0x434021=_0x1e29d6;let _0x1c2316=0x0,_0x92a48d=0x0,_0x4b4e39=[];for(const _0x4f122a of _0x1367f0){const _0x3013f7=API_BASE+'?func=ThemHocsinh'+('&ma_so_bhxh='+encodeURIComponent(_0x4f122a['ma_so_bhxh']))+(_0x434021(0x1a3)+encodeURIComponent(_0x4f122a[_0x434021(0x1d1)]))+(_0x434021(0x1b5)+encodeURIComponent(_0x4f122a[_0x434021(0x1d3)]))+('&gioi_tinh='+encodeURIComponent(_0x4f122a['gioi_tinh']))+(_0x434021(0x1c9)+encodeURIComponent(_0x4f122a[_0x434021(0x1cb)]))+('&ngay_het_han_bhyt='+encodeURIComponent(_0x4f122a[_0x434021(0x1c6)]))+(_0x434021(0x1c7)+encodeURIComponent(_0x4f122a[_0x434021(0x19f)]))+(_0x434021(0x1ba)+encodeURIComponent(_0x4f122a['lop_hoc']))+(_0x434021(0x1b7)+encodeURIComponent(_0x4f122a[_0x434021(0x1b1)]))+(_0x434021(0x1a0)+encodeURIComponent(_0x4f122a[_0x434021(0x1ca)]))+('&noi_kham_bhyt='+encodeURIComponent(_0x4f122a['noi_kham_bhyt']))+(_0x434021(0x1dc)+encodeURIComponent(_0x4f122a['ten_cha_me']))+(_0x434021(0x1d5)+encodeURIComponent(_0x4f122a['doi_tuong_dong']??_0x434021(0x1d4)))+(_0x434021(0x1cf)+encodeURIComponent(_0x4f122a[_0x434021(0x1b0)]??_0x434021(0x1d4)))+(_0x434021(0x1d7)+encodeURIComponent(_0x4f122a[_0x434021(0x1bf)]));try{const _0x416301=await fetch(_0x3013f7),_0x2a7f1c=await _0x416301[_0x434021(0x1c1)]();if(_0x2a7f1c[_0x434021(0x1c8)])_0x1c2316++;else _0x92a48d++,_0x4b4e39['push'](_0x2a7f1c[_0x434021(0x1b3)]||'Lỗi\x20không\x20xác\x20định');}catch(_0x2b4ba1){_0x92a48d++,_0x4b4e39['push'](_0x2b4ba1[_0x434021(0x1b3)]);}}if(_0x92a48d===0x0)return{'success':!![],'imported':_0x1c2316};else return{'success':![],'imported':_0x1c2316,'errors':_0x4b4e39};}async function suaHocsinh(_0x4dfd01){const _0x42b2ee=_0x1e29d6,_0x34354e=API_BASE+'?func=UpdateHocsinh'+(_0x42b2ee(0x1a9)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1ae)]))+('&ma_so_bhxh='+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1c5)]))+(_0x42b2ee(0x1a3)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1d1)]))+('&ngay_sinh='+encodeURIComponent(_0x4dfd01['ngay_sinh']))+(_0x42b2ee(0x1b2)+encodeURIComponent(_0x4dfd01['gioi_tinh']))+('&dia_chi='+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1cb)]))+(_0x42b2ee(0x1dd)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1c6)]))+(_0x42b2ee(0x1c7)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x19f)]))+(_0x42b2ee(0x1ba)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1cd)]))+(_0x42b2ee(0x1b7)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1b1)]))+('&so_dinh_danh='+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1ca)]))+(_0x42b2ee(0x1a7)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x197)]))+(_0x42b2ee(0x1dc)+encodeURIComponent(_0x4dfd01['ten_cha_me']))+(_0x42b2ee(0x1d5)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1e1)]??_0x42b2ee(0x1d4)))+(_0x42b2ee(0x1cf)+encodeURIComponent(_0x4dfd01[_0x42b2ee(0x1b0)]??_0x42b2ee(0x1d4)))+(_0x42b2ee(0x1d7)+encodeURIComponent(_0x4dfd01['ma_truong'])),_0x4a6a4a=await fetch(_0x34354e);return await _0x4a6a4a[_0x42b2ee(0x1c1)]();}async function xoaHocsinh(_0x3331bf){const _0x544aa5=_0x1e29d6,_0x157d83=API_BASE+'?func=DeleteHocsinh&id='+encodeURIComponent(_0x3331bf),_0x4ae149=await fetch(_0x157d83);return await _0x4ae149[_0x544aa5(0x1c1)]();}async function xoaNhieuHocsinh(_0xbb2258){const _0x232b8f=_0x1e29d6,_0x31faac=API_BASE+_0x232b8f(0x1e6)+encodeURIComponent(_0xbb2258[_0x232b8f(0x1d9)](',')),_0x10dc2e=await fetch(_0x31faac);return await _0x10dc2e[_0x232b8f(0x1c1)]();}function _0x1281(_0x40c832,_0x34b596){const _0x105910=_0x1059();return _0x1281=function(_0x128102,_0x2a420f){_0x128102=_0x128102-0x196;let _0x3383df=_0x105910[_0x128102];return _0x3383df;},_0x1281(_0x40c832,_0x34b596);}async function getDanhSachBHYT(_0x132a51,_0x2ea590){const _0x5b8196=_0x1e29d6,_0x4f079f=API_BASE+_0x5b8196(0x1be)+encodeURIComponent(_0x132a51)+_0x5b8196(0x1ba)+encodeURIComponent(_0x2ea590),_0xa407ae=await fetch(_0x4f079f);return await _0xa407ae[_0x5b8196(0x1c1)]();}async function getBHYTStatus(_0x12fd4d,_0x54a239,_0x1d325e){const _0x5c5625=_0x1e29d6,_0x12e5d3=API_BASE+_0x5c5625(0x198)+encodeURIComponent(_0x12fd4d)+_0x5c5625(0x1d7)+encodeURIComponent(_0x54a239)+'&lop_hoc='+encodeURIComponent(_0x1d325e),_0x3b9144=await fetch(_0x12e5d3);return await _0x3b9144[_0x5c5625(0x1c1)]();}async function nopHoSoBHYT(_0x8e0f8e){const _0x34c7a1=_0x1e29d6,_0x151f8a=Object[_0x34c7a1(0x1ce)](_0x8e0f8e)[_0x34c7a1(0x1c4)](([_0x188b0b,_0x4c48cb])=>encodeURIComponent(_0x188b0b)+'='+encodeURIComponent(_0x4c48cb))[_0x34c7a1(0x1d9)]('&'),_0x4e85b6=API_BASE+'?func=NopHoSoBHYT&'+_0x151f8a,_0x5569fc=await fetch(_0x4e85b6);return await _0x5569fc[_0x34c7a1(0x1c1)]();}async function suaHoSoBHYT(_0x54d9fe){const _0x313019=_0x1e29d6,_0x33c611=Object[_0x313019(0x1ce)](_0x54d9fe)[_0x313019(0x1c4)](([_0x7bcf94,_0x583c9c])=>encodeURIComponent(_0x7bcf94)+'='+encodeURIComponent(_0x583c9c))[_0x313019(0x1d9)]('&'),_0x57f415=API_BASE+_0x313019(0x1a8)+_0x33c611,_0x5bae66=await fetch(_0x57f415);return await _0x5bae66[_0x313019(0x1c1)]();}async function getHosoBHYTByHS(_0x1ecf1e,_0x3b5771,_0x7ec7b2){const _0x2cd0cc=_0x1e29d6,_0x331224=API_BASE+'?func=GetHosoBHYTByHS&so_dinh_danh='+encodeURIComponent(_0x1ecf1e)+'&ma_truong='+encodeURIComponent(_0x3b5771)+'&lop_hoc='+encodeURIComponent(_0x7ec7b2),_0x5dd49b=await fetch(_0x331224);return await _0x5dd49b[_0x2cd0cc(0x1c1)]();}async function nopBHYTHoSo({so_dinh_danh:_0x2443e2,noi_kham:_0x559a46,so_thang_dong:_0x16c1dc,user_info:_0x95ab10}){const _0x565bf6=_0x1e29d6,_0x439bd7=await fetch(API_BASE+_0x565bf6(0x1e5),{'method':_0x565bf6(0x1a1),'headers':{'Content-Type':_0x565bf6(0x19c)},'body':JSON[_0x565bf6(0x19e)]({'so_dinh_danh':_0x2443e2,'noi_kham':_0x559a46,'so_thang_dong':_0x16c1dc,'user_info':_0x95ab10})});return await _0x439bd7[_0x565bf6(0x1c1)]();}async function deleteBHYTByKey({so_dinh_danh:_0x474a86,ma_truong:_0x1080be,lop_hoc:_0x176518,phan_quyen:phan_quyen=''}){const _0x3a4c9b=_0x1e29d6,_0x3f1ab2=API_BASE+_0x3a4c9b(0x1d2)+('&so_dinh_danh='+encodeURIComponent(_0x474a86))+(_0x3a4c9b(0x1d7)+encodeURIComponent(_0x1080be))+(_0x3a4c9b(0x1ba)+encodeURIComponent(_0x176518))+(_0x3a4c9b(0x1a5)+encodeURIComponent(phan_quyen)),_0x6baca=await fetch(_0x3f1ab2);return await _0x6baca[_0x3a4c9b(0x1c1)]();}async function deleteBHYTByStt(_0x2d43d0,_0x17b0fe=''){const _0x1a45b0=_0x1e29d6,_0x36768e=API_BASE+'?func=DeleteBHYTByStt'+('&stt='+encodeURIComponent(_0x2d43d0))+(_0x1a45b0(0x1a5)+encodeURIComponent(_0x17b0fe)),_0x4dff5d=await fetch(_0x36768e);return await _0x4dff5d['json']();}async function getDanhSachBHTN(_0x4a7b14,_0x3525e6){const _0x56b5f7=_0x1e29d6,_0xfee752=API_BASE+_0x56b5f7(0x1c0)+encodeURIComponent(_0x4a7b14)+_0x56b5f7(0x1ba)+encodeURIComponent(_0x3525e6),_0x21680f=await fetch(_0xfee752);return await _0x21680f[_0x56b5f7(0x1c1)]();}async function getBHTNStatus(_0x3ecbd8,_0x19e266,_0x1eb993){const _0x2a7cd6=_0x1e29d6,_0x24564c=API_BASE+_0x2a7cd6(0x1af)+encodeURIComponent(_0x3ecbd8)+_0x2a7cd6(0x1d7)+encodeURIComponent(_0x19e266)+_0x2a7cd6(0x1ba)+encodeURIComponent(_0x1eb993),_0xfb0b9e=await fetch(_0x24564c);return await _0xfb0b9e['json']();}async function getHosoBHTNByHS(_0x2aae4e,_0x558bd6,_0x36fb73){const _0x95ddea=_0x1e29d6,_0x27d282=API_BASE+_0x95ddea(0x1e4)+encodeURIComponent(_0x2aae4e)+_0x95ddea(0x1d7)+encodeURIComponent(_0x558bd6)+'&lop_hoc='+encodeURIComponent(_0x36fb73),_0x577a04=await fetch(_0x27d282);return await _0x577a04[_0x95ddea(0x1c1)]();}async function getGiaBHTN(){const _0x419504=_0x1e29d6,_0x105982=API_BASE+_0x419504(0x1e7),_0x2f39df=await fetch(_0x105982);return await _0x2f39df[_0x419504(0x1c1)]();}function normalizeGiaBHTNResponse(_0x3e9ece){const _0x2a2076=_0x1e29d6;if(!_0x3e9ece)return{};const _0x67c749=_0x3e9ece[_0x2a2076(0x1b8)]!==undefined?_0x3e9ece[_0x2a2076(0x1b8)]:_0x3e9ece;if(Array['isArray'](_0x67c749))return _0x67c749[0x0]||{};return _0x67c749||{};}async function nopHoSoBHTN(_0x4ef2b6){const _0x400ff0=_0x1e29d6,_0x5f38b2=Object[_0x400ff0(0x1ce)](_0x4ef2b6)['map'](([_0x3453f3,_0x47d715])=>encodeURIComponent(_0x3453f3)+'='+encodeURIComponent(_0x47d715??''))[_0x400ff0(0x1d9)]('&'),_0x51dc0f=API_BASE+_0x400ff0(0x19a)+_0x5f38b2,_0x26c55d=await fetch(_0x51dc0f);return await _0x26c55d[_0x400ff0(0x1c1)]();}async function suaHoSoBHTN(_0x58bd21){const _0x3ddc76=_0x1e29d6,_0x2ae45c=Object['entries'](_0x58bd21)[_0x3ddc76(0x1c4)](([_0xf49d37,_0xaffc35])=>encodeURIComponent(_0xf49d37)+'='+encodeURIComponent(_0xaffc35??''))[_0x3ddc76(0x1d9)]('&'),_0x2450ce=API_BASE+_0x3ddc76(0x1aa)+_0x2ae45c,_0x5c9bac=await fetch(_0x2450ce);return await _0x5c9bac[_0x3ddc76(0x1c1)]();}async function deleteBHTNByKey({so_dinh_danh:_0xcae57c,ma_truong:_0x1dfdb1,lop_hoc:_0x209d08,phan_quyen:phan_quyen=''}){const _0x2ba2fa=_0x1e29d6,_0x416900=API_BASE+'?func=DeleteBHTN'+('&so_dinh_danh='+encodeURIComponent(_0xcae57c))+(_0x2ba2fa(0x1d7)+encodeURIComponent(_0x1dfdb1))+(_0x2ba2fa(0x1ba)+encodeURIComponent(_0x209d08))+('&phan_quyen='+encodeURIComponent(phan_quyen)),_0x2323e5=await fetch(_0x416900);return await _0x2323e5[_0x2ba2fa(0x1c1)]();}async function deleteBHTNByStt(_0x49ac71,_0x19e94d=''){const _0x5917f3=_0x1e29d6,_0x4438d4=API_BASE+_0x5917f3(0x1db)+('&stt='+encodeURIComponent(_0x49ac71))+(_0x5917f3(0x1a5)+encodeURIComponent(_0x19e94d)),_0x2822c0=await fetch(_0x4438d4);return await _0x2822c0[_0x5917f3(0x1c1)]();}
+// Sử dụng link Apps Script Web App của bạn!
+const API_BASE = "https://script.google.com/macros/s/AKfycbwfsTcpgpduAP6bsQnDu1vsUTzMrtYNRMyZLsqKDJu-5j910xP69GXmdS1OaOAdKbNJ/exec";
+
+
+// --- Drop-in limiter for fetch: queue + retry + small cache ---
+(() => {
+  const origFetch = window.fetch.bind(window);
+
+  // Cấu hình nhẹ
+  const MAX_CONCURRENCY = 3;     // chạy song song tối đa
+  const MIN_INTERVAL_MS = 150;   // giãn cách giữa 2 lượt lấy từ hàng đợi
+  const RETRIES = 2;             // retry khi lỗi mạng / 429
+  const RETRY_BASE_MS = 400;     // backoff cơ bản
+  const CACHE_TTL_MS = 30_000;   // cache GET 30s để chống gọi lặp
+
+  const cache = new Map(); // key: URL, val: {ts, jsonPromise}
+  const q = [];
+  let active = 0, lastDeq = 0;
+
+  async function limitedFetch(input, init) {
+    // Cache GET trong 30s (login/register là GET hiện tại)
+    const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
+    const url = (typeof input === 'string' ? input : input.url);
+
+    if (method === 'GET' && CACHE_TTL_MS > 0) {
+      const c = cache.get(url);
+      const now = Date.now();
+      if (c && (now - c.ts) < CACHE_TTL_MS) return c.jsonPromise.then(data => new Response(new Blob([JSON.stringify(data)]), {headers: {'Content-Type':'application/json'}}));
+    }
+
+    // Đưa vào hàng đợi
+    return new Promise((resolve, reject) => {
+      q.push({ input, init, resolve, reject, attempt: 0 });
+      pump();
+    });
+
+    function pump() {
+      if (!q.length) return;
+      const now = Date.now();
+      if (active >= MAX_CONCURRENCY || (now - lastDeq) < MIN_INTERVAL_MS) {
+        setTimeout(pump, MIN_INTERVAL_MS);
+        return;
+      }
+      lastDeq = now;
+      const task = q.shift();
+      active++;
+      doFetch(task).finally(() => { active--; pump(); });
+    }
+
+    async function doFetch(task) {
+      try {
+        const res = await origFetch(task.input, task.init);
+        // Thử backoff mềm nếu bị 429 hoặc lỗi tạm thời
+        if ((res.status === 429 || res.status === 503) && task.attempt < RETRIES) {
+          task.attempt++;
+          const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
+          await new Promise(r => setTimeout(r, wait));
+          return doFetch(task);
+        }
+        // Cache JSON của GET
+        if (method === 'GET' && res.ok && res.headers.get('Content-Type')?.includes('application/json')) {
+          const jsonPromise = res.clone().json();
+          cache.set(url, { ts: Date.now(), jsonPromise });
+        }
+        task.resolve(res);
+      } catch (err) {
+        if (task.attempt < RETRIES) {
+          task.attempt++;
+          const wait = RETRY_BASE_MS * Math.pow(2, task.attempt - 1);
+          await new Promise(r => setTimeout(r, wait));
+          return doFetch(task);
+        }
+        task.reject(err);
+      }
+    }
+  }
+
+  window.fetch = limitedFetch;
+})();
+
+
+
+
+async function login(sdt, password) {
+  const url = `${API_BASE}?func=Login&sdt=${encodeURIComponent(sdt)}&password=${encodeURIComponent(password)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+async function register(user) {
+  const url = `${API_BASE}?func=Register&ho_ten=${encodeURIComponent(user.ho_ten)}&sdt=${encodeURIComponent(user.sdt)}&password=${encodeURIComponent(user.password)}&ma_truong=${encodeURIComponent(user.ma_truong)}&loai_user=${encodeURIComponent(user.loai_user)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+async function forgotPassword(sdt) {
+  const url = `${API_BASE}?func=ForgotPassword&sdt=${encodeURIComponent(sdt)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// API lấy toàn bộ danh sách học sinh
+async function getAllDanhSachHocsinh(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetAllDanhSachHocsinh&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy danh sách học sinh phân trang + tìm kiếm + sort
+async function getDanhSachHocsinhPaginated(ma_truong, lop_hoc, start = 0, limit = 10, query = "", sortField = "", sortDir = 1) {
+  const url = `${API_BASE}?func=GetDanhSachHocsinhPaginated`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
+    + `&start=${start}`
+    + `&limit=${limit}`
+    + `&query=${encodeURIComponent(query)}`
+    + `&sortField=${encodeURIComponent(sortField)}`
+    + `&sortDir=${sortDir}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Thêm học sinh đơn lẻ
+async function themHocsinh(hs) {
+  const url = `${API_BASE}?func=ThemHocsinh`
+    + `&ma_so_bhxh=${encodeURIComponent(hs.ma_so_bhxh)}`
+    + `&ho_ten_hoc_sinh=${encodeURIComponent(hs.ho_ten_hoc_sinh)}`
+    + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
+    + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
+    + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
+    + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+    + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+    + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
+    + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
+    + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
+    + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+    + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+    + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
+    + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Import từng dòng (giữ nguyên chiến lược)
+async function importDanhSachHocsinh(listHS) {
+  let okCount = 0, failCount = 0, errors = [];
+  for (const hs of listHS) {
+    const url = `${API_BASE}?func=ThemHocsinh`
+      + `&ma_so_bhxh=${encodeURIComponent(hs.ma_so_bhxh)}`
+      + `&ho_ten_hoc_sinh=${encodeURIComponent(hs.ho_ten_hoc_sinh)}`
+      + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
+      + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
+      + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
+      + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+      + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+      + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
+      + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
+      + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+      + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
+      + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+      + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+      + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
+      + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.success) okCount++;
+      else { failCount++; errors.push(json.message || "Lỗi không xác định"); }
+    } catch (err) {
+      failCount++; errors.push(err.message);
+    }
+    await sleep(150); // 👈 giãn 150ms giữa mỗi request
+  }
+  if (failCount === 0) return { success: true, imported: okCount };
+  else return { success: false, imported: okCount, errors };
+}
+
+// Sửa học sinh
+async function suaHocsinh(hs) {
+  const url = `${API_BASE}?func=UpdateHocsinh`
+    + `&stt=${encodeURIComponent(hs.stt)}`
+    + `&ma_so_bhxh=${encodeURIComponent(hs.ma_so_bhxh)}`
+    + `&ho_ten_hoc_sinh=${encodeURIComponent(hs.ho_ten_hoc_sinh)}`
+    + `&ngay_sinh=${encodeURIComponent(hs.ngay_sinh)}`
+    + `&gioi_tinh=${encodeURIComponent(hs.gioi_tinh)}`
+    + `&dia_chi=${encodeURIComponent(hs.dia_chi)}`
+    + `&ngay_het_han_bhyt=${encodeURIComponent(hs.ngay_het_han_bhyt)}`
+    + `&ngay_het_han_bhtn=${encodeURIComponent(hs.ngay_het_han_bhtn)}`
+    + `&lop_hoc=${encodeURIComponent(hs.lop_hoc)}`
+    + `&sdt_lienhe=${encodeURIComponent(hs.sdt_lienhe)}`
+    + `&so_dinh_danh=${encodeURIComponent(hs.so_dinh_danh)}`
+    + `&noi_kham_bhyt=${encodeURIComponent(hs.noi_kham_bhyt)}`
+    + `&ten_cha_me=${encodeURIComponent(hs.ten_cha_me)}`
+    + `&doi_tuong_dong=${encodeURIComponent(hs.doi_tuong_dong ?? "null")}`
+    + `&ghi_chu=${encodeURIComponent(hs.ghi_chu ?? "null")}`
+    + `&ma_truong=${encodeURIComponent(hs.ma_truong)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa học sinh (theo stt hoặc số định danh)
+async function xoaHocsinh(id) {
+  const url = `${API_BASE}?func=DeleteHocsinh&id=${encodeURIComponent(id)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa nhiều học sinh
+async function xoaNhieuHocsinh(ids) {
+  const url = `${API_BASE}?func=DeleteManyHocsinh&ids=${encodeURIComponent(ids.join(","))}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+/* ====== BHYT: giữ nguyên các hàm phía dưới nếu đã chạy tốt ====== */
+// ... (không thay đổi phần BHYT hiện có)
+
+
+
+
+
+
+
+
+
+
+
+// Lấy danh sách BHYT theo trường/lớp (trả đủ cột, có so_ho_so)
+async function getDanhSachBHYT(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetDanhSachBHYT&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Trạng thái BHYT theo HS
+async function getBHYTStatus(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetBHYTStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// (Tùy nơi gọi) nộp hồ sơ qua GET param
+async function nopHoSoBHYT(payload) {
+  const params = Object.entries(payload).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=NopHoSoBHYT&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Sửa hồ sơ qua GET param
+async function suaHoSoBHYT(payload) {
+  const params = Object.entries(payload).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=SuaHoSoBHYT&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy hồ sơ BHYT theo HS
+async function getHosoBHYTByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetHosoBHYTByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// (Giữ lại) Hàm POST cũ — backend chưa implement; chỉ dùng nếu bạn bổ sung route POST tương ứng
+async function nopBHYTHoSo({ so_dinh_danh, noi_kham, so_thang_dong, user_info }) {
+  const res = await fetch(`${API_BASE}?func=NopBHYTHoSo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ so_dinh_danh, noi_kham, so_thang_dong, user_info })
+  });
+  return await res.json();
+}
+
+
+// Xóa hồ sơ BHYT theo so_dinh_danh + ma_truong + lop_hoc (dùng cho "Chưa thu" khi hồ sơ đang chờ duyệt)
+async function deleteBHYTByKey({ so_dinh_danh, ma_truong, lop_hoc, phan_quyen = "" }) {
+  const url = `${API_BASE}?func=DeleteBHYT`
+    + `&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa hồ sơ BHYT theo stt (dùng cho “Đã thu”)
+async function deleteBHYTByStt(stt, phan_quyen = "") {
+  const url = `${API_BASE}?func=DeleteBHYTByStt`
+    + `&stt=${encodeURIComponent(stt)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ====== BHTN: API tương thích model/controller mới ====== */
+
+// Lấy danh sách BHTN theo trường/lớp
+async function getDanhSachBHTN(ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetDanhSachBHTN&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Trạng thái BHTN theo HS (đã đóng/chưa đóng)
+async function getBHTNStatus(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetBHTNStatus&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy hồ sơ BHTN theo HS (1 học sinh)
+async function getHosoBHTNByHS(so_dinh_danh, ma_truong, lop_hoc) {
+  const url = `${API_BASE}?func=GetHosoBHTNByHS&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}&ma_truong=${encodeURIComponent(ma_truong)}&lop_hoc=${encodeURIComponent(lop_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Bảng giá BHTN (12 tháng)
+async function getGiaBHTN() {
+  const url = `${API_BASE}?func=GetGiaBHTN`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+
+// Helper bóc payload bảng giá BHTN thành object
+function normalizeGiaBHTNResponse(res){
+  if (!res) return {};
+  const d = (res.data !== undefined) ? res.data : res;
+  if (Array.isArray(d)) return d[0] || {};
+  return d || {};
+}
+
+
+
+
+/**
+ * Nộp hồ sơ BHTN (tạo mới/ghi đè nếu đã tồn tại theo so_dinh_danh + lớp + trường)
+ * Lưu ý:
+ *  - ma_so_bhtn có thể rỗng (admin kích hoạt sau).
+ *  - so_thang_dong cố định 12 ở backend (không cần gửi).
+ *  - KHÔNG có trường noi_kham_bhyt.
+ *  - có thể truyền so_tien/hoa_hong để override, nếu không backend sẽ lấy theo Gia_BHTN.
+ */
+async function nopHoSoBHTN(payload) {
+  const qs = Object.entries(payload).map(([k, v]) =>
+    `${encodeURIComponent(k)}=${encodeURIComponent(v ?? "")}`
+  ).join("&");
+  const url = `${API_BASE}?func=NopHoSoBHTN&${qs}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+/**
+ * Sửa hồ sơ BHTN
+ *  - Nếu không muốn thay đổi ma_so_bhtn, có thể KHÔNG gửi field này.
+ *  - Backend sẽ tính lại hạn 12 tháng dựa trên ngay_het_han_bhtn_cu nếu bạn gửi cập nhật.
+ */
+async function suaHoSoBHTN(payload) {
+  const qs = Object.entries(payload).map(([k, v]) =>
+    `${encodeURIComponent(k)}=${encodeURIComponent(v ?? "")}`
+  ).join("&");
+  const url = `${API_BASE}?func=SuaHoSoBHTN&${qs}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+
+
+
+// Xóa hồ sơ BHTN theo so_dinh_danh + ma_truong + lop_hoc (dùng cho "Chưa thu" khi hồ sơ đang chờ duyệt)
+async function deleteBHTNByKey({ so_dinh_danh, ma_truong, lop_hoc, phan_quyen = "" }) {
+  const url = `${API_BASE}?func=DeleteBHTN`
+    + `&so_dinh_danh=${encodeURIComponent(so_dinh_danh)}`
+    + `&ma_truong=${encodeURIComponent(ma_truong)}`
+    + `&lop_hoc=${encodeURIComponent(lop_hoc)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa hồ sơ BHTN theo stt (dùng cho “ĐÃ THU”)
+async function deleteBHTNByStt(stt, phan_quyen = "") {
+  const url = `${API_BASE}?func=DeleteBHTNByStt`
+    + `&stt=${encodeURIComponent(stt)}`
+    + `&phan_quyen=${encodeURIComponent(phan_quyen)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
