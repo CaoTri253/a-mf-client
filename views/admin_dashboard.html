@@ -18,8 +18,6 @@
 
   <!-- Thư viện xuất mẫu PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://raw.githack.com/MrRio/jsPDF/master/src/jspdf.plugin.addimage.js"></script>
-  <script src="https://raw.githack.com/parallax/jsPDF/master/dist/jspdf.plugin.autotable.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Regular-normal.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Bold-bold.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -5409,7 +5407,8 @@
               : `` }
           <button class="btn btn-sm btn-primary" onclick="bhtnp_onPrintReceiptIdx(${i})" title="In phiếu thu"><i class="bi bi-printer"></i></button>
           <button class="btn btn-sm btn-danger" onclick="bhtnp_deleteIdx(${i})" title="Xóa hồ sơ"><i class="bi bi-trash"></i></button>
-        </div>`;
+          ${claimBtn}
+          </div>`;
       }
 
 
