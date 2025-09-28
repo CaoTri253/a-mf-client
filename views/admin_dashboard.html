@@ -5856,19 +5856,17 @@
           downloadBtn.style.display = isValid ? 'inline-block' : 'none';
       }
 
-      // Hàm tạo và tải file PDF (PHIÊN BẢN CUỐI CÙNG - Tải font từ file local)
+      // Hàm tạo và tải file PDF (PHIÊN BẢN CUỐI CÙNG - ĐÃ SỬA ĐÚNG ĐƯỜNG DẪN FONT)
       window.bhtnp_generateClaimPDF = async function() { // <== Thêm "async" ở đây
         showLoading(); // Hiển thị spinner loading
         try {
             // --- Bắt đầu: Tải font từ thư mục assets/font ---
-            // Hàm helper để tải file và chuyển thành Base64
             const fetchFontAsBase64 = async (url) => {
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`Không thể tải font: ${url}`);
                 }
                 const fontBuffer = await response.arrayBuffer();
-                // Thủ thuật chuyển ArrayBuffer sang chuỗi Base64
                 let binary = '';
                 const bytes = new Uint8Array(fontBuffer);
                 for (let i = 0; i < bytes.byteLength; i++) {
@@ -5877,8 +5875,8 @@
                 return window.btoa(binary);
             };
             
-            // Tải font Arimo Regular. jsPDF có thể tự tạo bản Bold từ bản Regular.
-            const arimoRegularBase64 = await fetchFontAsBase64('assets/font/Arimo-Regular.ttf');
+            // SỬA LỖI Ở ĐÂY: Thêm "../" để trỏ đường dẫn đúng từ thư mục /views
+            const arimoRegularBase64 = await fetchFontAsBase64('../assets/font/Arimo-Regular.ttf');
             // --- Kết thúc: Tải font ---
 
             // Lấy dữ liệu từ form
