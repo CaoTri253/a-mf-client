@@ -5863,10 +5863,15 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // Thêm font tiếng Việt
-        doc.addFont('Arimo-Regular-normal.js', 'Arimo', 'normal');
-        doc.addFont('Arimo-Bold-bold.js', 'Arimo', 'bold');
-        doc.setFont('Arimo');
+        // === PHẦN SỬA LỖI FONT ===
+        // LỖI Ở ĐÂY: Các dòng này yêu cầu jsPDF tải file font từ server, gây lỗi 404.
+        // doc.addFont('Arimo-Regular-normal.js', 'Arimo', 'normal');
+        // doc.addFont('Arimo-Bold-bold.js', 'Arimo', 'bold');
+        
+        // SỬA LẠI: Chỉ cần đặt font đã nạp sẵn từ thẻ <script> trong <head>.
+        // Thư viện đã tự đăng ký font "Arimo" khi bạn nạp file .js của nó.
+        doc.setFont('Arimo', 'normal'); // Đặt font mặc định là Arimo normal
+        // === KẾT THÚC PHẦN SỬA LỖI ===
 
         let y = 15;
         const x = 15;
@@ -5878,7 +5883,7 @@
         const $radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
 
         // --- Vẽ Header ---
-        doc.setFont('Arimo', 'bold');
+        doc.setFont('Arimo', 'bold'); // Sử dụng Arimo bold
         doc.setFontSize(14);
         doc.text('GIẤY YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_mid, y, { align: 'center' });
         y += 6;
@@ -5892,7 +5897,7 @@
 
         // I. THÔNG TIN NGƯỜI ĐƯỢC BẢO HIỂM
         doc.text('I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)', x, y); y += 6;
-        doc.setFont('Arimo', 'normal');
+        doc.setFont('Arimo', 'normal'); // Chuyển về font thường
         doc.text(`Số GCNBH: ${$id('yc-gcnbh')}`, x, y); 
         doc.text(`Hiệu lực từ: ${$id('yc-hieuluc-tu')}  đến: ${$id('yc-hieuluc-den')}`, x_mid, y); y += 6;
         doc.text(`Họ tên: ${$id('yc-hoten-ndbh')}`, x, y);
@@ -5906,7 +5911,6 @@
         doc.setFont('Arimo', 'normal');
         doc.text(`Ngày xảy ra: ${$id('yc-ngay-xayra')}`, x, y); y += 6;
         
-        // Checkbox
         const drawCheckbox = (px, py, label, checked) => {
             doc.rect(px, py - 3.5, 4, 4);
             if (checked) {
