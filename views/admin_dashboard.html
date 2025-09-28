@@ -5857,6 +5857,7 @@
       }
 
       // Hàm tạo và tải file PDF (PHIÊN BẢN HOÀN CHỈNH - GIỐNG HỆT MẪU GỐC)
+      // Hàm tạo và tải file PDF (PHIÊN BẢN HOÀN CHỈNH - ĐÃ SỬA LỖI charSpace)
       window.bhtnp_generateClaimPDF = async function() {
         showLoading(); 
         try {
@@ -5865,7 +5866,7 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Không thể tải tài nguyên: ${url}`);
                 const buffer = await response.arrayBuffer();
-                if (!isBinary) return buffer; // Dành cho hình ảnh, có thể dùng blob URL
+                if (!isBinary) return buffer; 
                 
                 let binary = '';
                 const bytes = new Uint8Array(buffer);
@@ -5877,7 +5878,7 @@
 
             const [arimoRegularBase64, logoResponse] = await Promise.all([
                 fetchAssetAsBase64('../assets/font/Arimo-Regular.ttf'),
-                fetch('../assets/image/baoviet-logo.png') // Tải logo
+                fetch('../assets/image/baoviet-logo.png')
             ]);
             
             const logoBlob = await logoResponse.blob();
@@ -5903,7 +5904,6 @@
             const x_mid = PAGE_W / 2;
             const x_right = PAGE_W - MARGIN;
 
-            // --- Định nghĩa màu sắc theo mẫu ---
             const COLOR_DARK_BLUE = '#003366';
             const COLOR_TEXT_GRAY = '#555555';
 
@@ -5919,24 +5919,25 @@
                 doc.setFont('Arimo', 'normal');
                 return yPos + 6;
             };
-            const drawDataWithBoxes = (label, value, lx, ly, value_lx, charSpacing = 0.5) => {
+            
+            // SỬA LỖI Ở ĐÂY: Thêm { charSpacing = 0.5 } = {} vào tham số của hàm
+            const drawDataWithBoxes = (label, value, lx, ly, value_lx, { charSpacing = 0.5 } = {}) => {
                 doc.setFontSize(8);
                 doc.setTextColor(COLOR_TEXT_GRAY);
                 doc.text(label, lx, ly);
                 doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
                 doc.setFont('Arimo', 'bold');
-                doc.text(value, value_lx, ly, { charSpace });
+                doc.text(value, value_lx, ly, { charSpace: charSpacing }); // Và sửa lại cách dùng biến ở đây
                 doc.setFont('Arimo', 'normal');
             };
 
             // --- 1. Header ---
             doc.addImage(logoUrl, 'PNG', x, y, 45, 10);
-            URL.revokeObjectURL(logoUrl); // Giải phóng bộ nhớ
+            URL.revokeObjectURL(logoUrl);
             doc.setFontSize(10);
             doc.setFont('Arimo', 'bold');
             doc.text("BẢO HIỂM CON NGƯỜI", x_right, y + 6, { align: 'right' });
-            // Vẽ 3 chấm màu
             doc.setFillColor(4, 82, 159); doc.circle(x_right - 12, y + 1, 1.2, 'F');
             doc.setFillColor(4, 82, 159); doc.circle(x_right - 7, y + 1, 1.2, 'F');
             doc.setFillColor(253, 184, 19); doc.circle(x_right - 2, y + 1, 1.2, 'F');
@@ -5953,22 +5954,22 @@
 
             // --- 3. Section I ---
             y = drawSectionHeader(y, "I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)");
-            drawDataWithBoxes("Số Giấy chứng nhận bảo hiểm (GCNBH):", $id('yc-gcnbh'), x, y, x + 70, 2);
+            drawDataWithBoxes("Số Giấy chứng nhận bảo hiểm (GCNBH):", $id('yc-gcnbh'), x, y, x + 70, { charSpacing: 2 });
             y += 7;
-            drawDataWithBoxes("Hiệu lực từ:", $id('yc-hieuluc-tu'), x, y, x + 25, 2.5);
-            drawDataWithBoxes("Hiệu lực đến:", $id('yc-hieuluc-den'), x + 80, y, x + 105, 2.5);
+            drawDataWithBoxes("Hiệu lực từ:", $id('yc-hieuluc-tu'), x, y, x + 25, { charSpacing: 2.5 });
+            drawDataWithBoxes("Hiệu lực đến:", $id('yc-hieuluc-den'), x + 80, y, x + 105, { charSpacing: 2.5 });
             y += 7;
-            drawDataWithBoxes("Họ tên:", $id('yc-hoten-ndbh').toUpperCase(), x, y, x + 15, 2);
+            drawDataWithBoxes("Họ tên:", $id('yc-hoten-ndbh').toUpperCase(), x, y, x + 15, { charSpacing: 2 });
             y += 7;
-            drawDataWithBoxes("Ngày sinh:", $id('yc-ngaysinh-ndbh'), x, y, x + 20, 2.5);
-            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-ndbh'), x + 80, y, x + 125, 2);
+            drawDataWithBoxes("Ngày sinh:", $id('yc-ngaysinh-ndbh'), x, y, x + 20, { charSpacing: 2.5 });
+            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-ndbh'), x + 80, y, x + 125, { charSpacing: 2 });
             y += 7;
-            drawDataWithBoxes("Lớp, Trường:", `${$id('yc-lop')}, ${$id('yc-truong')}`, x, y, x + 25, 1);
+            drawDataWithBoxes("Lớp, Trường:", `${$id('yc-lop')}, ${$id('yc-truong')}`, x, y, x + 25, { charSpacing: 1 });
             y += 8;
             
             // --- 4. Section II ---
             y = drawSectionHeader(y, "II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM");
-            drawDataWithBoxes("Ngày xảy ra:", $id('yc-ngay-xayra'), x, y, x + 25, 2.5);
+            drawDataWithBoxes("Ngày xảy ra:", $id('yc-ngay-xayra'), x, y, x + 25, { charSpacing: 2.5 });
             y += 7;
             doc.setFontSize(8); doc.setTextColor(COLOR_TEXT_GRAY); doc.text("Nguyên nhân rủi ro:", x, y);
             const drawCheckbox = (px, py, label, checked) => { doc.rect(px, py - 3, 3, 3); if(checked){doc.setFont('Arimo', 'bold'); doc.text('X', px + 0.7, py-0.5); doc.setFont('Arimo', 'normal');} doc.setFontSize(9); doc.text(label, px + 5, y); };
@@ -5980,22 +5981,22 @@
             drawCheckbox(x + 50, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
             drawCheckbox(x + 80, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
             y += 7;
-            drawDataWithBoxes("Khám/ Điều trị tại:", $id('yc-noi-dieutri'), x, y, x + 35, 1);
+            drawDataWithBoxes("Khám/ Điều trị tại:", $id('yc-noi-dieutri'), x, y, x + 35, { charSpacing: 1 });
             y += 7;
-            drawDataWithBoxes("Từ ngày:", $id('yc-dieutri-tu'), x, y, x + 20, 2.5);
-            drawDataWithBoxes("Đến ngày:", $id('yc-dieutri-den'), x + 80, y, x + 100, 2.5);
+            drawDataWithBoxes("Từ ngày:", $id('yc-dieutri-tu'), x, y, x + 20, { charSpacing: 2.5 });
+            drawDataWithBoxes("Đến ngày:", $id('yc-dieutri-den'), x + 80, y, x + 100, { charSpacing: 2.5 });
             y += 7;
-            drawDataWithBoxes("Chẩn đoán của bác sĩ/ Nguyên nhân tai nạn:", $id('yc-chandoan'), x, y, x + 70, 1);
+            drawDataWithBoxes("Chẩn đoán của bác sĩ/ Nguyên nhân tai nạn:", $id('yc-chandoan'), x, y, x + 70, { charSpacing: 1 });
             y += 8;
 
             // --- 5. Section III ---
             y = drawSectionHeader(y, "III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)");
-            drawDataWithBoxes("Họ tên:", $id('yc-hoten-nyc').toUpperCase(), x, y, x + 15, 2);
+            drawDataWithBoxes("Họ tên:", $id('yc-hoten-nyc').toUpperCase(), x, y, x + 15, { charSpacing: 2 });
             y += 7;
-            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-nyc'), x, y, x + 45, 2);
+            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-nyc'), x, y, x + 45, { charSpacing: 2 });
             y += 7;
-            drawDataWithBoxes("Số điện thoại:", $id('yc-sdt-nyc'), x, y, x + 25, 2);
-            drawDataWithBoxes("Email:", $id('yc-email-nyc'), x + 80, y, x + 95, 1);
+            drawDataWithBoxes("Số điện thoại:", $id('yc-sdt-nyc'), x, y, x + 25, { charSpacing: 2 });
+            drawDataWithBoxes("Email:", $id('yc-email-nyc'), x + 80, y, x + 95, { charSpacing: 1 });
             y += 7;
             doc.setFontSize(8); doc.setTextColor(COLOR_TEXT_GRAY); doc.text("Quan hệ với người được bảo hiểm:", x, y);
             drawCheckbox(x + 55, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
@@ -6011,11 +6012,11 @@
             drawCheckbox(x + 5, y, 'Chuyển khoản', isChuyenKhoan);
             if(isChuyenKhoan) {
                 y += 6;
-                drawDataWithBoxes("Tên tài khoản:", $id('yc-tk-ten').toUpperCase(), x + 10, y, x + 35, 2);
-                drawDataWithBoxes("Số tài khoản:", $id('yc-tk-so'), x + 100, y, x + 125, 2);
+                drawDataWithBoxes("Tên tài khoản:", $id('yc-tk-ten').toUpperCase(), x + 10, y, x + 35, { charSpacing: 2 });
+                drawDataWithBoxes("Số tài khoản:", $id('yc-tk-so'), x + 100, y, x + 125, { charSpacing: 2 });
                 y += 7;
-                drawDataWithBoxes("Ngân hàng:", $id('yc-tk-nganhang'), x + 10, y, x + 30, 1);
-                drawDataWithBoxes("Chi nhánh:", $id('yc-tk-chinhanh'), x + 100, y, x + 120, 1);
+                drawDataWithBoxes("Ngân hàng:", $id('yc-tk-nganhang'), x + 10, y, x + 30, { charSpacing: 1 });
+                drawDataWithBoxes("Chi nhánh:", $id('yc-tk-chinhanh'), x + 100, y, x + 120, { charSpacing: 1 });
             }
             y += 7;
             drawCheckbox(x + 5, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan);
