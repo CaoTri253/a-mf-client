@@ -18,8 +18,6 @@
 
   <!-- Thư viện xuất mẫu PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Regular-normal.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Bold-bold.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 
@@ -5858,136 +5856,214 @@
           downloadBtn.style.display = isValid ? 'inline-block' : 'none';
       }
 
-      // Hàm tạo và tải file PDF
-      window.bhtnp_generateClaimPDF = function() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
+      // Hàm tạo và tải file PDF (PHIÊN BẢN CUỐI CÙNG - Tải font từ file local)
+      window.bhtnp_generateClaimPDF = async function() { // <== Thêm "async" ở đây
+        showLoading(); // Hiển thị spinner loading
+        try {
+            // --- Bắt đầu: Tải font từ thư mục assets/font ---
+            // Hàm helper để tải file và chuyển thành Base64
+            const fetchFontAsBase64 = async (url) => {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Không thể tải font: ${url}`);
+                }
+                const fontBuffer = await response.arrayBuffer();
+                // Thủ thuật chuyển ArrayBuffer sang chuỗi Base64
+                let binary = '';
+                const bytes = new Uint8Array(fontBuffer);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return window.btoa(binary);
+            };
+            
+            // Tải font Arimo Regular. jsPDF có thể tự tạo bản Bold từ bản Regular.
+            const arimoRegularBase64 = await fetchFontAsBase64('assets/font/Arimo-Regular.ttf');
+            // --- Kết thúc: Tải font ---
 
-        // === PHẦN SỬA LỖI FONT ===
-        // LỖI Ở ĐÂY: Các dòng này yêu cầu jsPDF tải file font từ server, gây lỗi 404.
-        // doc.addFont('Arimo-Regular-normal.js', 'Arimo', 'normal');
-        // doc.addFont('Arimo-Bold-bold.js', 'Arimo', 'bold');
-        
-        // SỬA LẠI: Chỉ cần đặt font đã nạp sẵn từ thẻ <script> trong <head>.
-        // Thư viện đã tự đăng ký font "Arimo" khi bạn nạp file .js của nó.
-        doc.setFont('Arimo', 'normal'); // Đặt font mặc định là Arimo normal
-        // === KẾT THÚC PHẦN SỬA LỖI ===
+            // Lấy dữ liệu từ form
+            const $id = (id) => document.getElementById(id).value.trim();
+            const $radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
 
-        let y = 15;
-        const x = 15;
-        const x_mid = 105;
-        const x_right = 195;
-        
-        const $id = (id) => document.getElementById(id).value.trim();
-        const $checked = (id) => document.getElementById(id).checked;
-        const $radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
 
-        // --- Vẽ Header ---
-        doc.setFont('Arimo', 'bold'); // Sử dụng Arimo bold
-        doc.setFontSize(14);
-        doc.text('GIẤY YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_mid, y, { align: 'center' });
-        y += 6;
-        doc.setFontSize(11);
-        doc.text('SẢN PHẨM TDHS - SV/KHCN GIÁO VIÊN', x_mid, y, { align: 'center' });
-        y += 10;
-        
-        // --- Vẽ các mục ---
-        doc.setFont('Arimo', 'bold');
-        doc.setFontSize(11);
+            // Thêm font từ Base64 đã tải vào hệ thống file ảo của jsPDF
+            doc.addFileToVFS('Arimo-Regular.ttf', arimoRegularBase64);
+            doc.addFont('Arimo-Regular.ttf', 'Arimo', 'normal');
+            doc.addFont('Arimo-Regular.ttf', 'Arimo', 'bold'); // jsPDF tự giả lập bold
 
-        // I. THÔNG TIN NGƯỜI ĐƯỢC BẢO HIỂM
-        doc.text('I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)', x, y); y += 6;
-        doc.setFont('Arimo', 'normal'); // Chuyển về font thường
-        doc.text(`Số GCNBH: ${$id('yc-gcnbh')}`, x, y); 
-        doc.text(`Hiệu lực từ: ${$id('yc-hieuluc-tu')}  đến: ${$id('yc-hieuluc-den')}`, x_mid, y); y += 6;
-        doc.text(`Họ tên: ${$id('yc-hoten-ndbh')}`, x, y);
-        doc.text(`Ngày sinh: ${$id('yc-ngaysinh-ndbh')}`, x_mid, y); y += 6;
-        doc.text(`Số CMND/CCCD/Hộ chiếu: ${$id('yc-cccd-ndbh')}`, x, y); y+= 6;
-        doc.text(`Lớp, Trường: ${$id('yc-lop')}, ${$id('yc-truong')}`, x, y); y += 10;
-        
-        // II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM
-        doc.setFont('Arimo', 'bold');
-        doc.text('II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM', x, y); y += 6;
-        doc.setFont('Arimo', 'normal');
-        doc.text(`Ngày xảy ra: ${$id('yc-ngay-xayra')}`, x, y); y += 6;
-        
-        const drawCheckbox = (px, py, label, checked) => {
-            doc.rect(px, py - 3.5, 4, 4);
-            if (checked) {
-                doc.setFontSize(12);
-                doc.text('X', px + 0.8, py);
-                doc.setFontSize(11);
+            // === BẮT ĐẦU VẼ PDF (Giữ nguyên phần vẽ chi tiết) ===
+            doc.setFont('Arimo', 'normal');
+            doc.setFontSize(10);
+
+            const PAGE_W = doc.internal.pageSize.getWidth();
+            const MARGIN = 15;
+            const x = MARGIN;
+            let y = 15;
+            const x_mid = PAGE_W / 2;
+            const x_right = PAGE_W - MARGIN;
+
+            const drawSectionHeader = (yPos, text) => {
+                doc.setFillColor(229, 242, 255);
+                doc.setTextColor(23, 77, 148);
+                doc.setFont('Arimo', 'bold');
+                doc.setFontSize(10);
+                doc.rect(x, yPos - 4, PAGE_W - (MARGIN * 2), 7, 'F');
+                doc.text(text, x + 2, yPos);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('Arimo', 'normal');
+                doc.setFontSize(10);
+                return yPos + 8;
+            };
+            const drawCheckbox = (px, py, label, checked) => {
+                doc.setDrawColor(0);
+                doc.rect(px, py - 3.5, 4, 4);
+                if (checked) {
+                    doc.setFont('Arimo', 'bold');
+                    doc.setFontSize(12);
+                    doc.text('X', px + 0.8, py);
+                    doc.setFont('Arimo', 'normal');
+                    doc.setFontSize(10);
+                }
+                doc.text(label, px + 6, py);
+            };
+            const drawDataField = (label, value, lx, ly, vx, vy) => {
+                doc.setTextColor(100, 100, 100);
+                doc.text(label, lx, ly);
+                doc.setTextColor(0, 0, 0);
+                doc.text(value, vx, vy);
             }
-            doc.text(label, px + 6, py);
-        };
 
-        doc.text('Nguyên nhân rủi ro:', x, y);
-        drawCheckbox(x + 40, y, 'Tai nạn', $radio('yc-nguyennhan') === 'Tai nạn');
-        drawCheckbox(x + 70, y, 'Ốm bệnh', $radio('yc-nguyennhan') === 'Ốm bệnh');
-        drawCheckbox(x + 100, y, 'Tử vong', $radio('yc-nguyennhan') === 'Tử vong');
-        y += 6;
+            // 1. Header
+            doc.setFont('Arimo', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(23, 77, 148);
+            doc.text("BAOVIET INSURANCE", x, y);
+            doc.setDrawColor(23, 77, 148);
+            doc.line(x, y + 1, x + 55, y + 1);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('Arimo', 'normal');
+            doc.setFontSize(10);
+            doc.text("BẢO HIỂM CON NGƯỜI", x_right, y, { align: 'right' });
+            y += 8;
 
-        doc.text('Hình thức điều trị:', x, y);
-        drawCheckbox(x + 40, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
-        drawCheckbox(x + 70, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
-        y += 6;
+            // 2. Title
+            doc.setFont('Arimo', 'bold');
+            doc.setFontSize(14);
+            doc.text("GIẤY YÊU CẦU TRẢ TIỀN BẢO HIỂM", x_mid, y, { align: 'center' });
+            y += 5;
+            doc.setFont('Arimo', 'normal');
+            doc.setFontSize(9);
+            doc.text("SẢN PHẨM TDHS - SV/KHCN GIÁO VIÊN", x_mid, y, { align: 'center' });
+            y += 8;
 
-        doc.text(`Khám/Điều trị tại: ${$id('yc-noi-dieutri')}`, x, y); y += 6;
-        doc.text(`Từ ngày: ${$id('yc-dieutri-tu')}      Đến ngày: ${$id('yc-dieutri-den')}`, x, y); y += 6;
-        doc.text(`Chẩn đoán của bác sĩ/Nguyên nhân tai nạn: ${$id('yc-chandoan')}`, x, y); y += 10;
+            // 3. Section I
+            y = drawSectionHeader(y, "I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)");
+            drawDataField("Số GCNBH:", $id('yc-gcnbh'), x, y, x + 30, y);
+            drawDataField("Hiệu lực từ:", $id('yc-hieuluc-tu'), x + 90, y, x + 110, y);
+            drawDataField("đến:", $id('yc-hieuluc-den'), x + 140, y, x + 148, y);
+            y += 7;
+            drawDataField("Họ và tên:", $id('yc-hoten-ndbh'), x, y, x + 30, y);
+            drawDataField("Ngày sinh:", $id('yc-ngaysinh-ndbh'), x + 90, y, x + 110, y);
+            y += 7;
+            drawDataField("Số CCCD/Định danh:", $id('yc-cccd-ndbh'), x, y, x + 40, y);
+            y += 7;
+            drawDataField("Lớp, Trường:", `${$id('yc-lop')}, ${$id('yc-truong')}`, x, y, x + 30, y);
+            y += 8;
 
-        // III. THÔNG TIN NGƯỜI YÊU CẦU
-        doc.setFont('Arimo', 'bold');
-        doc.text('III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)', x, y); y += 6;
-        doc.setFont('Arimo', 'normal');
-        doc.text(`Họ tên: ${$id('yc-hoten-nyc')}`, x, y); y += 6;
-        doc.text(`Số CMND/CCCD/Hộ chiếu: ${$id('yc-cccd-nyc')}`, x, y);
-        doc.text(`Số điện thoại: ${$id('yc-sdt-nyc')}`, x_mid, y); y += 6;
-        doc.text(`Email: ${$id('yc-email-nyc') || '(Không có)'}`, x, y); y += 6;
+            // 4. Section II
+            y = drawSectionHeader(y, "II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM");
+            drawDataField("Ngày xảy ra:", $id('yc-ngay-xayra'), x, y, x + 30, y);
+            y += 7;
+            doc.text("Nguyên nhân rủi ro:", x, y);
+            drawCheckbox(x + 40, y, 'Tai nạn', $radio('yc-nguyennhan') === 'Tai nạn');
+            drawCheckbox(x + 70, y, 'Ốm bệnh', $radio('yc-nguyennhan') === 'Ốm bệnh');
+            drawCheckbox(x + 100, y, 'Tử vong', $radio('yc-nguyennhan') === 'Tử vong');
+            y += 7;
+            doc.text("Hình thức điều trị:", x, y);
+            drawCheckbox(x + 40, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
+            drawCheckbox(x + 70, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
+            y += 7;
+            drawDataField("Khám/Điều trị tại:", $id('yc-noi-dieutri'), x, y, x + 40, y);
+            y += 7;
+            drawDataField("Từ ngày:", $id('yc-dieutri-tu'), x, y, x + 30, y);
+            drawDataField("Đến ngày:", $id('yc-dieutri-den'), x + 90, y, x + 110, y);
+            y += 7;
+            drawDataField("Chẩn đoán của bác sĩ:", $id('yc-chandoan'), x, y, x + 45, y);
+            y += 8;
+
+            // 5. Section III
+            y = drawSectionHeader(y, "III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)");
+            drawDataField("Họ và tên:", $id('yc-hoten-nyc'), x, y, x + 30, y);
+            y += 7;
+            drawDataField("Số CCCD/Hộ chiếu:", $id('yc-cccd-nyc'), x, y, x + 40, y);
+            drawDataField("Số điện thoại:", $id('yc-sdt-nyc'), x + 110, y, x + 135, y);
+            y += 7;
+            drawDataField("Email:", $id('yc-email-nyc') || '(Không có)', x, y, x + 30, y);
+            y += 7;
+            doc.text("Quan hệ với NĐBH:", x, y);
+            drawCheckbox(x + 40, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
+            drawCheckbox(x + 70, y, 'Con', $radio('yc-quanhe') === 'Con');
+            drawCheckbox(x + 95, y, 'Vợ/chồng', $radio('yc-quanhe') === 'Vợ/chồng');
+            let khacText = ($radio('yc-quanhe') === 'Khác') ? $id('yc-quanhe-khac-text') : '...';
+            doc.text(`Khác: ${khacText}`, x + 130, y);
+            y += 8;
+
+            // 6. Section IV
+            y = drawSectionHeader(y, "IV. HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG");
+            const isChuyenKhoan = $radio('yc-hinhthuc-nhantien') === 'Chuyển khoản';
+            drawCheckbox(x, y, 'Chuyển khoản', isChuyenKhoan);
+            y += 6;
+            if (isChuyenKhoan) {
+                doc.text(`Tên tài khoản: ${$id('yc-tk-ten')}`, x + 10, y);
+                doc.text(`Số tài khoản: ${$id('yc-tk-so')}`, x + 90, y);
+                y += 6;
+                doc.text(`Ngân hàng: ${$id('yc-tk-nganhang')}`, x + 10, y);
+                doc.text(`Chi nhánh: ${$id('yc-tk-chinhanh')}`, x + 90, y);
+                y += 6;
+            } else {
+                y += 12;
+            }
+            drawCheckbox(x, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan);
+            y += 15;
+
+            // 7. Signature
+            const today = new Date();
+            const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+            doc.setFont('Arimo', 'normal');
+            doc.setFontSize(10);
+            doc.text(dateStr, x_right, y, { align: 'right' });
+            y += 6;
+            doc.setFont('Arimo', 'bold');
+            doc.text('NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_right - 35, y, { align: 'center' });
+            y += 5;
+            doc.setFont('Arimo', 'normal');
+            doc.setFontSize(9);
+            doc.text('(ký và ghi rõ họ tên)', x_right - 35, y, { align: 'center' });
+            y += 20;
+            doc.setFont('Arimo', 'bold');
+            doc.setFontSize(11);
+            doc.text($id('yc-hoten-nyc'), x_right - 35, y, { align: 'center' });
+            y += 10;
+            doc.setDrawColor(150);
+            doc.line(x, y, x_right, y);
+            y += 5;
         
-        let quanheText = $radio('yc-quanhe');
-        if (quanheText === 'Khác') {
-            quanheText = $id('yc-quanhe-khac-text');
+            // 8. Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text("Trụ sở chính: Số 7 Lý Thường Kiệt, phường Phan Chu Trinh, quận Hoàn Kiếm, Hà Nội | Hotline: 1900 558899 | Website: baovietonline.com.vn", x_mid, y, { align: 'center' });
+
+            // Tải file
+            doc.save(`YeuCauThanhToan_${stripVN(window.bhtnp_currentClaimHS?.ho_ten_hoc_sinh || 'HS').replace(/\s/g, '_')}.pdf`);
+
+        } catch (error) {
+            console.error("Lỗi khi tạo PDF:", error);
+            alert("Đã có lỗi xảy ra khi tạo file PDF. Vui lòng kiểm tra lại đường dẫn file font hoặc liên hệ quản trị viên.");
+        } finally {
+            hideLoading(); // Ẩn spinner loading
         }
-        doc.text(`Quan hệ với người được bảo hiểm:`, x, y);
-        drawCheckbox(x + 65, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
-        drawCheckbox(x + 90, y, 'Con', $radio('yc-quanhe') === 'Con');
-        drawCheckbox(x + 110, y, 'Vợ/chồng', $radio('yc-quanhe') === 'Vợ/chồng');
-        doc.text(`Khác: ${($radio('yc-quanhe') === 'Khác') ? quanheText : '...' }`, x + 140, y);
-        y += 10;
-        
-        // IV. HÌNH THỨC NHẬN TIỀN
-        doc.setFont('Arimo', 'bold');
-        doc.text('IV. HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG', x, y); y += 6;
-        doc.setFont('Arimo', 'normal');
-        
-        const isChuyenKhoan = $radio('yc-hinhthuc-nhantien') === 'Chuyển khoản';
-        drawCheckbox(x, y, 'Chuyển khoản', isChuyenKhoan); y += 6;
-        if (isChuyenKhoan) {
-            doc.text(`Tên tài khoản: ${$id('yc-tk-ten')}`, x + 10, y);
-            doc.text(`Số tài khoản: ${$id('yc-tk-so')}`, x_mid, y); y += 6;
-            doc.text(`Ngân hàng: ${$id('yc-tk-nganhang')}`, x + 10, y);
-            doc.text(`Chi nhánh: ${$id('yc-tk-chinhanh')}`, x_mid, y); y += 6;
-        } else {
-            y += 12; // Để trống không gian
-        }
-
-        drawCheckbox(x, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan); y += 15;
-
-        // --- Phần ký tên ---
-        const today = new Date();
-        const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
-        doc.text(dateStr, x_right, y, { align: 'right' }); y += 6;
-        
-        doc.setFont('Arimo', 'bold');
-        doc.text('NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_right - 35, y, { align: 'center' }); y += 6;
-        doc.setFont('Arimo', 'normal');
-        doc.text('(ký và ghi rõ họ tên)', x_right - 35, y, { align: 'center' }); y += 25;
-        doc.setFont('Arimo', 'bold');
-        doc.text($id('yc-hoten-nyc'), x_right - 35, y, { align: 'center' });
-
-        // Tải file
-        doc.save(`YeuCauThanhToan_${stripVN(window.bhtnp_currentClaimHS?.ho_ten_hoc_sinh || 'HS').replace(/\s/g, '_')}.pdf`);
       };
 
       // ===================================================================
