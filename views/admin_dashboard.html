@@ -5856,211 +5856,219 @@
           downloadBtn.style.display = isValid ? 'inline-block' : 'none';
       }
 
-      // Hàm tạo và tải file PDF (PHIÊN BẢN CUỐI CÙNG - ĐÃ SỬA ĐÚNG ĐƯỜNG DẪN FONT)
-      window.bhtnp_generateClaimPDF = async function() { // <== Thêm "async" ở đây
-        showLoading(); // Hiển thị spinner loading
+      // Hàm tạo và tải file PDF (PHIÊN BẢN HOÀN CHỈNH - GIỐNG HỆT MẪU GỐC)
+      window.bhtnp_generateClaimPDF = async function() {
+        showLoading(); 
         try {
-            // --- Bắt đầu: Tải font từ thư mục assets/font ---
-            const fetchFontAsBase64 = async (url) => {
+            // --- Bắt đầu: Tải đồng thời font và logo từ file local ---
+            const fetchAssetAsBase64 = async (url, isBinary = true) => {
                 const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Không thể tải font: ${url}`);
-                }
-                const fontBuffer = await response.arrayBuffer();
+                if (!response.ok) throw new Error(`Không thể tải tài nguyên: ${url}`);
+                const buffer = await response.arrayBuffer();
+                if (!isBinary) return buffer; // Dành cho hình ảnh, có thể dùng blob URL
+                
                 let binary = '';
-                const bytes = new Uint8Array(fontBuffer);
+                const bytes = new Uint8Array(buffer);
                 for (let i = 0; i < bytes.byteLength; i++) {
                     binary += String.fromCharCode(bytes[i]);
                 }
                 return window.btoa(binary);
             };
-            
-            // SỬA LỖI Ở ĐÂY: Thêm "../" để trỏ đường dẫn đúng từ thư mục /views
-            const arimoRegularBase64 = await fetchFontAsBase64('../assets/font/Arimo-Regular.ttf');
-            // --- Kết thúc: Tải font ---
 
-            // Lấy dữ liệu từ form
+            const [arimoRegularBase64, logoResponse] = await Promise.all([
+                fetchAssetAsBase64('../assets/font/Arimo-Regular.ttf'),
+                fetch('../assets/image/baoviet-logo.png') // Tải logo
+            ]);
+            
+            const logoBlob = await logoResponse.blob();
+            const logoUrl = URL.createObjectURL(logoBlob);
+            // --- Kết thúc: Tải tài nguyên ---
+
             const $id = (id) => document.getElementById(id).value.trim();
             const $radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
 
-            // Thêm font từ Base64 đã tải vào hệ thống file ảo của jsPDF
             doc.addFileToVFS('Arimo-Regular.ttf', arimoRegularBase64);
             doc.addFont('Arimo-Regular.ttf', 'Arimo', 'normal');
-            doc.addFont('Arimo-Regular.ttf', 'Arimo', 'bold'); // jsPDF tự giả lập bold
+            doc.addFont('Arimo-Regular.ttf', 'Arimo', 'bold');
 
-            // === BẮT ĐẦU VẼ PDF (Giữ nguyên phần vẽ chi tiết) ===
+            // === BẮT ĐẦU VẼ PDF ===
             doc.setFont('Arimo', 'normal');
-            doc.setFontSize(10);
-
+            const MARGIN = 12;
             const PAGE_W = doc.internal.pageSize.getWidth();
-            const MARGIN = 15;
             const x = MARGIN;
-            let y = 15;
+            let y = 12;
             const x_mid = PAGE_W / 2;
             const x_right = PAGE_W - MARGIN;
 
+            // --- Định nghĩa màu sắc theo mẫu ---
+            const COLOR_DARK_BLUE = '#003366';
+            const COLOR_TEXT_GRAY = '#555555';
+
+            // --- Helper Functions for Drawing ---
             const drawSectionHeader = (yPos, text) => {
-                doc.setFillColor(229, 242, 255);
-                doc.setTextColor(23, 77, 148);
+                doc.setFillColor(COLOR_DARK_BLUE);
+                doc.setTextColor(255, 255, 255);
                 doc.setFont('Arimo', 'bold');
-                doc.setFontSize(10);
-                doc.rect(x, yPos - 4, PAGE_W - (MARGIN * 2), 7, 'F');
+                doc.setFontSize(9);
+                doc.rect(x, yPos - 4.5, PAGE_W - (MARGIN * 2), 6.5, 'F');
                 doc.text(text, x + 2, yPos);
                 doc.setTextColor(0, 0, 0);
                 doc.setFont('Arimo', 'normal');
-                doc.setFontSize(10);
-                return yPos + 8;
+                return yPos + 6;
             };
-            const drawCheckbox = (px, py, label, checked) => {
-                doc.setDrawColor(0);
-                doc.rect(px, py - 3.5, 4, 4);
-                if (checked) {
-                    doc.setFont('Arimo', 'bold');
-                    doc.setFontSize(12);
-                    doc.text('X', px + 0.8, py);
-                    doc.setFont('Arimo', 'normal');
-                    doc.setFontSize(10);
-                }
-                doc.text(label, px + 6, py);
-            };
-            const drawDataField = (label, value, lx, ly, vx, vy) => {
-                doc.setTextColor(100, 100, 100);
+            const drawDataWithBoxes = (label, value, lx, ly, value_lx, charSpacing = 0.5) => {
+                doc.setFontSize(8);
+                doc.setTextColor(COLOR_TEXT_GRAY);
                 doc.text(label, lx, ly);
+                doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
-                doc.text(value, vx, vy);
-            }
+                doc.setFont('Arimo', 'bold');
+                doc.text(value, value_lx, ly, { charSpace });
+                doc.setFont('Arimo', 'normal');
+            };
 
-            // 1. Header
-            doc.setFont('Arimo', 'bold');
-            doc.setFontSize(14);
-            doc.setTextColor(23, 77, 148);
-            doc.text("BAOVIET INSURANCE", x, y);
-            doc.setDrawColor(23, 77, 148);
-            doc.line(x, y + 1, x + 55, y + 1);
-            doc.setTextColor(0, 0, 0);
-            doc.setFont('Arimo', 'normal');
+            // --- 1. Header ---
+            doc.addImage(logoUrl, 'PNG', x, y, 45, 10);
+            URL.revokeObjectURL(logoUrl); // Giải phóng bộ nhớ
             doc.setFontSize(10);
-            doc.text("BẢO HIỂM CON NGƯỜI", x_right, y, { align: 'right' });
-            y += 8;
+            doc.setFont('Arimo', 'bold');
+            doc.text("BẢO HIỂM CON NGƯỜI", x_right, y + 6, { align: 'right' });
+            // Vẽ 3 chấm màu
+            doc.setFillColor(4, 82, 159); doc.circle(x_right - 12, y + 1, 1.2, 'F');
+            doc.setFillColor(4, 82, 159); doc.circle(x_right - 7, y + 1, 1.2, 'F');
+            doc.setFillColor(253, 184, 19); doc.circle(x_right - 2, y + 1, 1.2, 'F');
+            y += 15;
 
-            // 2. Title
+            // --- 2. Title ---
             doc.setFont('Arimo', 'bold');
             doc.setFontSize(14);
             doc.text("GIẤY YÊU CẦU TRẢ TIỀN BẢO HIỂM", x_mid, y, { align: 'center' });
             y += 5;
-            doc.setFont('Arimo', 'normal');
-            doc.setFontSize(9);
-            doc.text("SẢN PHẨM TDHS - SV/KHCN GIÁO VIÊN", x_mid, y, { align: 'center' });
-            y += 8;
-
-            // 3. Section I
-            y = drawSectionHeader(y, "I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)");
-            drawDataField("Số GCNBH:", $id('yc-gcnbh'), x, y, x + 30, y);
-            drawDataField("Hiệu lực từ:", $id('yc-hieuluc-tu'), x + 90, y, x + 110, y);
-            drawDataField("đến:", $id('yc-hieuluc-den'), x + 140, y, x + 148, y);
-            y += 7;
-            drawDataField("Họ và tên:", $id('yc-hoten-ndbh'), x, y, x + 30, y);
-            drawDataField("Ngày sinh:", $id('yc-ngaysinh-ndbh'), x + 90, y, x + 110, y);
-            y += 7;
-            drawDataField("Số CCCD/Định danh:", $id('yc-cccd-ndbh'), x, y, x + 40, y);
-            y += 7;
-            drawDataField("Lớp, Trường:", `${$id('yc-lop')}, ${$id('yc-truong')}`, x, y, x + 30, y);
-            y += 8;
-
-            // 4. Section II
-            y = drawSectionHeader(y, "II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM");
-            drawDataField("Ngày xảy ra:", $id('yc-ngay-xayra'), x, y, x + 30, y);
-            y += 7;
-            doc.text("Nguyên nhân rủi ro:", x, y);
-            drawCheckbox(x + 40, y, 'Tai nạn', $radio('yc-nguyennhan') === 'Tai nạn');
-            drawCheckbox(x + 70, y, 'Ốm bệnh', $radio('yc-nguyennhan') === 'Ốm bệnh');
-            drawCheckbox(x + 100, y, 'Tử vong', $radio('yc-nguyennhan') === 'Tử vong');
-            y += 7;
-            doc.text("Hình thức điều trị:", x, y);
-            drawCheckbox(x + 40, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
-            drawCheckbox(x + 70, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
-            y += 7;
-            drawDataField("Khám/Điều trị tại:", $id('yc-noi-dieutri'), x, y, x + 40, y);
-            y += 7;
-            drawDataField("Từ ngày:", $id('yc-dieutri-tu'), x, y, x + 30, y);
-            drawDataField("Đến ngày:", $id('yc-dieutri-den'), x + 90, y, x + 110, y);
-            y += 7;
-            drawDataField("Chẩn đoán của bác sĩ:", $id('yc-chandoan'), x, y, x + 45, y);
-            y += 8;
-
-            // 5. Section III
-            y = drawSectionHeader(y, "III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)");
-            drawDataField("Họ và tên:", $id('yc-hoten-nyc'), x, y, x + 30, y);
-            y += 7;
-            drawDataField("Số CCCD/Hộ chiếu:", $id('yc-cccd-nyc'), x, y, x + 40, y);
-            drawDataField("Số điện thoại:", $id('yc-sdt-nyc'), x + 110, y, x + 135, y);
-            y += 7;
-            drawDataField("Email:", $id('yc-email-nyc') || '(Không có)', x, y, x + 30, y);
-            y += 7;
-            doc.text("Quan hệ với NĐBH:", x, y);
-            drawCheckbox(x + 40, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
-            drawCheckbox(x + 70, y, 'Con', $radio('yc-quanhe') === 'Con');
-            drawCheckbox(x + 95, y, 'Vợ/chồng', $radio('yc-quanhe') === 'Vợ/chồng');
-            let khacText = ($radio('yc-quanhe') === 'Khác') ? $id('yc-quanhe-khac-text') : '...';
-            doc.text(`Khác: ${khacText}`, x + 130, y);
-            y += 8;
-
-            // 6. Section IV
-            y = drawSectionHeader(y, "IV. HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG");
-            const isChuyenKhoan = $radio('yc-hinhthuc-nhantien') === 'Chuyển khoản';
-            drawCheckbox(x, y, 'Chuyển khoản', isChuyenKhoan);
-            y += 6;
-            if (isChuyenKhoan) {
-                doc.text(`Tên tài khoản: ${$id('yc-tk-ten')}`, x + 10, y);
-                doc.text(`Số tài khoản: ${$id('yc-tk-so')}`, x + 90, y);
-                y += 6;
-                doc.text(`Ngân hàng: ${$id('yc-tk-nganhang')}`, x + 10, y);
-                doc.text(`Chi nhánh: ${$id('yc-tk-chinhanh')}`, x + 90, y);
-                y += 6;
-            } else {
-                y += 12;
-            }
-            drawCheckbox(x, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan);
-            y += 15;
-
-            // 7. Signature
-            const today = new Date();
-            const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
-            doc.setFont('Arimo', 'normal');
             doc.setFontSize(10);
-            doc.text(dateStr, x_right, y, { align: 'right' });
-            y += 6;
-            doc.setFont('Arimo', 'bold');
-            doc.text('NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_right - 35, y, { align: 'center' });
-            y += 5;
-            doc.setFont('Arimo', 'normal');
+            doc.text("SẢN PHẨM TDHS - SV/KHCN GIÁO VIÊN", x_mid, y, { align: 'center' });
+            y += 7;
+
+            // --- 3. Section I ---
+            y = drawSectionHeader(y, "I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)");
+            drawDataWithBoxes("Số Giấy chứng nhận bảo hiểm (GCNBH):", $id('yc-gcnbh'), x, y, x + 70, 2);
+            y += 7;
+            drawDataWithBoxes("Hiệu lực từ:", $id('yc-hieuluc-tu'), x, y, x + 25, 2.5);
+            drawDataWithBoxes("Hiệu lực đến:", $id('yc-hieuluc-den'), x + 80, y, x + 105, 2.5);
+            y += 7;
+            drawDataWithBoxes("Họ tên:", $id('yc-hoten-ndbh').toUpperCase(), x, y, x + 15, 2);
+            y += 7;
+            drawDataWithBoxes("Ngày sinh:", $id('yc-ngaysinh-ndbh'), x, y, x + 20, 2.5);
+            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-ndbh'), x + 80, y, x + 125, 2);
+            y += 7;
+            drawDataWithBoxes("Lớp, Trường:", `${$id('yc-lop')}, ${$id('yc-truong')}`, x, y, x + 25, 1);
+            y += 8;
+            
+            // --- 4. Section II ---
+            y = drawSectionHeader(y, "II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM");
+            drawDataWithBoxes("Ngày xảy ra:", $id('yc-ngay-xayra'), x, y, x + 25, 2.5);
+            y += 7;
+            doc.setFontSize(8); doc.setTextColor(COLOR_TEXT_GRAY); doc.text("Nguyên nhân rủi ro:", x, y);
+            const drawCheckbox = (px, py, label, checked) => { doc.rect(px, py - 3, 3, 3); if(checked){doc.setFont('Arimo', 'bold'); doc.text('X', px + 0.7, py-0.5); doc.setFont('Arimo', 'normal');} doc.setFontSize(9); doc.text(label, px + 5, y); };
+            drawCheckbox(x + 50, y, 'Tai nạn', $radio('yc-nguyennhan') === 'Tai nạn');
+            drawCheckbox(x + 80, y, 'Ốm bệnh', $radio('yc-nguyennhan') === 'Ốm bệnh');
+            drawCheckbox(x + 110, y, 'Tử vong', $radio('yc-nguyennhan') === 'Tử vong');
+            y += 7;
+            doc.setFontSize(8); doc.setTextColor(COLOR_TEXT_GRAY); doc.text("Hình thức điều trị:", x, y);
+            drawCheckbox(x + 50, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
+            drawCheckbox(x + 80, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
+            y += 7;
+            drawDataWithBoxes("Khám/ Điều trị tại:", $id('yc-noi-dieutri'), x, y, x + 35, 1);
+            y += 7;
+            drawDataWithBoxes("Từ ngày:", $id('yc-dieutri-tu'), x, y, x + 20, 2.5);
+            drawDataWithBoxes("Đến ngày:", $id('yc-dieutri-den'), x + 80, y, x + 100, 2.5);
+            y += 7;
+            drawDataWithBoxes("Chẩn đoán của bác sĩ/ Nguyên nhân tai nạn:", $id('yc-chandoan'), x, y, x + 70, 1);
+            y += 8;
+
+            // --- 5. Section III ---
+            y = drawSectionHeader(y, "III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)");
+            drawDataWithBoxes("Họ tên:", $id('yc-hoten-nyc').toUpperCase(), x, y, x + 15, 2);
+            y += 7;
+            drawDataWithBoxes("Số CMND/CCCD/Hộ chiếu:", $id('yc-cccd-nyc'), x, y, x + 45, 2);
+            y += 7;
+            drawDataWithBoxes("Số điện thoại:", $id('yc-sdt-nyc'), x, y, x + 25, 2);
+            drawDataWithBoxes("Email:", $id('yc-email-nyc'), x + 80, y, x + 95, 1);
+            y += 7;
+            doc.setFontSize(8); doc.setTextColor(COLOR_TEXT_GRAY); doc.text("Quan hệ với người được bảo hiểm:", x, y);
+            drawCheckbox(x + 55, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
+            drawCheckbox(x + 85, y, 'Con', $radio('yc-quanhe') === 'Con');
+            drawCheckbox(x + 115, y, 'Vợ/chồng', $radio('yc-quanhe') === 'Vợ/chồng');
+            let khacText = ($radio('yc-quanhe') === 'Khác') ? $id('yc-quanhe-khac-text') : '...';
+            doc.text(`Khác, vui lòng ghi rõ: ${khacText}`, x + 145, y-0.5);
+            y += 8;
+
+            // --- 6. Section IV ---
+            y = drawSectionHeader(y, "IV. THÔNG TIN VỀ HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG");
+            const isChuyenKhoan = $radio('yc-hinhthuc-nhantien') === 'Chuyển khoản';
+            drawCheckbox(x + 5, y, 'Chuyển khoản', isChuyenKhoan);
+            if(isChuyenKhoan) {
+                y += 6;
+                drawDataWithBoxes("Tên tài khoản:", $id('yc-tk-ten').toUpperCase(), x + 10, y, x + 35, 2);
+                drawDataWithBoxes("Số tài khoản:", $id('yc-tk-so'), x + 100, y, x + 125, 2);
+                y += 7;
+                drawDataWithBoxes("Ngân hàng:", $id('yc-tk-nganhang'), x + 10, y, x + 30, 1);
+                drawDataWithBoxes("Chi nhánh:", $id('yc-tk-chinhanh'), x + 100, y, x + 120, 1);
+            }
+            y += 7;
+            drawCheckbox(x + 5, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan);
+            y += 8;
+
+            // --- 7. Cam kết và Chữ ký ---
+            doc.setFont('Arimo', 'bold'); doc.setFontSize(9); doc.text("CAM KẾT:", x, y);
+            y += 4;
+            doc.setFont('Arimo', 'normal'); doc.setFontSize(7.5);
+            const camketText = `1. Với việc nộp bộ hồ sơ bao gồm việc kê khai và ký tên trên Giấy YCTTBH này, NĐBH, NYCTTBH và tất cả các bên có quyền lợi và nghĩa vụ liên quan cam kết rằng những thông tin kê khai trên đây và những thông tin cung cấp trong bộ hồ sơ YCTTBH là đúng sự thực và xin chịu hoàn toàn trách nhiệm về các khai báo của mình, đồng thời đồng ý với các Điều khoản và Điều kiện chung của Bảo hiểm Bảo Việt về Bảo vệ và Xử lý Dữ liệu Cá nhân quy định tại Website của Bảo hiểm Bảo Việt: https://www.baoviet.com.vn/insurance, và cho phép ủy quyền cho Bảo hiểm Bảo Việt và/hoặc đại diện của họ:\n2. Trường hợp số tiền chi trả bảo hiểm chưa chính xác so với quyền lợi bảo hiểm quy định trong HĐBH/GCNBH, các bên có quyền và nghĩa vụ thanh toán bổ sung hoặc hoàn trả số tiền chi trả chưa chính xác đó cho các bên còn lại.\n3. Người nhận tiền chịu trách nhiệm nếu có bất cứ tranh chấp nào về quyền thụ hưởng số tiền này.`;
+            doc.text(camketText, x, y, { maxWidth: PAGE_W - MARGIN * 2, lineHeightFactor: 1.3 });
+            y += 28;
+
+            const today = new Date();
             doc.setFontSize(9);
-            doc.text('(ký và ghi rõ họ tên)', x_right - 35, y, { align: 'center' });
-            y += 20;
-            doc.setFont('Arimo', 'bold');
-            doc.setFontSize(11);
-            doc.text($id('yc-hoten-nyc'), x_right - 35, y, { align: 'center' });
-            y += 10;
-            doc.setDrawColor(150);
-            doc.line(x, y, x_right, y);
+            doc.text(`Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`, x_right, y, { align: 'right' });
             y += 5;
-        
-            // 8. Footer
+            doc.setFont('Arimo', 'bold'); doc.text('NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_right, y, { align: 'right', maxWidth: 80 });
+            y += 4;
+            doc.setFont('Arimo', 'normal'); doc.setFontSize(8); doc.text('(ký và ghi rõ họ tên)', x_right, y, { align: 'right', maxWidth: 80 });
+            y += 18;
+            doc.setFont('Arimo', 'bold'); doc.setFontSize(10); doc.text($id('yc-hoten-nyc').toUpperCase(), x_right, y, { align: 'right', maxWidth: 80 });
+            y += 5;
+
+            // --- 8. Giấy tờ kèm theo ---
+            doc.setDrawColor(180, 180, 180); doc.line(x, y, x_right, y); y += 5;
+            doc.setFont('Arimo', 'bold'); doc.setFontSize(9); doc.text("NHỮNG GIẤY TỜ KÈM THEO:", x, y); y += 5;
             doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text("Trụ sở chính: Số 7 Lý Thường Kiệt, phường Phan Chu Trinh, quận Hoàn Kiếm, Hà Nội | Hotline: 1900 558899 | Website: baovietonline.com.vn", x_mid, y, { align: 'center' });
+            drawCheckbox(x, y, 'Giấy nhập/ra viện', false);
+            drawCheckbox(x + 55, y, 'Bảng kê chi tiết viện phí', false);
+            y += 5;
+            drawCheckbox(x, y, 'Đơn thuốc', false);
+            drawCheckbox(x + 55, y, 'Biên bản tai nạn', false);
+            y += 5;
+            drawCheckbox(x, y, 'Phiếu xét nghiệm, X-quang', false);
+            drawCheckbox(x + 55, y, 'Giấy chứng tử', false);
+            y += 5;
+            drawCheckbox(x, y, 'Phiếu mổ/GCN phẫu thuật', false);
+            drawCheckbox(x + 55, y, 'Giấy tờ khác', false);
+            
+            // --- 9. Footer ---
+            const finalY = doc.internal.pageSize.getHeight() - 8;
+            doc.setDrawColor(180, 180, 180); doc.line(x, finalY - 2, x_right, finalY - 2);
+            doc.setFontSize(7); doc.setTextColor(COLOR_TEXT_GRAY);
+            doc.text("Trụ sở chính: Số 7 Lý Thường Kiệt, phường Phan Chu Trinh, quận Hoàn Kiếm, Hà Nội | Hotline: 1900 558899 | Website: baovietonline.com.vn", x_mid, finalY, { align: 'center' });
 
             // Tải file
             doc.save(`YeuCauThanhToan_${stripVN(window.bhtnp_currentClaimHS?.ho_ten_hoc_sinh || 'HS').replace(/\s/g, '_')}.pdf`);
-
         } catch (error) {
             console.error("Lỗi khi tạo PDF:", error);
-            alert("Đã có lỗi xảy ra khi tạo file PDF. Vui lòng kiểm tra lại đường dẫn file font hoặc liên hệ quản trị viên.");
+            alert("Đã có lỗi xảy ra khi tạo file PDF. Vui lòng kiểm tra lại đường dẫn file font, logo hoặc liên hệ quản trị viên.");
         } finally {
-            hideLoading(); // Ẩn spinner loading
+            hideLoading();
         }
       };
 
