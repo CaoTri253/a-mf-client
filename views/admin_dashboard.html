@@ -10,8 +10,23 @@
 
   <link rel="icon" type="image/png" href="/assets/image/school.png">
 
+  <!-- Bootstrap CSS + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+
+
+  <!-- Thư viện xuất mẫu PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://raw.githack.com/MrRio/jsPDF/master/src/jspdf.plugin.addimage.js"></script>
+  <script src="https://raw.githack.com/parallax/jsPDF/master/dist/jspdf.plugin.autotable.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Regular-normal.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/tatthien/jsPDF-Vietnamese-Font/libs/Arimo-Bold-bold.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+
+
+
   
   <style>
     :root{
@@ -1504,6 +1519,95 @@
                 </div>
               </div>
             </div>
+
+
+
+
+            <!-- Modal Xuất PDF Phiếu yêu cầu thanh toán BHTN -->
+            <div class="modal fade" id="modalYeuCauThanhToan" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+              <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Tạo Giấy Yêu Cầu Trả Tiền Bảo Hiểm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="formYeuCauThanhToan" class="needs-validation" novalidate oninput="bhtnp_validateClaimForm()">
+                      <h6 class="fw-bold text-primary">I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)</h6>
+                      <div class="row g-2 p-2 border rounded mb-3">
+                        <div class="col-md-4"><label class="form-label">Số GCNBH</label><input class="form-control form-control-sm" id="yc-gcnbh" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Hiệu lực từ</label><input class="form-control form-control-sm" id="yc-hieuluc-tu" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Hiệu lực đến</label><input class="form-control form-control-sm" id="yc-hieuluc-den" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Họ tên NĐBH</label><input class="form-control form-control-sm" id="yc-hoten-ndbh" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Ngày sinh</label><input class="form-control form-control-sm" id="yc-ngaysinh-ndbh" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Số CCCD/Định danh</label><input class="form-control form-control-sm" id="yc-cccd-ndbh" readonly></div>
+                        <div class="col-md-4"><label class="form-label">Lớp</label><input class="form-control form-control-sm" id="yc-lop" readonly></div>
+                        <div class="col-md-8"><label class="form-label">Trường</label><input class="form-control form-control-sm" id="yc-truong" readonly></div>
+                      </div>
+
+                      <h6 class="fw-bold text-primary">II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM</h6>
+                      <div class="row g-2 p-2 border rounded mb-3">
+                        <div class="col-md-3"><label class="form-label">Ngày xảy ra sự kiện</label><input type="text" class="form-control form-control-sm yc-flatpickr" id="yc-ngay-xayra" placeholder="dd/mm/yyyy" required></div>
+                        <div class="col-md-4">
+                          <label class="form-label d-block">Nguyên nhân rủi ro</label>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-nguyennhan" id="yc-nguyennhan-tainan" value="Tai nạn" required><label class="form-check-label" for="yc-nguyennhan-tainan">Tai nạn</label></div>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-nguyennhan" id="yc-nguyennhan-ombenh" value="Ốm bệnh"><label class="form-check-label" for="yc-nguyennhan-ombenh">Ốm bệnh</label></div>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-nguyennhan" id="yc-nguyennhan-tuvong" value="Tử vong"><label class="form-check-label" for="yc-nguyennhan-tuvong">Tử vong</label></div>
+                        </div>
+                        <div class="col-md-5">
+                          <label class="form-label d-block">Hình thức điều trị</label>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-hinhthuc-dieutri" id="yc-hinhthuc-ngoaitru" value="Ngoại trú" required><label class="form-check-label" for="yc-hinhthuc-ngoaitru">Ngoại trú</label></div>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-hinhthuc-dieutri" id="yc-hinhthuc-noitru" value="Nội trú"><label class="form-check-label" for="yc-hinhthuc-noitru">Nội trú</label></div>
+                        </div>
+                        <div class="col-12"><label class="form-label">Khám/Điều trị tại</label><input type="text" class="form-control form-control-sm" id="yc-noi-dieutri" required></div>
+                        <div class="col-md-3"><label class="form-label">Điều trị từ ngày</label><input type="text" class="form-control form-control-sm yc-flatpickr" id="yc-dieutri-tu" placeholder="dd/mm/yyyy" required></div>
+                        <div class="col-md-3"><label class="form-label">Đến ngày</label><input type="text" class="form-control form-control-sm yc-flatpickr" id="yc-dieutri-den" placeholder="dd/mm/yyyy" required></div>
+                        <div class="col-md-6"><label class="form-label">Chẩn đoán của bác sĩ</label><input type="text" class="form-control form-control-sm" id="yc-chandoan" required></div>
+                      </div>
+
+                      <h6 class="fw-bold text-primary">III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN (NYCTTBH)</h6>
+                      <div class="row g-2 p-2 border rounded mb-3">
+                        <div class="col-md-4"><label class="form-label">Họ tên NYCTTBH</label><input type="text" class="form-control form-control-sm" id="yc-hoten-nyc" required></div>
+                        <div class="col-md-4"><label class="form-label">Số CCCD/Hộ chiếu</label><input type="text" class="form-control form-control-sm" id="yc-cccd-nyc" required></div>
+                        <div class="col-md-4"><label class="form-label">Số điện thoại</label><input type="tel" class="form-control form-control-sm" id="yc-sdt-nyc" required></div>
+                        <div class="col-md-4"><label class="form-label">Email</label><input type="email" class="form-control form-control-sm" id="yc-email-nyc"></div>
+                        <div class="col-md-8">
+                          <label class="form-label d-block">Quan hệ với NĐBH</label>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-quanhe" id="yc-quanhe-bome" value="Bố/mẹ" required><label for="yc-quanhe-bome">Bố/mẹ</label></div>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-quanhe" id="yc-quanhe-con" value="Con"><label for="yc-quanhe-con">Con</label></div>
+                          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="yc-quanhe" id="yc-quanhe-vochong" value="Vợ/chồng"><label for="yc-quanhe-vochong">Vợ/chồng</label></div>
+                          <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="yc-quanhe" id="yc-quanhe-khac" value="Khác">
+                            <label for="yc-quanhe-khac">Khác:</label>
+                            <input type="text" class="form-control form-control-sm d-inline-block" style="width: auto;" id="yc-quanhe-khac-text" placeholder="Ghi rõ...">
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <h6 class="fw-bold text-primary">IV. HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG</h6>
+                      <div class="p-2 border rounded mb-3">
+                          <div class="form-check"><input class="form-check-input" type="radio" name="yc-hinhthuc-nhantien" id="yc-nhantien-chuyenkhoan" value="Chuyển khoản" required><label class="form-check-label" for="yc-nhantien-chuyenkhoan">Chuyển khoản</label></div>
+                          <div class="row g-2 mt-1 ps-4" id="yc-thongtin-chuyenkhoan">
+                            <div class="col-md-4"><label class="form-label">Tên tài khoản</label><input type="text" class="form-control form-control-sm" id="yc-tk-ten"></div>
+                            <div class="col-md-4"><label class="form-label">Số tài khoản</label><input type="text" class="form-control form-control-sm" id="yc-tk-so"></div>
+                            <div class="col-md-4"><label class="form-label">Ngân hàng</label><input type="text" class="form-control form-control-sm" id="yc-tk-nganhang"></div>
+                            <div class="col-md-4"><label class="form-label">Chi nhánh</label><input type="text" class="form-control form-control-sm" id="yc-tk-chinhanh"></div>
+                          </div>
+                          <div class="form-check mt-2"><input class="form-check-input" type="radio" name="yc-hinhthuc-nhantien" id="yc-nhantien-tienmat" value="Tiền mặt"><label class="form-check-label" for="yc-nhantien-tienmat">Người YCTTBH nhận tiền mặt tại Bảo Việt</label></div>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" id="btnTaiPhieuYeuCau" style="display:none;" onclick="bhtnp_generateClaimPDF()">
+                      <i class="bi bi-file-earmark-pdf"></i> Tải Phiếu yêu cầu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
           </div>
         </div>
 
@@ -5295,6 +5399,9 @@
       function actionsCell(i, row){
         const st  = toTrangThai(row.trang_thai);
         const shs = getSoHoSo(row);
+        // THÊM NÚT "Tạo yêu cầu" VÀO ĐÂY
+        const claimBtn = `<button class="btn btn-sm btn-success" onclick="bhtnp_openClaimModal(${i})" title="Tạo yêu cầu thanh toán"><i class="bi bi-file-earmark-plus"></i></button>`;
+
         return `<div class="action-btns">
           <button class="btn btn-sm btn-warning" onclick="bhtnp_openEditIdx(${i})" title="Sửa hồ sơ"><i class="bi bi-pencil-square"></i></button>
           ${ (st===1 && shs)
@@ -5666,6 +5773,223 @@
           finally{ hideLoading?.(); }
         });
       };
+
+
+
+
+      // ===================================================================
+      // ====== BẮT ĐẦU: KHỐI MÃ MỚI CHO TÍNH NĂNG TẠO YÊU CẦU THANH TOÁN ======
+      // ===================================================================
+      
+      // Biến lưu trữ thông tin học sinh hiện tại để tạo yêu cầu
+      window.bhtnp_currentClaimHS = null;
+
+      // Hàm mở modal và điền dữ liệu
+      window.bhtnp_openClaimModal = async function(index) {
+        const src = (window.BHTNP?.state?.filtered || window.bhtnp_last || window.bhtnp_all || []);
+        const row = src[index];
+        if (!row) {
+          alert('Không tìm thấy thông tin học sinh.');
+          return;
+        }
+        window.bhtnp_currentClaimHS = row;
+
+        // Reset form
+        const form = document.getElementById('formYeuCauThanhToan');
+        form.reset();
+        
+        // I. Điền thông tin người được bảo hiểm (NĐBH)
+        const { tu, den } = makeRangeBHTN(row);
+        document.getElementById('yc-gcnbh').value = cleanVal(row.ma_so_bhtn) || 'Chưa cấp';
+        document.getElementById('yc-hieuluc-tu').value = tu;
+        document.getElementById('yc-hieuluc-den').value = den;
+        document.getElementById('yc-hoten-ndbh').value = row.ho_ten_hoc_sinh || '';
+        document.getElementById('yc-ngaysinh-ndbh').value = displayDate(row.ngay_sinh) || '';
+        document.getElementById('yc-cccd-ndbh').value = row.so_dinh_danh || '';
+        document.getElementById('yc-lop').value = row.lop_hoc || '';
+        document.getElementById('yc-truong').value = bhtnp_user.ten_truong || '';
+
+        // Khởi tạo Flatpickr cho các trường ngày tháng
+        if (!window.claimPickers) {
+            window.claimPickers = flatpickr(".yc-flatpickr", {
+                dateFormat: "d/m/Y",
+                allowInput: true
+            });
+        }
+        
+        // Validate form để ẩn nút tải PDF
+        bhtnp_validateClaimForm();
+
+        // Mở modal
+        new bootstrap.Modal(document.getElementById('modalYeuCauThanhToan')).show();
+      };
+
+      // Hàm kiểm tra form
+      window.bhtnp_validateClaimForm = function() {
+          const form = document.getElementById('formYeuCauThanhToan');
+          const downloadBtn = document.getElementById('btnTaiPhieuYeuCau');
+          let isValid = true;
+
+          // Kiểm tra các input text và radio bắt buộc
+          form.querySelectorAll('[required]').forEach(el => {
+              if (el.type === 'radio') {
+                  const groupName = el.name;
+                  if (!form.querySelector(`input[name="${groupName}"]:checked`)) {
+                      isValid = false;
+                  }
+              } else {
+                  if (!el.value.trim()) {
+                      isValid = false;
+                  }
+              }
+          });
+          
+          // Kiểm tra logic phụ thuộc (VD: nhập text "khác", chi tiết chuyển khoản)
+          const quanheKhacRadio = document.getElementById('yc-quanhe-khac');
+          if (quanheKhacRadio && quanheKhacRadio.checked && !document.getElementById('yc-quanhe-khac-text').value.trim()) {
+              isValid = false;
+          }
+          const chuyenKhoanRadio = document.getElementById('yc-nhantien-chuyenkhoan');
+          if (chuyenKhoanRadio && chuyenKhoanRadio.checked) {
+              if (!document.getElementById('yc-tk-ten').value.trim() || !document.getElementById('yc-tk-so').value.trim() || !document.getElementById('yc-tk-nganhang').value.trim()) {
+                  isValid = false;
+              }
+          }
+
+          downloadBtn.style.display = isValid ? 'inline-block' : 'none';
+      }
+
+      // Hàm tạo và tải file PDF
+      window.bhtnp_generateClaimPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        // Thêm font tiếng Việt
+        doc.addFont('Arimo-Regular-normal.js', 'Arimo', 'normal');
+        doc.addFont('Arimo-Bold-bold.js', 'Arimo', 'bold');
+        doc.setFont('Arimo');
+
+        let y = 15;
+        const x = 15;
+        const x_mid = 105;
+        const x_right = 195;
+        
+        const $id = (id) => document.getElementById(id).value.trim();
+        const $checked = (id) => document.getElementById(id).checked;
+        const $radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+
+        // --- Vẽ Header ---
+        doc.setFont('Arimo', 'bold');
+        doc.setFontSize(14);
+        doc.text('GIẤY YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_mid, y, { align: 'center' });
+        y += 6;
+        doc.setFontSize(11);
+        doc.text('SẢN PHẨM TDHS - SV/KHCN GIÁO VIÊN', x_mid, y, { align: 'center' });
+        y += 10;
+        
+        // --- Vẽ các mục ---
+        doc.setFont('Arimo', 'bold');
+        doc.setFontSize(11);
+
+        // I. THÔNG TIN NGƯỜI ĐƯỢC BẢO HIỂM
+        doc.text('I. THÔNG TIN VỀ NGƯỜI ĐƯỢC BẢO HIỂM (NĐBH)', x, y); y += 6;
+        doc.setFont('Arimo', 'normal');
+        doc.text(`Số GCNBH: ${$id('yc-gcnbh')}`, x, y); 
+        doc.text(`Hiệu lực từ: ${$id('yc-hieuluc-tu')}  đến: ${$id('yc-hieuluc-den')}`, x_mid, y); y += 6;
+        doc.text(`Họ tên: ${$id('yc-hoten-ndbh')}`, x, y);
+        doc.text(`Ngày sinh: ${$id('yc-ngaysinh-ndbh')}`, x_mid, y); y += 6;
+        doc.text(`Số CMND/CCCD/Hộ chiếu: ${$id('yc-cccd-ndbh')}`, x, y); y+= 6;
+        doc.text(`Lớp, Trường: ${$id('yc-lop')}, ${$id('yc-truong')}`, x, y); y += 10;
+        
+        // II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM
+        doc.setFont('Arimo', 'bold');
+        doc.text('II. THÔNG TIN VỀ SỰ KIỆN BẢO HIỂM', x, y); y += 6;
+        doc.setFont('Arimo', 'normal');
+        doc.text(`Ngày xảy ra: ${$id('yc-ngay-xayra')}`, x, y); y += 6;
+        
+        // Checkbox
+        const drawCheckbox = (px, py, label, checked) => {
+            doc.rect(px, py - 3.5, 4, 4);
+            if (checked) {
+                doc.setFontSize(12);
+                doc.text('X', px + 0.8, py);
+                doc.setFontSize(11);
+            }
+            doc.text(label, px + 6, py);
+        };
+
+        doc.text('Nguyên nhân rủi ro:', x, y);
+        drawCheckbox(x + 40, y, 'Tai nạn', $radio('yc-nguyennhan') === 'Tai nạn');
+        drawCheckbox(x + 70, y, 'Ốm bệnh', $radio('yc-nguyennhan') === 'Ốm bệnh');
+        drawCheckbox(x + 100, y, 'Tử vong', $radio('yc-nguyennhan') === 'Tử vong');
+        y += 6;
+
+        doc.text('Hình thức điều trị:', x, y);
+        drawCheckbox(x + 40, y, 'Ngoại trú', $radio('yc-hinhthuc-dieutri') === 'Ngoại trú');
+        drawCheckbox(x + 70, y, 'Nội trú', $radio('yc-hinhthuc-dieutri') === 'Nội trú');
+        y += 6;
+
+        doc.text(`Khám/Điều trị tại: ${$id('yc-noi-dieutri')}`, x, y); y += 6;
+        doc.text(`Từ ngày: ${$id('yc-dieutri-tu')}      Đến ngày: ${$id('yc-dieutri-den')}`, x, y); y += 6;
+        doc.text(`Chẩn đoán của bác sĩ/Nguyên nhân tai nạn: ${$id('yc-chandoan')}`, x, y); y += 10;
+
+        // III. THÔNG TIN NGƯỜI YÊU CẦU
+        doc.setFont('Arimo', 'bold');
+        doc.text('III. THÔNG TIN VỀ NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM (NYCTTBH)', x, y); y += 6;
+        doc.setFont('Arimo', 'normal');
+        doc.text(`Họ tên: ${$id('yc-hoten-nyc')}`, x, y); y += 6;
+        doc.text(`Số CMND/CCCD/Hộ chiếu: ${$id('yc-cccd-nyc')}`, x, y);
+        doc.text(`Số điện thoại: ${$id('yc-sdt-nyc')}`, x_mid, y); y += 6;
+        doc.text(`Email: ${$id('yc-email-nyc') || '(Không có)'}`, x, y); y += 6;
+        
+        let quanheText = $radio('yc-quanhe');
+        if (quanheText === 'Khác') {
+            quanheText = $id('yc-quanhe-khac-text');
+        }
+        doc.text(`Quan hệ với người được bảo hiểm:`, x, y);
+        drawCheckbox(x + 65, y, 'Bố/mẹ', $radio('yc-quanhe') === 'Bố/mẹ');
+        drawCheckbox(x + 90, y, 'Con', $radio('yc-quanhe') === 'Con');
+        drawCheckbox(x + 110, y, 'Vợ/chồng', $radio('yc-quanhe') === 'Vợ/chồng');
+        doc.text(`Khác: ${($radio('yc-quanhe') === 'Khác') ? quanheText : '...' }`, x + 140, y);
+        y += 10;
+        
+        // IV. HÌNH THỨC NHẬN TIỀN
+        doc.setFont('Arimo', 'bold');
+        doc.text('IV. HÌNH THỨC NHẬN TIỀN BỒI THƯỜNG', x, y); y += 6;
+        doc.setFont('Arimo', 'normal');
+        
+        const isChuyenKhoan = $radio('yc-hinhthuc-nhantien') === 'Chuyển khoản';
+        drawCheckbox(x, y, 'Chuyển khoản', isChuyenKhoan); y += 6;
+        if (isChuyenKhoan) {
+            doc.text(`Tên tài khoản: ${$id('yc-tk-ten')}`, x + 10, y);
+            doc.text(`Số tài khoản: ${$id('yc-tk-so')}`, x_mid, y); y += 6;
+            doc.text(`Ngân hàng: ${$id('yc-tk-nganhang')}`, x + 10, y);
+            doc.text(`Chi nhánh: ${$id('yc-tk-chinhanh')}`, x_mid, y); y += 6;
+        } else {
+            y += 12; // Để trống không gian
+        }
+
+        drawCheckbox(x, y, 'Người YCTTBH nhận tiền mặt tại Bảo Việt', !isChuyenKhoan); y += 15;
+
+        // --- Phần ký tên ---
+        const today = new Date();
+        const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+        doc.text(dateStr, x_right, y, { align: 'right' }); y += 6;
+        
+        doc.setFont('Arimo', 'bold');
+        doc.text('NGƯỜI YÊU CẦU TRẢ TIỀN BẢO HIỂM', x_right - 35, y, { align: 'center' }); y += 6;
+        doc.setFont('Arimo', 'normal');
+        doc.text('(ký và ghi rõ họ tên)', x_right - 35, y, { align: 'center' }); y += 25;
+        doc.setFont('Arimo', 'bold');
+        doc.text($id('yc-hoten-nyc'), x_right - 35, y, { align: 'center' });
+
+        // Tải file
+        doc.save(`YeuCauThanhToan_${stripVN(window.bhtnp_currentClaimHS?.ho_ten_hoc_sinh || 'HS').replace(/\s/g, '_')}.pdf`);
+      };
+
+      // ===================================================================
+      // ====== KẾT THÚC: KHỐI MÃ MỚI CHO TÍNH NĂNG TẠO YÊU CẦU THANH TOÁN ======
+      // ===================================================================
 
 
 
