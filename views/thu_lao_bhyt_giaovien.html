@@ -222,7 +222,7 @@
         const buckets = {3:{count:0, commission:0}, 6:{count:0, commission:0}, 12:{count:0, commission:0}};
         for (const r of ds) {
           const so_tien = toNum(r.so_tien);
-          const hoa_hong = toNum(r.hoa_hong);
+          const hoa_hong = toNum(r.hoa_hong)/2; // Giáo viên hưởng 50% hoa hồng
           totalMoney += so_tien;
           totalCommission += hoa_hong;
 
