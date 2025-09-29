@@ -6756,7 +6756,7 @@
       for (const r of dsFilt){
         submitted += 1;
         const so_tien = rw_toNum(r.so_tien);
-        const hoa_hong = rw_toNum(r.hoa_hong);
+        const hoa_hong = rw_toNum(r.hoa_hong)/2; // hoa_hong chia đôi cho admin
         money += so_tien;
         commission += hoa_hong;
 
