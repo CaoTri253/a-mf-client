@@ -49,43 +49,6 @@
     .nav-item.active{ background:rgba(59,130,246,.35); color:#fff; }
     .nav-item .bi{ font-size:18px; width:22px; text-align:center; }
 
-
-    /* ===== CSS CHO SUBMENU (THÊM VÀO ĐÂY) ===== */
-    .nav-submenu {
-      padding-left: 20px; /* Thụt lề cho menu con */
-      border-left: 2px solid rgba(255,255,255, .1);
-      margin-left: 14px; /* Căn lề với icon cha */
-      margin-top: 4px;
-      margin-bottom: 4px;
-    }
-
-    .nav-submenu .nav-item {
-      padding-top: 8px;    /* Làm menu con nhỏ hơn 1 chút */
-      padding-bottom: 8px;
-      margin: 2px 0;
-    }
-    
-    .nav-submenu .nav-item .bi {
-      font-size: 16px; /* Icon con nhỏ hơn */
-    }
-
-    /* Xử lý icon-caret xoay khi mở */
-    a.nav-item[aria-expanded="true"] .bi-chevron-down {
-      transform: rotate(180deg);
-    }
-    a.nav-item .bi-chevron-down {
-      transition: transform 0.2s ease; /* Hiệu ứng xoay mượt */
-      font-size: 0.8em; /* Thu nhỏ icon-caret */
-      margin-left: auto; /* Đẩy icon-caret về cuối */
-    }
-
-    /* Khi menu cha active (do menu con được chọn), đổi màu nền */
-    a.nav-item[data-bs-toggle="collapse"].active {
-      background: rgba(255,255,255,.08);
-      color: #fff;
-    }
-    /* ============================================= */
-
     @supports (height: 100svh){
       .sidebar{ height:100svh; }
     }
@@ -411,22 +374,10 @@
           <div class="nav-item" data-page="students"><i class="bi bi-people"></i><span>Danh sách học sinh</span></div>
           <div class="nav-item" data-page="others"><i class="bi bi-people"></i><span>Ds Đối tượng khác</span></div>
           <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
-          
-
-          <a class="nav-item" data-bs-toggle="collapse" href="#collapseBaoHiem" role="button" aria-expanded="false" aria-controls="collapseBaoHiem">
-            <i class="bi bi-umbrella"></i> <span>Quản lý bảo hiểm</span>
-            <i class="bi bi-chevron-down"></i> </a>
-          
-          <div class="collapse" id="collapseBaoHiem">
-            <div class="nav-submenu"> <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
-              <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
-              <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
-              <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
-
-            </div>
-          </div>
-
-
+          <div class="nav-item" data-page="bhyt"><i class="bi bi-hospital"></i><span>Bảo hiểm y tế</span></div>
+          <div class="nav-item" data-page="bhtn"><i class="bi bi-heart-pulse"></i><span>Bảo Hiểm Tai Nạn</span></div>
+          <div class="nav-item" data-page="stats"><i class="bi bi-bar-chart"></i><span>Thống kê</span></div>
+          <div class="nav-item" data-page="rewards"><i class="bi bi-cash-coin"></i><span>Thù lao</span></div>
           <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
           <div class="nav-item" data-page="settings"><i class="bi bi-gear-wide-connected"></i><span>Cài đặt</span></div>
         </div>
@@ -7050,48 +7001,12 @@
       return user;
     }
 
-    // === HÀM setActivePage ĐÃ ĐƯỢC CẬP NHẬT ===
     function setActivePage(page){
-      
-      // Danh sách các trang con thuộc menu mới
-      const subPages = ['bhyt', 'bhtn', 'stats', 'rewards'];
-      const isSubPage = subPages.includes(page);
-      
-      // 1. Xử lý active cho item con (như cũ)
-      $$('#sidebarMenu .nav-item').forEach(el=> {
-        el.classList.toggle('active', el.dataset.page === page);
-      });
-      
-      // 2. Xử lý cho menu cha
-      const parentTrigger = $('a.nav-item[href="#collapseBaoHiem"]');
-      const parentCollapse = $('#collapseBaoHiem');
-
-      // Tắt active của tất cả các menu cha (nếu sau này có thêm)
-      $$('#sidebarMenu a.nav-item[data-bs-toggle="collapse"]').forEach(trigger => {
-        trigger.classList.remove('active');
-        trigger.setAttribute('aria-expanded', 'false');
-        // Không tự động đóng collapse, để người dùng tự do
-        // const collapseEl = $(trigger.getAttribute('href'));
-        // if (collapseEl) bootstrap.Collapse.getOrCreateInstance(collapseEl).hide();
-      });
-
-      // Bật active và mở collapse cho menu cha của trang hiện tại
-      if (isSubPage) {
-        if (parentTrigger) {
-          parentTrigger.classList.add('active');
-          parentTrigger.setAttribute('aria-expanded', 'true');
-        }
-        if (parentCollapse) {
-          // Dùng API của Bootstrap để mở, tránh giật
-          bootstrap.Collapse.getOrCreateInstance(parentCollapse).show();
-        }
-      }
-
-      // 3. Hiển thị section nội dung (như cũ)
+      $$('#sidebarMenu .nav-item').forEach(el=> el.classList.toggle('active', el.dataset.page === page));
       $$('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
       const sec = $(`#page-${page}`); sec?.classList.remove('d-none');
-      
-      // 4. Logic khởi tạo trang (GIỮ NGUYÊN HOÀN TOÀN TỪ FILE GỐC)
+
+      // NEW: khi vào trang học sinh, khởi tạo UI 1 lần và reload dữ liệu
       if (page === 'students') {
         if (!sec.dataset.wired) {
           adm_wireStudentsPage();
@@ -7100,6 +7015,8 @@
         adm_reloadStudents();
       }
 
+
+      // NEW: khi vào trang Đối tượng khác, khởi tạo UI 1 lần và reload dữ liệu
       if (page === 'others') {
         if (!sec.dataset.wired) { others_wirePage(); sec.dataset.wired = '1'; }
         showLoading();
@@ -7107,10 +7024,23 @@
           .finally(hideLoading);
       }
 
+
+
+
+
+      // NEW: khi vào trang BHYT, khởi tạo UI 1 lần và reload dữ liệu
       if (page === 'bhyt') {
         if (!sec.dataset.wired) { bhyt_wirePage(); sec.dataset.wired = '1'; }
         bhyt_reload();
       }
+
+
+
+      // if (page === 'bhtn') {
+      //   if (!sec.dataset.wired) {sec.dataset.wired = '1'; }
+      //   // Tuỳ chọn: tự nạp tab đầu tiên
+      //   window.bhtn_unpaid_wireTab?.();
+      // }
 
       if (page === 'bhtn') {
         if (!sec.dataset.wired) { sec.dataset.wired = '1'; }
@@ -7118,6 +7048,8 @@
         Promise.resolve(window.bhtn_unpaid_wireTab?.())
           .finally(hideLoading);
       }
+
+
     }
 
 
