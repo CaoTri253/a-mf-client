@@ -413,6 +413,26 @@
           <div class="nav-item" data-page="teachers"><i class="bi bi-person-badge"></i><span>Danh sách giáo viên</span></div>
           
 
+
+          <!-- ===== MENU CON QUẢN LÝ Y TẾ ===== -->
+          <a class="nav-item" data-bs-toggle="collapse" href="#collapseYTe" role="button" aria-expanded="false" aria-controls="collapseYTe">
+            <i class="bi bi-clipboard-pulse"></i> <span>Quản lý y tế</span>
+            <i class="bi bi-chevron-down"></i> </a>
+          
+          <div class="collapse" id="collapseYTe">
+            <div class="nav-submenu">
+              <div class="nav-item" data-page="qlyte-vbden"><i class="bi bi-inbox"></i><span>Văn bản đến</span></div>
+              <div class="nav-item" data-page="qlyte-cacloaiso"><i class="bi bi-book"></i><span>Các loại sổ</span></div>
+              <div class="nav-item" data-page="qlyte-kehoach"><i class="bi bi-calendar-check"></i><span>Kế hoạch</span></div>
+              <div class="nav-item" data-page="qlyte-baocao"><i class="bi bi-file-earmark-bar-graph"></i><span>Báo cáo thống kê</span></div>
+            </div>
+          </div>
+          <!-- ===== MENU CON QUẢN LÝ Y TẾ ===== -->
+
+
+
+
+          <!-- ===== MENU CON QUẢN LÝ BẢO HIỂM ===== -->
           <a class="nav-item" data-bs-toggle="collapse" href="#collapseBaoHiem" role="button" aria-expanded="false" aria-controls="collapseBaoHiem">
             <i class="bi bi-umbrella"></i> <span>Quản lý bảo hiểm</span>
             <i class="bi bi-chevron-down"></i> </a>
@@ -425,6 +445,8 @@
 
             </div>
           </div>
+          <!-- ===== MENU CON QUẢN LÝ BẢO HIỂM ===== -->
+
 
 
           <div class="nav-item" data-page="profile"><i class="bi bi-person-badge"></i><span>Cá nhân</span></div>
@@ -2095,6 +2117,66 @@
 
       <!-- THÙ LAO (embedded, for admin) -->
 
+
+
+
+      <!-- QUẢN LÝ Y TẾ (embedded, for admin) -->
+      <section id="page-qlyte" class="d-none">
+        <div class="mb-2">
+          <div class="h5 fw-bold">Quản lý y tế</div>
+        </div>
+
+        <ul class="nav nav-tabs" id="qlyteTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-vbden-tab" data-bs-toggle="tab" data-bs-target="#tab-vbden" type="button" role="tab" aria-controls="tab-vbden" aria-selected="false">
+              Văn bản đến
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-cacloaiso-tab" data-bs-toggle="tab" data-bs-target="#tab-cacloaiso" type="button" role="tab" aria-controls="tab-cacloaiso" aria-selected="false">
+              Các loại sổ
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-kehoach-tab" data-bs-toggle="tab" data-bs-target="#tab-kehoach" type="button" role="tab" aria-controls="tab-kehoach" aria-selected="false">
+              Kế hoạch
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-baocao-tab" data-bs-toggle="tab" data-bs-target="#tab-baocao" type="button" role="tab" aria-controls="tab-baocao" aria-selected="false">
+              Báo cáo thống kê
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+          <div class="tab-pane fade" id="tab-vbden" role="tabpanel" aria-labelledby="tab-vbden-tab">
+            <div class="panel">
+              <h4>Nội dung Văn bản đến</h4>
+              <p></p>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="tab-cacloaiso" role="tabpanel" aria-labelledby="tab-cacloaiso-tab">
+            <div class="panel">
+              <h4>Nội dung Các loại sổ</h4>
+              <p></p>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="tab-kehoach" role="tabpanel" aria-labelledby="tab-kehoach-tab">
+            <div class="panel">
+              <h4>Nội dung Kế hoạch</h4>
+              <p></p>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="tab-baocao" role="tabpanel" aria-labelledby="tab-baocao-tab">
+            <div class="panel">
+              <h4>Nội dung Báo cáo thống kê</h4>
+              <p></p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- QUẢN LÝ Y TẾ (embedded, for admin) -->
 
 
 
