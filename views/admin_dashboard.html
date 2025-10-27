@@ -8418,379 +8418,432 @@
     // =======================================================
     (function() {
       if (window._SKHS_LOADED) return;
-      window._SKHS_LOADED = true;
+        window._SKHS_LOADED = true;
 
-      const SKHS = {
-        allStudents: [],
-        filteredStudents: [],
-        page: 1,
-        pageSize: 15, // Điều chỉnh nếu cần
-        sortField: 'ho_ten_hoc_sinh',
-        sortDir: 1,
-        currentKhamRecord: null, // Lưu bản ghi khám đang sửa
-        currentSuKienEditing: null, // Lưu sự kiện đang sửa (_rowIndex)
-        flatpickrInstances: {} // Lưu trữ instances của flatpickr
-      };
-
-      // === Helpers ===
-      const $sk = (selector) => document.querySelector(selector);
-      const $$sk = (selector) => document.querySelectorAll(selector);
-      // Sử dụng adm_displayNgay từ khối Học sinh nếu có, hoặc định nghĩa lại
-      const skhs_displayNgay = window.adm_displayNgay || function(raw) { /*...*/ return raw; };
-
-      // === Khởi tạo Flatpickr ===
-      function initFlatpickr() {
-          // Ngày (dd/mm/yyyy)
-          SKHS.flatpickrInstances.date = flatpickr(".skhs-flatpickr", {
-              dateFormat: "d/m/Y",
-              allowInput: true,
-              disableMobile: true
-          });
-          // Ngày giờ (dd/mm/yyyy HH:MM)
-          SKHS.flatpickrInstances.datetime = flatpickr(".skhs-flatpickr-datetime", {
-              enableTime: true,
-              dateFormat: "d/m/Y H:i",
-              time_24hr: true,
-              allowInput: true,
-              disableMobile: true
-          });
-      }
-
-      // === Lấy dữ liệu và Render ===
-      async function skhs_loadStudentsAndClasses() {
-        showLoading();
-        try {
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const res = await getAllDanhSachHocsinh(user.ma_truong || '', ''); // Lấy toàn trường
-          SKHS.allStudents = res.success ? res.data : [];
-
-          // Populate class dropdown
-          const classes = [...new Set(SKHS.allStudents.map(s => s.lop_hoc).filter(Boolean))].sort();
-          const classSelect = $sk('#skhs-classes');
-          if (classSelect) {
-            classSelect.innerHTML = '<option value="" selected>-- Tất cả các lớp --</option>'
-                                  + classes.map(c => `<option value="${c}">${c}</option>`).join('');
-          }
-          skhs_applyFiltersAndRender();
-        } catch (err) {
-          console.error("SKHS load error:", err);
-          showToast('Lỗi tải danh sách học sinh', 'danger');
-          $sk('#skhs-ds').innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
-        } finally {
-          hideLoading();
-        }
-      }
-
-      function skhs_applyFiltersAndRender() {
-        const lop = $sk('#skhs-classes').value;
-        const search = $sk('#skhs-search').value.toLowerCase().trim();
-
-        SKHS.filteredStudents = SKHS.allStudents.filter(hs => {
-          const matchLop = !lop || hs.lop_hoc === lop;
-          const matchSearch = !search ||
-            (hs.ho_ten_hoc_sinh || '').toLowerCase().includes(search) ||
-            (hs.so_dinh_danh || '').toLowerCase().includes(search) ||
-            (hs.ma_so_bhxh || '').toLowerCase().includes(search);
-          return matchLop && matchSearch;
-        });
-
-        // Sort
-        if (SKHS.sortField) {
-          SKHS.filteredStudents.sort((a, b) => {
-            let valA = a[SKHS.sortField] || '';
-            let valB = b[SKHS.sortField] || '';
-            // Cân nhắc sort số/ngày nếu cần
-            return valA.localeCompare(valB, 'vi') * SKHS.sortDir;
-          });
-        }
-
-        SKHS.page = 1; // Reset về trang 1 khi lọc/tìm kiếm
-        skhs_renderTableAndPagination();
-      }
-
-      function skhs_renderTableAndPagination() {
-        const total = SKHS.filteredStudents.length;
-        $sk('#skhs-total').textContent = total;
-
-        const start = (SKHS.page - 1) * SKHS.pageSize;
-        const end = start + SKHS.pageSize;
-        const pageData = SKHS.filteredStudents.slice(start, end);
-
-        skhs_renderTable(pageData);
-        skhs_renderPagination(total);
-      }
-
-      function skhs_renderTable(data) {
-        const tableContainer = $sk('#skhs-ds');
-        if (!tableContainer) return;
-
-        let html = `
-          <table class="table table-bordered table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 150px;">Thao tác</th>
-                <th>Họ tên</th>
-                <th>Ngày sinh</th>
-                <th>Lớp</th>
-                <th>Số định danh</th>
-                <th>Mã số BHXH</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        if (data.length === 0) {
-          html += '<tr><td colspan="6" class="text-center text-muted">Không tìm thấy học sinh phù hợp.</td></tr>';
-        } else {
-          data.forEach(hs => {
-            // Lấy năm học hiện tại (VD: 2025-2026) - Cần logic chuẩn hơn
-            const currentYear = new Date().getFullYear();
-            const academicYear = `${currentYear}-${currentYear + 1}`;
-
-            html += `
-              <tr>
-                <td class="action-btns">
-                  <div class="row g-1 mb-1">
-                    <div class="col-4"><button class="btn btn-sm btn-success w-100" title="Khám sức khỏe" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', false)"><i class="bi bi-clipboard2-plus"></i></button></div>
-                    <div class="col-4"><button class="btn btn-sm btn-warning w-100" title="Sửa phiếu khám" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', true)"><i class="bi bi-pencil-square"></i></button></div>
-                    <div class="col-4"><button class="btn btn-sm btn-danger w-100" title="Xóa hồ sơ khám" onclick="skhs_confirmDeleteKham('${hs.ma_so_bhxh}', '${academicYear}')"><i class="bi bi-journal-x"></i></button></div>
-                  </div>
-                  <div class="row g-1">
-                    <div class="col-4"><button class="btn btn-sm btn-info w-100" title="Sự kiện sức khỏe" onclick="skhs_openSuKienModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})')"><i class="bi bi-calendar-event"></i></button></div>
-                    <div class="col-4"><button class="btn btn-sm btn-secondary w-100 disabled" title="Sửa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-pencil"></i></button></div>
-                    <div class="col-4"><button class="btn btn-sm btn-dark w-100 disabled" title="Xóa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-calendar-x"></i></button></div>
-                  </div>
-                </td>
-                <td>${hs.ho_ten_hoc_sinh || ''}</td>
-                <td>${skhs_displayNgay(hs.ngay_sinh) || ''}</td>
-                <td>${hs.lop_hoc || ''}</td>
-                <td>${hs.so_dinh_danh || ''}</td>
-                <td>${hs.ma_so_bhxh || ''}</td>
-              </tr>
-            `;
-          });
-        }
-
-        html += '</tbody></table>';
-        tableContainer.innerHTML = html;
-      }
-
-    function skhs_renderPagination(total) {
-        const paginationContainer = $sk('#skhs-pagin');
-        if (!paginationContainer) return;
-        paginationContainer.innerHTML = ''; // Clear existing pagination
-
-        const totalPages = Math.ceil(total / SKHS.pageSize);
-        if (totalPages <= 1) return; // No pagination needed for 0 or 1 page
-
-        const createPageItem = (page, label, isActive = false, isDisabled = false) => {
-            const li = document.createElement('li');
-            li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
-            const a = document.createElement('a');
-            a.className = 'page-link';
-            a.href = '#';
-            a.innerHTML = label;
-            if (!isDisabled) {
-                a.onclick = (e) => {
-                    e.preventDefault();
-                    SKHS.page = page;
-                    skhs_renderTableAndPagination();
-                };
-            }
-            li.appendChild(a);
-            return li;
+        const SKHS = {
+          allStudents: [],
+          filteredStudents: [],
+          page: 1,
+          pageSize: 15, // Điều chỉnh nếu cần
+          sortField: 'ho_ten_hoc_sinh',
+          sortDir: 1,
+          currentKhamRecord: null, // Lưu bản ghi khám đang sửa
+          currentSuKienEditing: null, // Lưu sự kiện đang sửa (_rowIndex)
+          flatpickrInstances: {} // Lưu trữ instances của flatpickr
         };
 
-        // Previous button
-        paginationContainer.appendChild(createPageItem(SKHS.page - 1, 'Trước', false, SKHS.page === 1));
+        // === Helpers ===
+        const $sk = (selector) => document.querySelector(selector);
+        const $$sk = (selector) => document.querySelectorAll(selector);
+        // Sử dụng adm_displayNgay từ khối Học sinh nếu có, hoặc định nghĩa lại
+        const skhs_displayNgay = window.adm_displayNgay || function(raw) { /*...*/ return raw; };
 
-        // Page numbers
-        const maxPagesToShow = 5; // Adjust number of visible page links
-        let startPage = Math.max(1, SKHS.page - Math.floor(maxPagesToShow / 2));
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-        // Adjust startPage if endPage reaches the totalPages limit
-        if (endPage === totalPages) {
-            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        // === Khởi tạo Flatpickr ===
+        function initFlatpickr() {
+            // Ngày (dd/mm/yyyy)
+            SKHS.flatpickrInstances.date = flatpickr(".skhs-flatpickr", {
+                dateFormat: "d/m/Y",
+                allowInput: true,
+                disableMobile: true
+            });
+            // Ngày giờ (dd/mm/yyyy HH:MM)
+            SKHS.flatpickrInstances.datetime = flatpickr(".skhs-flatpickr-datetime", {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                time_24hr: true,
+                allowInput: true,
+                disableMobile: true
+            });
         }
 
-        if (startPage > 1) {
-            paginationContainer.appendChild(createPageItem(1, '1'));
-            if (startPage > 2) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link">...</span>';
-                paginationContainer.appendChild(li);
-            }
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            paginationContainer.appendChild(createPageItem(i, i.toString(), i === SKHS.page));
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link">...</span>';
-                paginationContainer.appendChild(li);
-            }
-            paginationContainer.appendChild(createPageItem(totalPages, totalPages.toString()));
-        }
-
-        // Next button
-        paginationContainer.appendChild(createPageItem(SKHS.page + 1, 'Sau', false, SKHS.page === totalPages));
-    }
-
-      // === Modal Khám SK ===
-      window.skhs_openKhamModal = async (stt_hs, ma_so_bhxh, hs_info, nam_hoc, isEdit) => {
-        const modal = new bootstrap.Modal($sk('#modalKhamSK'));
-        const form = $sk('#formKhamSK');
-        const errorDiv = $sk('#kham-sk-error');
-        form.reset();
-        errorDiv.textContent = '';
-        SKHS.currentKhamRecord = null; // Reset
-        $sk('#kham-sk-rowindex').value = '';
-        $sk('#kham-sk-ma-so-bhxh').value = ma_so_bhxh;
-        $sk('#kham-sk-hs-info').textContent = hs_info;
-        $sk('#kham-sk-nam-hoc').value = nam_hoc; // Set năm học
-
-        if (isEdit) {
-          $sk('#modalKhamSKLabel').textContent = "Sửa phiếu khám sức khỏe";
+        // === Lấy dữ liệu và Render ===
+        async function skhs_loadStudentsAndClasses() {
           showLoading();
           try {
-            const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
-            if (res.success && res.data) {
-              SKHS.currentKhamRecord = res.data;
-              $sk('#kham-sk-rowindex').value = res.data._rowIndex; // Lưu rowIndex để update
-              // Populate form - Lấy key từ sheet headers
-              Object.keys(res.data).forEach(key => {
-                  const input = $sk(`#${key.replace(/_/g, '-')}`); // Chuyển snake_case sang kebab-case id
-                  if (input) {
-                      // Xử lý Flatpickr riêng
-                      if (input.classList.contains('skhs-flatpickr') && SKHS.flatpickrInstances.date) {
-                          SKHS.flatpickrInstances.date.find(inst => inst.input === input)?.setDate(res.data[key], true);
-                      } else {
-                          input.value = res.data[key] || '';
-                      }
-                  }
-              });
-              $sk('#kham-sk-nam-hoc').readOnly = true; // Không cho sửa năm học khi edit
-            } else {
-              errorDiv.textContent = "Không tìm thấy hồ sơ khám của năm học này.";
-              showToast("Chưa có hồ sơ khám của năm học này để sửa.", "warning");
-              // Không đóng modal, cho phép người dùng nhập mới nếu muốn
-              $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
-              $sk('#kham-sk-nam-hoc').readOnly = false;
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const res = await getAllDanhSachHocsinh(user.ma_truong || '', ''); // Lấy toàn trường
+            SKHS.allStudents = res.success ? res.data : [];
+
+            // Populate class dropdown
+            const classes = [...new Set(SKHS.allStudents.map(s => s.lop_hoc).filter(Boolean))].sort();
+            const classSelect = $sk('#skhs-classes');
+            if (classSelect) {
+              classSelect.innerHTML = '<option value="" selected>-- Tất cả các lớp --</option>'
+                                    + classes.map(c => `<option value="${c}">${c}</option>`).join('');
             }
+            skhs_applyFiltersAndRender();
           } catch (err) {
-            errorDiv.textContent = "Lỗi khi tải dữ liệu khám.";
-            showToast("Lỗi tải dữ liệu khám", "danger");
+            console.error("SKHS load error:", err);
+            showToast('Lỗi tải danh sách học sinh', 'danger');
+            $sk('#skhs-ds').innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
           } finally {
             hideLoading();
           }
-        } else {
-          $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
-          $sk('#kham-sk-nam-hoc').readOnly = false; // Cho phép nhập năm học khi thêm mới
         }
-        modal.show();
-      }
 
-      window.skhs_saveKham = async () => {
+        function skhs_applyFiltersAndRender() {
+          const lop = $sk('#skhs-classes').value;
+          const search = $sk('#skhs-search').value.toLowerCase().trim();
+
+          SKHS.filteredStudents = SKHS.allStudents.filter(hs => {
+            const matchLop = !lop || hs.lop_hoc === lop;
+            const matchSearch = !search ||
+              (hs.ho_ten_hoc_sinh || '').toLowerCase().includes(search) ||
+              (hs.so_dinh_danh || '').toLowerCase().includes(search) ||
+              (hs.ma_so_bhxh || '').toLowerCase().includes(search);
+            return matchLop && matchSearch;
+          });
+
+          // Sort
+          if (SKHS.sortField) {
+            SKHS.filteredStudents.sort((a, b) => {
+              let valA = a[SKHS.sortField] || '';
+              let valB = b[SKHS.sortField] || '';
+              // Cân nhắc sort số/ngày nếu cần
+              return valA.localeCompare(valB, 'vi') * SKHS.sortDir;
+            });
+          }
+
+          SKHS.page = 1; // Reset về trang 1 khi lọc/tìm kiếm
+          skhs_renderTableAndPagination();
+        }
+
+        function skhs_renderTableAndPagination() {
+          const total = SKHS.filteredStudents.length;
+          $sk('#skhs-total').textContent = total;
+
+          const start = (SKHS.page - 1) * SKHS.pageSize;
+          const end = start + SKHS.pageSize;
+          const pageData = SKHS.filteredStudents.slice(start, end);
+
+          skhs_renderTable(pageData);
+          skhs_renderPagination(total);
+        }
+
+        function skhs_renderTable(data) {
+          const tableContainer = $sk('#skhs-ds');
+          if (!tableContainer) return;
+
+          let html = `
+            <table class="table table-bordered table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 150px;">Thao tác</th>
+                  <th>Họ tên</th>
+                  <th>Ngày sinh</th>
+                  <th>Lớp</th>
+                  <th>Số định danh</th>
+                  <th>Mã số BHXH</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          if (data.length === 0) {
+            html += '<tr><td colspan="6" class="text-center text-muted">Không tìm thấy học sinh phù hợp.</td></tr>';
+          } else {
+            data.forEach(hs => {
+              // Lấy năm học hiện tại (VD: 2025-2026) - Cần logic chuẩn hơn
+              const currentYear = new Date().getFullYear();
+              const academicYear = `${currentYear}-${currentYear + 1}`;
+
+              html += `
+                <tr>
+                  <td class="action-btns">
+                    <div class="row g-1 mb-1">
+                      <div class="col-4"><button class="btn btn-sm btn-success w-100" title="Khám sức khỏe" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', false)"><i class="bi bi-clipboard2-plus"></i></button></div>
+                      <div class="col-4"><button class="btn btn-sm btn-warning w-100" title="Sửa phiếu khám" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', true)"><i class="bi bi-pencil-square"></i></button></div>
+                      <div class="col-4"><button class="btn btn-sm btn-danger w-100" title="Xóa hồ sơ khám" onclick="skhs_confirmDeleteKham('${hs.ma_so_bhxh}', '${academicYear}')"><i class="bi bi-journal-x"></i></button></div>
+                    </div>
+                    <div class="row g-1">
+                      <div class="col-4"><button class="btn btn-sm btn-info w-100" title="Sự kiện sức khỏe" onclick="skhs_openSuKienModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})')"><i class="bi bi-calendar-event"></i></button></div>
+                      <div class="col-4"><button class="btn btn-sm btn-secondary w-100 disabled" title="Sửa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-pencil"></i></button></div>
+                      <div class="col-4"><button class="btn btn-sm btn-dark w-100 disabled" title="Xóa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-calendar-x"></i></button></div>
+                    </div>
+                  </td>
+                  <td>${hs.ho_ten_hoc_sinh || ''}</td>
+                  <td>${skhs_displayNgay(hs.ngay_sinh) || ''}</td>
+                  <td>${hs.lop_hoc || ''}</td>
+                  <td>${hs.so_dinh_danh || ''}</td>
+                  <td>${hs.ma_so_bhxh || ''}</td>
+                </tr>
+              `;
+            });
+          }
+
+          html += '</tbody></table>';
+          tableContainer.innerHTML = html;
+        }
+
+        function skhs_renderPagination(total) {
+          const paginationContainer = $sk('#skhs-pagin');
+          if (!paginationContainer) return;
+          paginationContainer.innerHTML = ''; // Clear existing pagination
+
+          const totalPages = Math.ceil(total / SKHS.pageSize);
+          if (totalPages <= 1) return; // No pagination needed for 0 or 1 page
+
+          const createPageItem = (page, label, isActive = false, isDisabled = false) => {
+              const li = document.createElement('li');
+              li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+              const a = document.createElement('a');
+              a.className = 'page-link';
+              a.href = '#';
+              a.innerHTML = label;
+              if (!isDisabled) {
+                  a.onclick = (e) => {
+                      e.preventDefault();
+                      SKHS.page = page;
+                      skhs_renderTableAndPagination();
+                  };
+              }
+              li.appendChild(a);
+              return li;
+          };
+
+          // Previous button
+          paginationContainer.appendChild(createPageItem(SKHS.page - 1, 'Trước', false, SKHS.page === 1));
+
+          // Page numbers
+          const maxPagesToShow = 5; // Adjust number of visible page links
+          let startPage = Math.max(1, SKHS.page - Math.floor(maxPagesToShow / 2));
+          let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+          // Adjust startPage if endPage reaches the totalPages limit
+          if (endPage === totalPages) {
+              startPage = Math.max(1, endPage - maxPagesToShow + 1);
+          }
+
+          if (startPage > 1) {
+              paginationContainer.appendChild(createPageItem(1, '1'));
+              if (startPage > 2) {
+                  const li = document.createElement('li');
+                  li.className = 'page-item disabled';
+                  li.innerHTML = '<span class="page-link">...</span>';
+                  paginationContainer.appendChild(li);
+              }
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+              paginationContainer.appendChild(createPageItem(i, i.toString(), i === SKHS.page));
+          }
+
+          if (endPage < totalPages) {
+              if (endPage < totalPages - 1) {
+                  const li = document.createElement('li');
+                  li.className = 'page-item disabled';
+                  li.innerHTML = '<span class="page-link">...</span>';
+                  paginationContainer.appendChild(li);
+              }
+              paginationContainer.appendChild(createPageItem(totalPages, totalPages.toString()));
+          }
+
+          // Next button
+          paginationContainer.appendChild(createPageItem(SKHS.page + 1, 'Sau', false, SKHS.page === totalPages));
+        }
+
+        // === Modal Khám SK ===
+        window.skhs_openKhamModal = async (stt_hs, ma_so_bhxh, hs_info, nam_hoc, isEdit) => {
+          const modal = new bootstrap.Modal($sk('#modalKhamSK'));
           const form = $sk('#formKhamSK');
-          const formData = new FormData(form); // Không hoạt động tốt với input thường
+          const errorDiv = $sk('#kham-sk-error');
+          form.reset();
+          errorDiv.textContent = '';
+          SKHS.currentKhamRecord = null; // Reset
+          $sk('#kham-sk-rowindex').value = '';
+          $sk('#kham-sk-ma-so-bhxh').value = ma_so_bhxh;
+          $sk('#kham-sk-hs-info').textContent = hs_info;
+          $sk('#kham-sk-nam-hoc').value = nam_hoc; // Set năm học
+
+          if (isEdit) {
+            $sk('#modalKhamSKLabel').textContent = "Sửa phiếu khám sức khỏe";
+            showLoading();
+            try {
+              const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
+              if (res.success && res.data) {
+                SKHS.currentKhamRecord = res.data;
+                $sk('#kham-sk-rowindex').value = res.data._rowIndex; // Lưu rowIndex để update
+                // Populate form - Lấy key từ sheet headers
+                Object.keys(res.data).forEach(key => {
+                    const input = $sk(`#${key.replace(/_/g, '-')}`); // Chuyển snake_case sang kebab-case id
+                    if (input) {
+                        // Xử lý Flatpickr riêng
+                        if (input.classList.contains('skhs-flatpickr') && SKHS.flatpickrInstances.date) {
+                            SKHS.flatpickrInstances.date.find(inst => inst.input === input)?.setDate(res.data[key], true);
+                        } else {
+                            input.value = res.data[key] || '';
+                        }
+                    }
+                });
+                $sk('#kham-sk-nam-hoc').readOnly = true; // Không cho sửa năm học khi edit
+              } else {
+                errorDiv.textContent = "Không tìm thấy hồ sơ khám của năm học này.";
+                showToast("Chưa có hồ sơ khám của năm học này để sửa.", "warning");
+                // Không đóng modal, cho phép người dùng nhập mới nếu muốn
+                $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
+                $sk('#kham-sk-nam-hoc').readOnly = false;
+              }
+            } catch (err) {
+              errorDiv.textContent = "Lỗi khi tải dữ liệu khám.";
+              showToast("Lỗi tải dữ liệu khám", "danger");
+            } finally {
+              hideLoading();
+            }
+          } else {
+            $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
+            $sk('#kham-sk-nam-hoc').readOnly = false; // Cho phép nhập năm học khi thêm mới
+          }
+          modal.show();
+        }
+
+        // === Sửa hàm skhs_saveKham ===
+        window.skhs_saveKham = async () => {
+          const form = $sk('#formKhamSK');
           const errorDiv = $sk('#kham-sk-error');
           errorDiv.textContent = '';
 
-          const recordData = {};
-          const inputs = form.querySelectorAll('input, select, textarea');
+          // Lấy dữ liệu trực tiếp từ form (Phần khám 1, 2, CK)
+          const formData = {};
+          const inputs = form.querySelectorAll('input:not([type=hidden]), select, textarea');
           inputs.forEach(input => {
-                // Lấy ID và chuyển kebab-case sang snake_case
-              const key = input.id.replace(/-/g, '_');
-              if (key) { // Bỏ qua nếu không có ID
-                  recordData[key] = input.value.trim();
+              const key = input.id.replace(/-/g, '_'); // Chuyển id -> key snake_case
+              if (key) {
+                  formData[key] = input.value.trim();
               }
           });
 
-          // Lấy các giá trị ẩn quan trọng
-          recordData.ma_so_bhxh = $sk('#kham-sk-ma-so-bhxh').value;
-          const rowIndex = $sk('#kham-sk-rowindex').value;
+          // Lấy các giá trị ẩn và thông tin cần thiết khác
+          const ma_so_bhxh = $sk('#kham-sk-ma-so-bhxh').value;
+          const rowIndex = $sk('#kham-sk-rowindex').value; // Sẽ có giá trị nếu là Sửa
+          const nam_hoc_input = $sk('#kham-sk-nam-hoc').value.trim(); // Năm học nhập trên form
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const ma_truong = user.ma_truong;
+
+            // Tìm thông tin lop_hoc của học sinh từ danh sách đã tải
+          const student = (SKHS.filteredStudents || SKHS.allStudents || []).find(hs => hs.ma_so_bhxh === ma_so_bhxh);
+          const lop_hoc = student ? student.lop_hoc : '';
 
           // Validation cơ bản
-          if (!recordData.kham_sk_nam_hoc) {
+          if (!nam_hoc_input) {
               errorDiv.textContent = "Vui lòng nhập Năm học.";
               return;
           }
+            if (!ma_so_bhxh || !ma_truong) {
+              errorDiv.textContent = "Thiếu thông tin học sinh hoặc trường.";
+              return;
+          }
+
 
           showLoading();
           try {
               let res;
-              if (rowIndex) { // Update
-                  recordData._rowIndex = rowIndex; // Truyền rowIndex cho backend
-                  res = await updateSucKhoeRecord(recordData);
-              } else { // Add new
-                  res = await addSucKhoeRecord(recordData);
+              let payload = {}; // Dữ liệu cuối cùng gửi đi
+
+              if (rowIndex) {
+                  // --- CHẾ ĐỘ SỬA ---
+                  // 1. Lấy bản ghi đầy đủ hiện tại từ sheet
+                  const currentRecordRes = await getSucKhoeRecord(ma_so_bhxh, nam_hoc_input); // Dùng năm học trên form
+                  if (!currentRecordRes.success || !currentRecordRes.data) {
+                      throw new Error("Không tìm thấy bản ghi gốc để cập nhật.");
+                  }
+                  const existingData = currentRecordRes.data;
+
+                  // 2. Merge dữ liệu form mới đè lên dữ liệu cũ
+                  // Giữ lại các trường không có trong form (VD: Tiền sử)
+                  payload = { ...existingData, ...formData };
+
+                  // Đảm bảo các key cần thiết không bị ghi đè rỗng (nếu cần)
+                  payload.ma_so_bhxh = ma_so_bhxh;
+                  payload.nam_hoc = nam_hoc_input;
+                  payload.ma_truong = ma_truong;
+                  payload.lop_hoc = lop_hoc || existingData.lop_hoc; // Ưu tiên lớp mới nhất
+
+                  // 3. Gửi đi với _rowIndex
+                  payload._rowIndex = rowIndex;
+                  res = await updateSucKhoeRecord(payload);
+
+              } else {
+                    // --- CHẾ ĐỘ THÊM MỚI ---
+                    // 1. Kiểm tra xem bản ghi cho năm học này đã tồn tại chưa
+                    const existingCheck = await getSucKhoeRecord(ma_so_bhxh, nam_hoc_input);
+                    if (existingCheck.success && existingCheck.data) {
+                        throw new Error(`Đã tồn tại phiếu khám cho học sinh này trong năm học ${nam_hoc_input}.`);
+                    }
+
+                    // 2. Tạo payload mới chỉ chứa các thông tin cần thiết
+                    // (Tiền sử sẽ trống nếu chưa nhập ở đâu đó)
+                    payload = {
+                        ...formData, // Dữ liệu từ form
+                        ma_so_bhxh: ma_so_bhxh,
+                        ma_truong: ma_truong,
+                        lop_hoc: lop_hoc,
+                        nam_hoc: nam_hoc_input,
+                        // Các trường tiền sử sẽ là undefined/null và backend sẽ ghi rỗng
+                    };
+
+                    // 3. Gửi đi để thêm mới
+                    res = await addSucKhoeRecord(payload);
               }
 
+              // Xử lý kết quả
               if (res.success) {
                   bootstrap.Modal.getInstance($sk('#modalKhamSK')).hide();
                   showToast(rowIndex ? 'Cập nhật phiếu khám thành công!' : 'Thêm phiếu khám thành công!', 'success');
-                  // Cân nhắc có nên reload danh sách HS hay không
+                  // Không cần reload danh sách HS, chỉ cần cập nhật trạng thái nếu cần
               } else {
-                  errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
-                  showToast(errorDiv.textContent, 'danger');
+                  throw new Error(res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại'));
               }
           } catch (err) {
-              errorDiv.textContent = "Lỗi hệ thống: " + err.message;
-              showToast("Lỗi hệ thống", 'danger');
+              console.error("SKHS Save Kham Error:", err);
+              errorDiv.textContent = err.message || "Lỗi hệ thống";
+              showToast(errorDiv.textContent, 'danger');
           } finally {
               hideLoading();
           }
-      }
-
+        }
         window.skhs_confirmDeleteKham = async (ma_so_bhxh, nam_hoc) => {
-            showLoading();
-            try {
-                const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
-                hideLoading();
-                if (res.success && res.data && res.data._rowIndex) {
-                    const rowIndex = res.data._rowIndex;
-                    $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa phiếu khám sức khỏe năm học <strong>${nam_hoc}</strong> của học sinh này?`;
-                    const confirmBtn = $sk('#confirmSKHSBtn');
-                    // Clone để xóa listener cũ
-                    const newConfirmBtn = confirmBtn.cloneNode(true);
-                    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+          showLoading();
+          try {
+              const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
+              hideLoading();
+              if (res.success && res.data && res.data._rowIndex) {
+                  const rowIndex = res.data._rowIndex;
+                  $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa phiếu khám sức khỏe năm học <strong>${nam_hoc}</strong> của học sinh này?`;
+                  const confirmBtn = $sk('#confirmSKHSBtn');
+                  // Clone để xóa listener cũ
+                  const newConfirmBtn = confirmBtn.cloneNode(true);
+                  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-                    newConfirmBtn.onclick = async () => {
-                        bootstrap.Modal.getInstance($sk('#modalConfirmSKHS')).hide();
-                        showLoading();
-                        try {
-                            const deleteRes = await deleteSucKhoeRecord(rowIndex);
-                            if (deleteRes.success) {
-                                showToast('Xóa phiếu khám thành công!', 'success');
-                            } else {
-                                showToast(deleteRes.message || 'Xóa phiếu khám thất bại!', 'danger');
-                            }
-                        } catch (err) {
-                            showToast("Lỗi hệ thống khi xóa!", 'danger');
-                        } finally {
-                            hideLoading();
-                        }
-                    };
-                    new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
+                  newConfirmBtn.onclick = async () => {
+                      bootstrap.Modal.getInstance($sk('#modalConfirmSKHS')).hide();
+                      showLoading();
+                      try {
+                          const deleteRes = await deleteSucKhoeRecord(rowIndex);
+                          if (deleteRes.success) {
+                              showToast('Xóa phiếu khám thành công!', 'success');
+                          } else {
+                              showToast(deleteRes.message || 'Xóa phiếu khám thất bại!', 'danger');
+                          }
+                      } catch (err) {
+                          showToast("Lỗi hệ thống khi xóa!", 'danger');
+                      } finally {
+                          hideLoading();
+                      }
+                  };
+                  new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
 
-                } else {
-                    showToast("Không tìm thấy phiếu khám để xóa.", "warning");
-                }
+              } else {
+                  showToast("Không tìm thấy phiếu khám để xóa.", "warning");
+              }
 
-            } catch (err) {
-                hideLoading();
-                showToast("Lỗi khi tìm phiếu khám để xóa.", "danger");
-            }
+          } catch (err) {
+              hideLoading();
+              showToast("Lỗi khi tìm phiếu khám để xóa.", "danger");
+          }
         }
 
-      // === Modal Sự kiện SK ===
-      window.skhs_openSuKienModal = async (stt_hs, ma_so_bhxh, hs_info) => {
+        // === Modal Sự kiện SK ===
+        window.skhs_openSuKienModal = async (stt_hs, ma_so_bhxh, hs_info) => {
           const modal = new bootstrap.Modal($sk('#modalSuKienSK'));
           const form = $sk('#formSuKienSK');
           const errorDiv = $sk('#sukien-sk-error');
@@ -8830,9 +8883,9 @@
               listDiv.innerHTML = '<div class="text-danger small">Lỗi hệ thống khi tải sự kiện.</div>';
           }
           skhs_resetSuKienForm(); // Đảm bảo form ở trạng thái nhập mới
-      }
+        }
 
-      window.skhs_resetSuKienForm = () => {
+        window.skhs_resetSuKienForm = () => {
           SKHS.currentSuKienEditing = null;
           $sk('#sukien-sk-rowindex').value = '';
           $sk('#formSuKienSK').reset();
@@ -8840,9 +8893,9 @@
           // Reset flatpickr
           const datetimePicker = SKHS.flatpickrInstances.datetime.find(inst => inst.input === $sk('#sukien-sk-thoi-gian'));
           datetimePicker?.clear();
-      }
+        }
 
-      window.skhs_editSuKien = (rowIndex) => {
+        window.skhs_editSuKien = (rowIndex) => {
           const listDiv = $sk('#sukien-sk-list');
           const eventDiv = listDiv.querySelector(`[onclick="skhs_editSuKien(${rowIndex})"]`);
           if (!eventDiv) return;
@@ -8881,9 +8934,9 @@
                 hideLoading();
                 showToast("Lỗi hệ thống khi tải sự kiện.", "danger");
           });
-      }
+        }
 
-      window.skhs_saveSuKien = async () => {
+        window.skhs_saveSuKien = async () => {
           const form = $sk('#formSuKienSK');
           const errorDiv = $sk('#sukien-sk-error');
           errorDiv.textContent = '';
@@ -8958,9 +9011,9 @@
           } finally {
               hideLoading();
           }
-      }
+        }
 
-      window.skhs_confirmDeleteSuKien = (rowIndex, thoi_gian) => {
+        window.skhs_confirmDeleteSuKien = (rowIndex, thoi_gian) => {
           if (!rowIndex) return;
           $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa sự kiện sức khỏe vào lúc <strong>${thoi_gian || 'không rõ'}</strong>?`;
           const confirmBtn = $sk('#confirmSKHSBtn');
@@ -9007,42 +9060,40 @@
               }
           };
           new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
-      }
+        }
 
 
-      // === Wire UI ===
-      function skhs_wirePage() {
-        if ($sk('#tab-cacloaiso').dataset.wired === '1') return;
-        $sk('#tab-cacloaiso').dataset.wired = '1';
+        // === Wire UI ===
+        function skhs_wirePage() {
+          if ($sk('#tab-cacloaiso').dataset.wired === '1') return;
+          $sk('#tab-cacloaiso').dataset.wired = '1';
 
-        console.log("Wiring SKHS page...");
+          console.log("Wiring SKHS page...");
 
-        // Init Flatpickr cho các modals
-        initFlatpickr();
+          // Init Flatpickr cho các modals
+          initFlatpickr();
 
-        // Event listeners
-        $sk('#skhs-classes').addEventListener('change', skhs_applyFiltersAndRender);
-        $sk('#skhs-search').addEventListener('input', skhs_applyFiltersAndRender);
-        $sk('#skhs-btn-reload').addEventListener('click', skhs_loadStudentsAndClasses);
+          // Event listeners
+          $sk('#skhs-classes').addEventListener('change', skhs_applyFiltersAndRender);
+          $sk('#skhs-search').addEventListener('input', skhs_applyFiltersAndRender);
+          $sk('#skhs-btn-reload').addEventListener('click', skhs_loadStudentsAndClasses);
 
-        // Initial load
-        skhs_loadStudentsAndClasses();
-      }
+          // Initial load
+          skhs_loadStudentsAndClasses();
+        }
 
-      // === Integration with main navigation ===
-      const skhsTabTrigger = document.getElementById('tab-cacloaiso-tab');
-      if (skhsTabTrigger) {
-          skhsTabTrigger.addEventListener('shown.bs.tab', skhs_wirePage);
-      } else {
-          console.warn("SKHS: Tab trigger #tab-cacloaiso-tab not found for wiring.");
-      }
+        // === Integration with main navigation ===
+        const skhsTabTrigger = document.getElementById('tab-cacloaiso-tab');
+        if (skhsTabTrigger) {
+            skhsTabTrigger.addEventListener('shown.bs.tab', skhs_wirePage);
+        } else {
+            console.warn("SKHS: Tab trigger #tab-cacloaiso-tab not found for wiring.");
+        }
 
-      // Optional: If the tab might be active on page load, wire it immediately
-        if (skhsTabTrigger && skhsTabTrigger.classList.contains('active')) {
-          skhs_wirePage();
-      }
-
-
+        // Optional: If the tab might be active on page load, wire it immediately
+          if (skhsTabTrigger && skhsTabTrigger.classList.contains('active')) {
+            skhs_wirePage();
+        }
     })();
     // =======================================================
     // ====== /KHỐI SỔ KHÁM SỨC KHỎE HỌC SINH (SKHS) =====
