@@ -2193,12 +2193,207 @@
 
             </div>
           </div>
+          
+          
+          <!-- CÁC LOẠI SỔ -->
           <div class="tab-pane fade" id="tab-cacloaiso" role="tabpanel" aria-labelledby="tab-cacloaiso-tab">
-            <div class="panel">
-              <h4>Nội dung Các loại sổ</h4>
-              <p></p>
+            <div class="h5 fw-bold mb-2">Sổ theo dõi sức khỏe học sinh</div>
+
+            <div class="table-box p-3 mb-2">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-4">
+                  <label class="form-label fw-semibold">Chọn lớp</label>
+                  <select id="skhs-classes" class="form-select" aria-label="Chọn lớp">
+                    <option value="" selected>-- Tất cả các lớp --</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-5">
+                  <label class="form-label fw-semibold">Tìm kiếm</label>
+                  <input class="form-control" id="skhs-search" placeholder="Tìm theo tên, số định danh..." />
+                </div>
+                <div class="col-12 col-lg-3 d-flex align-items-end gap-2">
+                  <button id="skhs-btn-reload" class="btn btn-primary w-100">
+                    <i class="bi bi-arrow-repeat"></i> Tải danh sách
+                  </button>
+                </div>
+              </div>
+              <div class="mt-2 text-secondary">Tổng số: <span id="skhs-total">0</span> học sinh</div>
+            </div>
+
+            <div class="table-responsive table-box p-0" id="skhs-ds">
+              <div class="text-center p-5 text-muted">Đang tải danh sách học sinh...</div>
+            </div>
+
+            <nav class="mt-2">
+              <ul class="pagination justify-content-center" id="skhs-pagin"></ul>
+            </nav>
+
+            <div class="modal fade" id="modalKhamSK" tabindex="-1" aria-labelledby="modalKhamSKLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalKhamSKLabel">Phiếu khám sức khỏe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="formKhamSK" onsubmit="event.preventDefault(); skhs_saveKham()">
+                      <input type="hidden" id="kham-sk-rowindex">
+                      <input type="hidden" id="kham-sk-ma-so-bhxh">
+
+                      <div class="alert alert-info small">
+                        Học sinh: <strong id="kham-sk-hs-info">---</strong>
+                      </div>
+
+                      <div class="row g-3">
+                        <div class="col-md-4">
+                          <label for="kham-sk-nam-hoc" class="form-label">Năm học (*)</label>
+                          <input type="text" class="form-control" id="kham-sk-nam-hoc" required placeholder="VD: 2025-2026">
+                        </div>
+
+                        <h6 class="mt-4 text-primary fw-bold col-12">Khám lần 1 (Đầu năm học)</h6>
+                        <div class="col-md-3"> <label for="lan1-ngay-kham" class="form-label">Ngày khám</label> <input type="text" class="form-control skhs-flatpickr" id="lan1-ngay-kham"> </div>
+                        <div class="col-md-5"> <label for="lan1-can-bo-y-te" class="form-label">Cán bộ y tế</label> <input type="text" class="form-control" id="lan1-can-bo-y-te"> </div>
+                        <div class="col-md-2"> <label for="lan1-chieu-cao-m" class="form-label">Chiều cao (m)</label> <input type="number" step="0.01" class="form-control" id="lan1-chieu-cao-m"> </div>
+                        <div class="col-md-2"> <label for="lan1-can-nang-kg" class="form-label">Cân nặng (kg)</label> <input type="number" step="0.1" class="form-control" id="lan1-can-nang-kg"> </div>
+                        <div class="col-md-2"> <label for="lan1-bmi" class="form-label">BMI</label> <input type="number" step="0.1" class="form-control" id="lan1-bmi"> </div>
+                        <div class="col-md-3"> <label for="lan1-huyet-ap-tam-truong" class="form-label">Huyết áp TTruong</label> <input type="text" class="form-control" id="lan1-huyet-ap-tam-truong" placeholder="VD: 70"> </div>
+                        <div class="col-md-3"> <label for="lan1-huyet-ap-tam-thu" class="form-label">Huyết áp TThu</label> <input type="text" class="form-control" id="lan1-huyet-ap-tam-thu" placeholder="VD: 110"> </div>
+                        <div class="col-md-2"> <label for="lan1-nhip-tim" class="form-label">Nhịp tim</label> <input type="number" class="form-control" id="lan1-nhip-tim"> </div>
+                        <div class="col-md-2"> <label class="form-label">Thị lực K.Kính</label> <div class="input-group"> <input type="text" class="form-control" id="lan1-thiluc-khongkinh-phai" placeholder="P:/10"> <input type="text" class="form-control" id="lan1-thiluc-khongkinh-trai" placeholder="T:/10"> </div> </div>
+                        <div class="col-md-2"> <label class="form-label">Thị lực Có Kính</label> <div class="input-group"> <input type="text" class="form-control" id="lan1-thiluc-cokinh-phai" placeholder="P:/10"> <input type="text" class="form-control" id="lan1-thiluc-cokinh-trai" placeholder="T:/10"> </div> </div>
+
+                        <h6 class="mt-4 text-primary fw-bold col-12">Khám lần 2 (Đầu học kỳ II)</h6>
+                        <div class="col-md-3"> <label for="lan2-ngay-kham" class="form-label">Ngày khám</label> <input type="text" class="form-control skhs-flatpickr" id="lan2-ngay-kham"> </div>
+                        <div class="col-md-5"> <label for="lan2-can-bo-y-te" class="form-label">Cán bộ y tế</label> <input type="text" class="form-control" id="lan2-can-bo-y-te"> </div>
+                        <div class="col-md-2"> <label for="lan2-chieu-cao-m" class="form-label">Chiều cao (m)</label> <input type="number" step="0.01" class="form-control" id="lan2-chieu-cao-m"> </div>
+                        <div class="col-md-2"> <label for="lan2-can-nang-kg" class="form-label">Cân nặng (kg)</label> <input type="number" step="0.1" class="form-control" id="lan2-can-nang-kg"> </div>
+                        <div class="col-md-2"> <label for="lan2-bmi" class="form-label">BMI</label> <input type="number" step="0.1" class="form-control" id="lan2-bmi"> </div>
+
+                        <h6 class="mt-4 text-primary fw-bold col-12">Khám chuyên khoa</h6>
+                        <div class="col-md-3"> <label for="ck-ngay-kham" class="form-label">Ngày khám</label> <input type="text" class="form-control skhs-flatpickr" id="ck-ngay-kham"> </div>
+                        <div class="col-md-5"> <label for="ck-bac-si-kham" class="form-label">Bác sĩ khám</label> <input type="text" class="form-control" id="ck-bac-si-kham"> </div>
+                        <div class="col-12"><label class="form-label">Nội khoa</label></div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-tuanhoan" placeholder="Tuần hoàn..."> </div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-hohap" placeholder="Hô hấp..."> </div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-tieuhoa" placeholder="Tiêu hóa..."> </div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-than-tietnieu" placeholder="Thận - Tiết niệu..."> </div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-thankinh-tamthan" placeholder="Thần kinh - Tâm thần..."> </div>
+                        <div class="col-md-6"> <input type="text" class="form-control mb-1" id="ck-nhi-khac" placeholder="Khám lâm sàng khác..."> </div>
+                        <div class="col-12"><label class="form-label">Mắt</label></div>
+                        <div class="col-md-3"> <label class="form-label small">Thị lực K.Kính</label> <div class="input-group"> <input type="text" class="form-control" id="ck-mat-thiluc-khongkinh-phai" placeholder="P:/10"> <input type="text" class="form-control" id="ck-mat-thiluc-khongkinh-trai" placeholder="T:/10"> </div> </div>
+                        <div class="col-md-3"> <label class="form-label small">Thị lực Có Kính</label> <div class="input-group"> <input type="text" class="form-control" id="ck-mat-thiluc-cokinh-phai" placeholder="P:/10"> <input type="text" class="form-control" id="ck-mat-thiluc-cokinh-trai" placeholder="T:/10"> </div> </div>
+                        <div class="col-md-6"> <label class="form-label small">Bệnh về mắt (nếu có)</label> <input type="text" class="form-control" id="ck-mat-benh"> </div>
+                          <div class="col-12"><label class="form-label">Tai-Mũi-Họng</label></div>
+                        <div class="col-md-3"> <label class="form-label small">Thính lực Trái (m)</label> <div class="input-group"> <input type="text" class="form-control" id="ck-tmh-thinhluc-trai-thuong" placeholder="Thường"> <input type="text" class="form-control" id="ck-tmh-thinhluc-trai-tham" placeholder="Thầm"> </div> </div>
+                        <div class="col-md-3"> <label class="form-label small">Thính lực Phải (m)</label> <div class="input-group"> <input type="text" class="form-control" id="ck-tmh-thinhluc-phai-thuong" placeholder="Thường"> <input type="text" class="form-control" id="ck-tmh-thinhluc-phai-tham" placeholder="Thầm"> </div> </div>
+                          <div class="col-md-6"> <label class="form-label small">Bệnh về TMH (nếu có)</label> <input type="text" class="form-control" id="ck-tmh-benh"> </div>
+                        <div class="col-12"><label class="form-label">Răng-Hàm-Mặt</label></div>
+                          <div class="col-md-6"> <label class="form-label small">Hàm trên</label> <input type="text" class="form-control" id="ck-rhm-ham-tren"> </div>
+                        <div class="col-md-6"> <label class="form-label small">Hàm dưới</label> <input type="text" class="form-control" id="ck-rhm-ham-duoi"> </div>
+                        <div class="col-12"> <label class="form-label small">Bệnh về RHM (nếu có)</label> <input type="text" class="form-control" id="ck-rhm-benh"> </div>
+                        <div class="col-12"><label class="form-label">Cơ xương khớp</label></div>
+                        <div class="col-md-6">
+                            <label class="form-label small d-block">Kết quả khám cột sống</label>
+                            <select class="form-select" id="ck-cxk-ket-qua">
+                                <option value="Bình thường" selected>Bình thường</option>
+                                <option value="Gù">Gù</option>
+                                <option value="Ưỡn">Ưỡn</option>
+                                <option value="Vẹo S">Vẹo chữ S</option>
+                                <option value="Vẹo C">Vẹo chữ C</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6"> <label class="form-label small">Bệnh CXK khác (nếu có)</label> <input type="text" class="form-control" id="ck-cxk-benh"> </div>
+
+                        <div class="col-12">
+                            <label for="kham-sk-ghi-chu" class="form-label">Ghi chú chung</label>
+                            <textarea class="form-control" id="kham-sk-ghi-chu" rows="2"></textarea>
+                        </div>
+                      </div>
+                      <div id="kham-sk-error" class="text-danger mt-2 small" style="min-height: 18px;"></div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" form="formKhamSK">Lưu phiếu khám</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal fade" id="modalSuKienSK" tabindex="-1" aria-labelledby="modalSuKienSKLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalSuKienSKLabel">Sự kiện sức khỏe bất thường</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="formSuKienSK" onsubmit="event.preventDefault(); skhs_saveSuKien()">
+                      <input type="hidden" id="sukien-sk-rowindex">
+                      <input type="hidden" id="sukien-sk-ma-so-bhxh">
+                      <div class="alert alert-info small">
+                        Học sinh: <strong id="sukien-sk-hs-info">---</strong>
+                      </div>
+                      <div id="sukien-sk-list" class="mb-3 border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                        <div class="text-muted small">Đang tải lịch sử sự kiện...</div>
+                      </div>
+
+                      <h6 class="text-primary fw-bold">Thêm/Sửa sự kiện</h6>
+                      <div class="row g-2">
+                        <div class="col-md-4">
+                          <label for="sukien-sk-thoi-gian" class="form-label">Thời gian (*)</label>
+                          <input type="text" class="form-control skhs-flatpickr-datetime" id="sukien-sk-thoi-gian" required placeholder="dd/mm/yyyy HH:MM">
+                        </div>
+                        <div class="col-md-8">
+                          <label for="sukien-sk-chan-doan" class="form-label">Chẩn đoán ban đầu</label>
+                          <input type="text" class="form-control" id="sukien-sk-chan-doan">
+                        </div>
+                        <div class="col-12">
+                          <label for="sukien-sk-xu-tri" class="form-label">Xử trí tại trường</label>
+                          <textarea class="form-control" id="sukien-sk-xu-tri" rows="2"></textarea>
+                        </div>
+                          <div class="col-md-6">
+                          <label for="sukien-sk-chuyen-den" class="form-label">Chuyển đến (nếu có)</label>
+                          <input type="text" class="form-control" id="sukien-sk-chuyen-den">
+                        </div>
+                          <div class="col-md-6">
+                          <label for="sukien-sk-ghi-chu-event" class="form-label">Ghi chú sự kiện</label>
+                          <input type="text" class="form-control" id="sukien-sk-ghi-chu-event">
+                        </div>
+                      </div>
+                      <div id="sukien-sk-error" class="text-danger mt-2 small" style="min-height: 18px;"></div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-warning" id="btn-reset-sukien-form" onclick="skhs_resetSuKienForm()">Nhập mới</button>
+                    <button type="submit" class="btn btn-primary" form="formSuKienSK">Lưu sự kiện</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal fade" id="modalConfirmSKHS" tabindex="-1" aria-labelledby="modalConfirmSKHSLabel" aria-hidden="true">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalConfirmSKHSLabel">Xác nhận xóa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body" id="confirmSKHSBody">
+                    Bạn có chắc chắn muốn xóa mục này?
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger" id="confirmSKHSBtn">Xóa</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+
+
+
           <div class="tab-pane fade" id="tab-kehoach" role="tabpanel" aria-labelledby="tab-kehoach-tab">
             <div class="panel">
               <h4>Nội dung Kế hoạch</h4>
@@ -8209,5 +8404,652 @@
     }
   </script>
   <!-- ===== Xuất Excel: Danh sách BHTN Học sinh (Chờ duyệt) ===== -->
+
+
+
+
+
+
+
+  <!-- ===== KHỐI SỔ KHÁM SỨC KHỎE HỌC SINH (SKHS) ===== -->
+  <script>
+    // =======================================================
+    // ====== KHỐI SỔ KHÁM SỨC KHỎE HỌC SINH (SKHS) =====
+    // =======================================================
+    (function() {
+      if (window._SKHS_LOADED) return;
+      window._SKHS_LOADED = true;
+
+      const SKHS = {
+        allStudents: [],
+        filteredStudents: [],
+        page: 1,
+        pageSize: 15, // Điều chỉnh nếu cần
+        sortField: 'ho_ten_hoc_sinh',
+        sortDir: 1,
+        currentKhamRecord: null, // Lưu bản ghi khám đang sửa
+        currentSuKienEditing: null, // Lưu sự kiện đang sửa (_rowIndex)
+        flatpickrInstances: {} // Lưu trữ instances của flatpickr
+      };
+
+      // === Helpers ===
+      const $sk = (selector) => document.querySelector(selector);
+      const $$sk = (selector) => document.querySelectorAll(selector);
+      // Sử dụng adm_displayNgay từ khối Học sinh nếu có, hoặc định nghĩa lại
+      const skhs_displayNgay = window.adm_displayNgay || function(raw) { /*...*/ return raw; };
+
+      // === Khởi tạo Flatpickr ===
+      function initFlatpickr() {
+          // Ngày (dd/mm/yyyy)
+          SKHS.flatpickrInstances.date = flatpickr(".skhs-flatpickr", {
+              dateFormat: "d/m/Y",
+              allowInput: true,
+              disableMobile: true
+          });
+          // Ngày giờ (dd/mm/yyyy HH:MM)
+          SKHS.flatpickrInstances.datetime = flatpickr(".skhs-flatpickr-datetime", {
+              enableTime: true,
+              dateFormat: "d/m/Y H:i",
+              time_24hr: true,
+              allowInput: true,
+              disableMobile: true
+          });
+      }
+
+      // === Lấy dữ liệu và Render ===
+      async function skhs_loadStudentsAndClasses() {
+        showLoading();
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const res = await getAllDanhSachHocsinh(user.ma_truong || '', ''); // Lấy toàn trường
+          SKHS.allStudents = res.success ? res.data : [];
+
+          // Populate class dropdown
+          const classes = [...new Set(SKHS.allStudents.map(s => s.lop_hoc).filter(Boolean))].sort();
+          const classSelect = $sk('#skhs-classes');
+          if (classSelect) {
+            classSelect.innerHTML = '<option value="" selected>-- Tất cả các lớp --</option>'
+                                  + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+          }
+          skhs_applyFiltersAndRender();
+        } catch (err) {
+          console.error("SKHS load error:", err);
+          showToast('Lỗi tải danh sách học sinh', 'danger');
+          $sk('#skhs-ds').innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function skhs_applyFiltersAndRender() {
+        const lop = $sk('#skhs-classes').value;
+        const search = $sk('#skhs-search').value.toLowerCase().trim();
+
+        SKHS.filteredStudents = SKHS.allStudents.filter(hs => {
+          const matchLop = !lop || hs.lop_hoc === lop;
+          const matchSearch = !search ||
+            (hs.ho_ten_hoc_sinh || '').toLowerCase().includes(search) ||
+            (hs.so_dinh_danh || '').toLowerCase().includes(search) ||
+            (hs.ma_so_bhxh || '').toLowerCase().includes(search);
+          return matchLop && matchSearch;
+        });
+
+        // Sort
+        if (SKHS.sortField) {
+          SKHS.filteredStudents.sort((a, b) => {
+            let valA = a[SKHS.sortField] || '';
+            let valB = b[SKHS.sortField] || '';
+            // Cân nhắc sort số/ngày nếu cần
+            return valA.localeCompare(valB, 'vi') * SKHS.sortDir;
+          });
+        }
+
+        SKHS.page = 1; // Reset về trang 1 khi lọc/tìm kiếm
+        skhs_renderTableAndPagination();
+      }
+
+      function skhs_renderTableAndPagination() {
+        const total = SKHS.filteredStudents.length;
+        $sk('#skhs-total').textContent = total;
+
+        const start = (SKHS.page - 1) * SKHS.pageSize;
+        const end = start + SKHS.pageSize;
+        const pageData = SKHS.filteredStudents.slice(start, end);
+
+        skhs_renderTable(pageData);
+        skhs_renderPagination(total);
+      }
+
+      function skhs_renderTable(data) {
+        const tableContainer = $sk('#skhs-ds');
+        if (!tableContainer) return;
+
+        let html = `
+          <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 150px;">Thao tác</th>
+                <th>Họ tên</th>
+                <th>Ngày sinh</th>
+                <th>Lớp</th>
+                <th>Số định danh</th>
+                <th>Mã số BHXH</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        if (data.length === 0) {
+          html += '<tr><td colspan="6" class="text-center text-muted">Không tìm thấy học sinh phù hợp.</td></tr>';
+        } else {
+          data.forEach(hs => {
+            // Lấy năm học hiện tại (VD: 2025-2026) - Cần logic chuẩn hơn
+            const currentYear = new Date().getFullYear();
+            const academicYear = `${currentYear}-${currentYear + 1}`;
+
+            html += `
+              <tr>
+                <td class="action-btns">
+                  <div class="row g-1 mb-1">
+                    <div class="col-4"><button class="btn btn-sm btn-success w-100" title="Khám sức khỏe" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', false)"><i class="bi bi-clipboard2-plus"></i></button></div>
+                    <div class="col-4"><button class="btn btn-sm btn-warning w-100" title="Sửa phiếu khám" onclick="skhs_openKhamModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})', '${academicYear}', true)"><i class="bi bi-pencil-square"></i></button></div>
+                    <div class="col-4"><button class="btn btn-sm btn-danger w-100" title="Xóa hồ sơ khám" onclick="skhs_confirmDeleteKham('${hs.ma_so_bhxh}', '${academicYear}')"><i class="bi bi-journal-x"></i></button></div>
+                  </div>
+                  <div class="row g-1">
+                    <div class="col-4"><button class="btn btn-sm btn-info w-100" title="Sự kiện sức khỏe" onclick="skhs_openSuKienModal('${hs.stt}', '${hs.ma_so_bhxh}', '${hs.ho_ten_hoc_sinh} (${skhs_displayNgay(hs.ngay_sinh)})')"><i class="bi bi-calendar-event"></i></button></div>
+                    <div class="col-4"><button class="btn btn-sm btn-secondary w-100 disabled" title="Sửa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-pencil"></i></button></div>
+                    <div class="col-4"><button class="btn btn-sm btn-dark w-100 disabled" title="Xóa sự kiện SK (Chọn từ danh sách)"><i class="bi bi-calendar-x"></i></button></div>
+                  </div>
+                </td>
+                <td>${hs.ho_ten_hoc_sinh || ''}</td>
+                <td>${skhs_displayNgay(hs.ngay_sinh) || ''}</td>
+                <td>${hs.lop_hoc || ''}</td>
+                <td>${hs.so_dinh_danh || ''}</td>
+                <td>${hs.ma_so_bhxh || ''}</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += '</tbody></table>';
+        tableContainer.innerHTML = html;
+      }
+
+    function skhs_renderPagination(total) {
+        const paginationContainer = $sk('#skhs-pagin');
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = ''; // Clear existing pagination
+
+        const totalPages = Math.ceil(total / SKHS.pageSize);
+        if (totalPages <= 1) return; // No pagination needed for 0 or 1 page
+
+        const createPageItem = (page, label, isActive = false, isDisabled = false) => {
+            const li = document.createElement('li');
+            li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.innerHTML = label;
+            if (!isDisabled) {
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    SKHS.page = page;
+                    skhs_renderTableAndPagination();
+                };
+            }
+            li.appendChild(a);
+            return li;
+        };
+
+        // Previous button
+        paginationContainer.appendChild(createPageItem(SKHS.page - 1, 'Trước', false, SKHS.page === 1));
+
+        // Page numbers
+        const maxPagesToShow = 5; // Adjust number of visible page links
+        let startPage = Math.max(1, SKHS.page - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        // Adjust startPage if endPage reaches the totalPages limit
+        if (endPage === totalPages) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        if (startPage > 1) {
+            paginationContainer.appendChild(createPageItem(1, '1'));
+            if (startPage > 2) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">...</span>';
+                paginationContainer.appendChild(li);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationContainer.appendChild(createPageItem(i, i.toString(), i === SKHS.page));
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">...</span>';
+                paginationContainer.appendChild(li);
+            }
+            paginationContainer.appendChild(createPageItem(totalPages, totalPages.toString()));
+        }
+
+        // Next button
+        paginationContainer.appendChild(createPageItem(SKHS.page + 1, 'Sau', false, SKHS.page === totalPages));
+    }
+
+      // === Modal Khám SK ===
+      window.skhs_openKhamModal = async (stt_hs, ma_so_bhxh, hs_info, nam_hoc, isEdit) => {
+        const modal = new bootstrap.Modal($sk('#modalKhamSK'));
+        const form = $sk('#formKhamSK');
+        const errorDiv = $sk('#kham-sk-error');
+        form.reset();
+        errorDiv.textContent = '';
+        SKHS.currentKhamRecord = null; // Reset
+        $sk('#kham-sk-rowindex').value = '';
+        $sk('#kham-sk-ma-so-bhxh').value = ma_so_bhxh;
+        $sk('#kham-sk-hs-info').textContent = hs_info;
+        $sk('#kham-sk-nam-hoc').value = nam_hoc; // Set năm học
+
+        if (isEdit) {
+          $sk('#modalKhamSKLabel').textContent = "Sửa phiếu khám sức khỏe";
+          showLoading();
+          try {
+            const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
+            if (res.success && res.data) {
+              SKHS.currentKhamRecord = res.data;
+              $sk('#kham-sk-rowindex').value = res.data._rowIndex; // Lưu rowIndex để update
+              // Populate form - Lấy key từ sheet headers
+              Object.keys(res.data).forEach(key => {
+                  const input = $sk(`#${key.replace(/_/g, '-')}`); // Chuyển snake_case sang kebab-case id
+                  if (input) {
+                      // Xử lý Flatpickr riêng
+                      if (input.classList.contains('skhs-flatpickr') && SKHS.flatpickrInstances.date) {
+                          SKHS.flatpickrInstances.date.find(inst => inst.input === input)?.setDate(res.data[key], true);
+                      } else {
+                          input.value = res.data[key] || '';
+                      }
+                  }
+              });
+              $sk('#kham-sk-nam-hoc').readOnly = true; // Không cho sửa năm học khi edit
+            } else {
+              errorDiv.textContent = "Không tìm thấy hồ sơ khám của năm học này.";
+              showToast("Chưa có hồ sơ khám của năm học này để sửa.", "warning");
+              // Không đóng modal, cho phép người dùng nhập mới nếu muốn
+              $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
+              $sk('#kham-sk-nam-hoc').readOnly = false;
+            }
+          } catch (err) {
+            errorDiv.textContent = "Lỗi khi tải dữ liệu khám.";
+            showToast("Lỗi tải dữ liệu khám", "danger");
+          } finally {
+            hideLoading();
+          }
+        } else {
+          $sk('#modalKhamSKLabel').textContent = "Thêm phiếu khám sức khỏe";
+          $sk('#kham-sk-nam-hoc').readOnly = false; // Cho phép nhập năm học khi thêm mới
+        }
+        modal.show();
+      }
+
+      window.skhs_saveKham = async () => {
+          const form = $sk('#formKhamSK');
+          const formData = new FormData(form); // Không hoạt động tốt với input thường
+          const errorDiv = $sk('#kham-sk-error');
+          errorDiv.textContent = '';
+
+          const recordData = {};
+          const inputs = form.querySelectorAll('input, select, textarea');
+          inputs.forEach(input => {
+                // Lấy ID và chuyển kebab-case sang snake_case
+              const key = input.id.replace(/-/g, '_');
+              if (key) { // Bỏ qua nếu không có ID
+                  recordData[key] = input.value.trim();
+              }
+          });
+
+          // Lấy các giá trị ẩn quan trọng
+          recordData.ma_so_bhxh = $sk('#kham-sk-ma-so-bhxh').value;
+          const rowIndex = $sk('#kham-sk-rowindex').value;
+
+          // Validation cơ bản
+          if (!recordData.kham_sk_nam_hoc) {
+              errorDiv.textContent = "Vui lòng nhập Năm học.";
+              return;
+          }
+
+          showLoading();
+          try {
+              let res;
+              if (rowIndex) { // Update
+                  recordData._rowIndex = rowIndex; // Truyền rowIndex cho backend
+                  res = await updateSucKhoeRecord(recordData);
+              } else { // Add new
+                  res = await addSucKhoeRecord(recordData);
+              }
+
+              if (res.success) {
+                  bootstrap.Modal.getInstance($sk('#modalKhamSK')).hide();
+                  showToast(rowIndex ? 'Cập nhật phiếu khám thành công!' : 'Thêm phiếu khám thành công!', 'success');
+                  // Cân nhắc có nên reload danh sách HS hay không
+              } else {
+                  errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
+                  showToast(errorDiv.textContent, 'danger');
+              }
+          } catch (err) {
+              errorDiv.textContent = "Lỗi hệ thống: " + err.message;
+              showToast("Lỗi hệ thống", 'danger');
+          } finally {
+              hideLoading();
+          }
+      }
+
+        window.skhs_confirmDeleteKham = async (ma_so_bhxh, nam_hoc) => {
+            showLoading();
+            try {
+                const res = await getSucKhoeRecord(ma_so_bhxh, nam_hoc);
+                hideLoading();
+                if (res.success && res.data && res.data._rowIndex) {
+                    const rowIndex = res.data._rowIndex;
+                    $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa phiếu khám sức khỏe năm học <strong>${nam_hoc}</strong> của học sinh này?`;
+                    const confirmBtn = $sk('#confirmSKHSBtn');
+                    // Clone để xóa listener cũ
+                    const newConfirmBtn = confirmBtn.cloneNode(true);
+                    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+                    newConfirmBtn.onclick = async () => {
+                        bootstrap.Modal.getInstance($sk('#modalConfirmSKHS')).hide();
+                        showLoading();
+                        try {
+                            const deleteRes = await deleteSucKhoeRecord(rowIndex);
+                            if (deleteRes.success) {
+                                showToast('Xóa phiếu khám thành công!', 'success');
+                            } else {
+                                showToast(deleteRes.message || 'Xóa phiếu khám thất bại!', 'danger');
+                            }
+                        } catch (err) {
+                            showToast("Lỗi hệ thống khi xóa!", 'danger');
+                        } finally {
+                            hideLoading();
+                        }
+                    };
+                    new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
+
+                } else {
+                    showToast("Không tìm thấy phiếu khám để xóa.", "warning");
+                }
+
+            } catch (err) {
+                hideLoading();
+                showToast("Lỗi khi tìm phiếu khám để xóa.", "danger");
+            }
+        }
+
+      // === Modal Sự kiện SK ===
+      window.skhs_openSuKienModal = async (stt_hs, ma_so_bhxh, hs_info) => {
+          const modal = new bootstrap.Modal($sk('#modalSuKienSK'));
+          const form = $sk('#formSuKienSK');
+          const errorDiv = $sk('#sukien-sk-error');
+          form.reset();
+          errorDiv.textContent = '';
+          SKHS.currentSuKienEditing = null; // Reset
+          $sk('#sukien-sk-rowindex').value = '';
+          $sk('#sukien-sk-ma-so-bhxh').value = ma_so_bhxh;
+          $sk('#sukien-sk-hs-info').textContent = hs_info;
+          $sk('#modalSuKienSKLabel').textContent = `Sự kiện sức khỏe: ${hs_info}`;
+
+          // Load danh sách sự kiện cũ
+          const listDiv = $sk('#sukien-sk-list');
+          listDiv.innerHTML = '<div class="text-muted small">Đang tải lịch sử sự kiện...</div>';
+          modal.show(); // Hiển thị modal trước khi fetch
+
+          try {
+              const res = await getSucKhoeEvents(ma_so_bhxh);
+              if (res.success && res.data) {
+                  if (res.data.length === 0) {
+                      listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào được ghi nhận.</div>';
+                  } else {
+                      listDiv.innerHTML = res.data.map(event => `
+                          <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
+                              <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan || 'Chưa rõ CĐ'}
+                              <span class="float-end">
+                                  <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
+                                  <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
+                              </span>
+                          </div>
+                      `).join('');
+                  }
+              } else {
+                  listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lịch sử sự kiện.</div>';
+              }
+          } catch (err) {
+              listDiv.innerHTML = '<div class="text-danger small">Lỗi hệ thống khi tải sự kiện.</div>';
+          }
+          skhs_resetSuKienForm(); // Đảm bảo form ở trạng thái nhập mới
+      }
+
+      window.skhs_resetSuKienForm = () => {
+          SKHS.currentSuKienEditing = null;
+          $sk('#sukien-sk-rowindex').value = '';
+          $sk('#formSuKienSK').reset();
+          $sk('#modalSuKienSKLabel').textContent = `Thêm sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
+          // Reset flatpickr
+          const datetimePicker = SKHS.flatpickrInstances.datetime.find(inst => inst.input === $sk('#sukien-sk-thoi-gian'));
+          datetimePicker?.clear();
+      }
+
+      window.skhs_editSuKien = (rowIndex) => {
+          const listDiv = $sk('#sukien-sk-list');
+          const eventDiv = listDiv.querySelector(`[onclick="skhs_editSuKien(${rowIndex})"]`);
+          if (!eventDiv) return;
+
+          // Tìm data tương ứng (cần fetch lại cho chắc chắn)
+          showLoading();
+          const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
+          getSucKhoeEvents(ma_so_bhxh).then(res => {
+              hideLoading();
+              if(res.success && res.data) {
+                  const eventData = res.data.find(e => e._rowIndex === rowIndex);
+                  if (eventData) {
+                        SKHS.currentSuKienEditing = eventData;
+                        $sk('#sukien-sk-rowindex').value = rowIndex;
+                        $sk('#modalSuKienSKLabel').textContent = `Sửa sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
+
+                        // Populate form
+                        $sk('#sukien-sk-thoi-gian').value = eventData.thoi_gian || '';
+                        $sk('#sukien-sk-chan-doan').value = eventData.chan_doan_ban_dau || ''; // Sửa key
+                        $sk('#sukien-sk-xu-tri').value = eventData.xu_tri_tai_truong || '';   // Sửa key
+                        $sk('#sukien-sk-chuyen-den').value = eventData.chuyen_den || '';
+                        $sk('#sukien-sk-ghi-chu-event').value = eventData.ghi_chu || '';      // Sửa key
+
+                        // Cập nhật Flatpickr
+                        const datetimePicker = SKHS.flatpickrInstances.datetime.find(inst => inst.input === $sk('#sukien-sk-thoi-gian'));
+                        datetimePicker?.setDate(eventData.thoi_gian, true);
+
+
+                  } else {
+                      showToast("Không tìm thấy dữ liệu sự kiện để sửa.", "warning");
+                  }
+              } else {
+                    showToast("Lỗi khi tải lại dữ liệu sự kiện.", "danger");
+              }
+          }).catch(err => {
+                hideLoading();
+                showToast("Lỗi hệ thống khi tải sự kiện.", "danger");
+          });
+      }
+
+      window.skhs_saveSuKien = async () => {
+          const form = $sk('#formSuKienSK');
+          const errorDiv = $sk('#sukien-sk-error');
+          errorDiv.textContent = '';
+
+          const eventData = {};
+          const inputs = form.querySelectorAll('input, select, textarea');
+          inputs.forEach(input => {
+                const key = input.id.replace('sukien-sk-', '').replace(/-/g, '_'); // Chuyển id -> key
+                // Ánh xạ key đặc biệt từ form ID sang tên cột sheet
+                const keyMap = {
+                    'chan_doan': 'chan_doan_ban_dau',
+                    'xu_tri': 'xu_tri_tai_truong',
+                    'ghi_chu_event': 'ghi_chu'
+                };
+                const finalKey = keyMap[key] || key;
+                if (finalKey) {
+                    eventData[finalKey] = input.value.trim();
+                }
+          });
+
+          eventData.ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
+          const rowIndex = $sk('#sukien-sk-rowindex').value;
+
+          // Validation
+          if (!eventData.thoi_gian) {
+              errorDiv.textContent = "Vui lòng nhập Thời gian.";
+              return;
+          }
+
+          showLoading();
+          try {
+              let res;
+              if (rowIndex) { // Update
+                  eventData._rowIndex = rowIndex;
+                  res = await updateSucKhoeEvent(eventData);
+              } else { // Add new
+                    res = await addSucKhoeEvent(eventData);
+              }
+
+                if (res.success) {
+                  showToast(rowIndex ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện thành công!', 'success');
+                  // Reload list trong modal
+                  const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
+                  const listDiv = $sk('#sukien-sk-list');
+                  listDiv.innerHTML = '<div class="text-muted small">Đang tải lại lịch sử...</div>';
+                  const listRes = await getSucKhoeEvents(ma_so_bhxh);
+                    if (listRes.success && listRes.data) {
+                        if (listRes.data.length === 0) {
+                            listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào.</div>';
+                        } else {
+                            listDiv.innerHTML = listRes.data.map(event => `
+                              <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
+                                  <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan_ban_dau || 'Chưa rõ CĐ'}
+                                  <span class="float-end">
+                                      <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
+                                      <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
+                                  </span>
+                              </div>
+                          `).join('');
+                        }
+                    } else {
+                          listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
+                    }
+                    skhs_resetSuKienForm(); // Reset form về trạng thái nhập mới
+              } else {
+                  errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
+                  showToast(errorDiv.textContent, 'danger');
+              }
+          } catch (err) {
+              errorDiv.textContent = "Lỗi hệ thống: " + err.message;
+              showToast("Lỗi hệ thống", 'danger');
+          } finally {
+              hideLoading();
+          }
+      }
+
+      window.skhs_confirmDeleteSuKien = (rowIndex, thoi_gian) => {
+          if (!rowIndex) return;
+          $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa sự kiện sức khỏe vào lúc <strong>${thoi_gian || 'không rõ'}</strong>?`;
+          const confirmBtn = $sk('#confirmSKHSBtn');
+          const newConfirmBtn = confirmBtn.cloneNode(true);
+          confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+          newConfirmBtn.onclick = async () => {
+              bootstrap.Modal.getInstance($sk('#modalConfirmSKHS')).hide();
+              showLoading();
+              try {
+                  const deleteRes = await deleteSucKhoeEvent(rowIndex);
+                  if (deleteRes.success) {
+                      showToast('Xóa sự kiện thành công!', 'success');
+                      // Reload list trong modal
+                      const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
+                      const listDiv = $sk('#sukien-sk-list');
+                      listDiv.innerHTML = '<div class="text-muted small">Đang tải lại lịch sử...</div>';
+                      const listRes = await getSucKhoeEvents(ma_so_bhxh);
+                      if (listRes.success && listRes.data) {
+                          if (listRes.data.length === 0) {
+                              listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào.</div>';
+                          } else {
+                              listDiv.innerHTML = listRes.data.map(event => `
+                              <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
+                                  <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan_ban_dau || 'Chưa rõ CĐ'}
+                                  <span class="float-end">
+                                      <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
+                                      <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
+                                  </span>
+                              </div>
+                          `).join('');
+                          }
+                      } else {
+                          listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
+                      }
+                      skhs_resetSuKienForm(); // Reset form
+                  } else {
+                      showToast(deleteRes.message || 'Xóa sự kiện thất bại!', 'danger');
+                  }
+              } catch (err) {
+                  showToast("Lỗi hệ thống khi xóa sự kiện!", 'danger');
+              } finally {
+                  hideLoading();
+              }
+          };
+          new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
+      }
+
+
+      // === Wire UI ===
+      function skhs_wirePage() {
+        if ($sk('#tab-cacloaiso').dataset.wired === '1') return;
+        $sk('#tab-cacloaiso').dataset.wired = '1';
+
+        console.log("Wiring SKHS page...");
+
+        // Init Flatpickr cho các modals
+        initFlatpickr();
+
+        // Event listeners
+        $sk('#skhs-classes').addEventListener('change', skhs_applyFiltersAndRender);
+        $sk('#skhs-search').addEventListener('input', skhs_applyFiltersAndRender);
+        $sk('#skhs-btn-reload').addEventListener('click', skhs_loadStudentsAndClasses);
+
+        // Initial load
+        skhs_loadStudentsAndClasses();
+      }
+
+      // === Integration with main navigation ===
+      const skhsTabTrigger = document.getElementById('tab-cacloaiso-tab');
+      if (skhsTabTrigger) {
+          skhsTabTrigger.addEventListener('shown.bs.tab', skhs_wirePage);
+      } else {
+          console.warn("SKHS: Tab trigger #tab-cacloaiso-tab not found for wiring.");
+      }
+
+      // Optional: If the tab might be active on page load, wire it immediately
+        if (skhsTabTrigger && skhsTabTrigger.classList.contains('active')) {
+          skhs_wirePage();
+      }
+
+
+    })();
+    // =======================================================
+    // ====== /KHỐI SỔ KHÁM SỨC KHỎE HỌC SINH (SKHS) =====
+    // =======================================================
+  </script>
+  <!-- ===== KHỐI SỔ KHÁM SỨC KHỎE HỌC SINH (SKHS) ===== -->
+
+
 </body>
 </html>

@@ -401,3 +401,75 @@ async function deleteBHTNByStt(stt, phan_quyen = "") {
   return await res.json();
 }
 
+
+
+
+
+
+
+
+
+
+
+/* ====== SỨC KHỎE HỌC SINH ====== */
+
+// Lấy hồ sơ khám SK theo mã số BHXH và năm học
+async function getSucKhoeRecord(ma_so_bhxh, nam_hoc) {
+  const url = `${API_BASE}?func=GetSucKhoeRecord&ma_so_bhxh=${encodeURIComponent(ma_so_bhxh)}&nam_hoc=${encodeURIComponent(nam_hoc)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Thêm hồ sơ khám SK mới
+async function addSucKhoeRecord(recordData) {
+  const params = Object.entries(recordData).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=AddSucKhoeRecord&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Cập nhật hồ sơ khám SK (cần _rowIndex)
+async function updateSucKhoeRecord(recordData) {
+   const params = Object.entries(recordData).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=UpdateSucKhoeRecord&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa hồ sơ khám SK (cần _rowIndex)
+async function deleteSucKhoeRecord(rowIndex) {
+  const url = `${API_BASE}?func=DeleteSucKhoeRecord&_rowIndex=${encodeURIComponent(rowIndex)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Lấy danh sách sự kiện SK theo mã số BHXH
+async function getSucKhoeEvents(ma_so_bhxh) {
+  const url = `${API_BASE}?func=GetSucKhoeEvents&ma_so_bhxh=${encodeURIComponent(ma_so_bhxh)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Thêm sự kiện SK mới
+async function addSucKhoeEvent(eventData) {
+   const params = Object.entries(eventData).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=AddSucKhoeEvent&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Cập nhật sự kiện SK (cần _rowIndex)
+async function updateSucKhoeEvent(eventData) {
+   const params = Object.entries(eventData).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const url = `${API_BASE}?func=UpdateSucKhoeEvent&${params}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// Xóa sự kiện SK (cần _rowIndex)
+async function deleteSucKhoeEvent(rowIndex) {
+   const url = `${API_BASE}?func=DeleteSucKhoeEvent&_rowIndex=${encodeURIComponent(rowIndex)}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+/* ====== SỨC KHỎE HỌC SINH ====== */
