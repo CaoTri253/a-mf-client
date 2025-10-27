@@ -8440,22 +8440,29 @@
 
         // === Khởi tạo Flatpickr ===
         function initFlatpickr() {
-            // Ngày (dd/mm/yyyy)
-            SKHS.flatpickrInstances.date = flatpickr(".skhs-flatpickr", {
-                dateFormat: "d/m/Y",
-                allowInput: true,
-                disableMobile: true
-            });
-            // Ngày giờ (dd/mm/yyyy HH:MM)
-            SKHS.flatpickrInstances.datetime = flatpickr(".skhs-flatpickr-datetime", {
+          // Ngày (dd/mm/yyyy) - Vẫn giữ là mảng nếu có nhiều input ngày khác
+          SKHS.flatpickrInstances.date = flatpickr(".skhs-flatpickr", {
+            dateFormat: "d/m/Y",
+            allowInput: true,
+            disableMobile: true
+          }) || []; // Đảm bảo là mảng
+
+          // Ngày giờ (dd/mm/yyyy HH:MM) - Lưu instance cụ thể cho modal SuKien
+          const dtInput = $sk("#sukien-sk-thoi-gian"); // Lấy input cụ thể
+          if (dtInput) {
+            // Khởi tạo và lưu trực tiếp instance
+            SKHS.flatpickrInstances.suKienDateTime = flatpickr(dtInput, {
                 enableTime: true,
                 dateFormat: "d/m/Y H:i",
                 time_24hr: true,
                 allowInput: true,
                 disableMobile: true
             });
+          } else {
+            SKHS.flatpickrInstances.suKienDateTime = null; // Không tìm thấy input
+            console.warn("SKHS: Input #sukien-sk-thoi-gian not found for Flatpickr.");
+          }
         }
-
         // === Lấy dữ liệu và Render ===
         async function skhs_loadStudentsAndClasses() {
           showLoading();
@@ -8885,22 +8892,32 @@
           skhs_resetSuKienForm(); // Đảm bảo form ở trạng thái nhập mới
         }
 
+        // === Sửa hàm skhs_resetSuKienForm ===
         window.skhs_resetSuKienForm = () => {
           SKHS.currentSuKienEditing = null;
           $sk('#sukien-sk-rowindex').value = '';
           $sk('#formSuKienSK').reset();
-          $sk('#modalSuKienSKLabel').textContent = `Thêm sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
-          // Reset flatpickr
-          const datetimePicker = SKHS.flatpickrInstances.datetime.find(inst => inst.input === $sk('#sukien-sk-thoi-gian'));
-          datetimePicker?.clear();
+          // Cập nhật lại tiêu đề sau khi reset form
+          const hsInfo = $sk('#sukien-sk-hs-info') ? $sk('#sukien-sk-hs-info').textContent : 'học sinh';
+          $sk('#modalSuKienSKLabel').textContent = `Thêm sự kiện sức khỏe: ${hsInfo}`;
+
+          // Reset flatpickr instance cụ thể
+          if (SKHS.flatpickrInstances.suKienDateTime) {
+              SKHS.flatpickrInstances.suKienDateTime.clear();
+          } else {
+              // Fallback nếu instance không tồn tại (ít khả năng xảy ra nếu init đúng)
+              const dtInput = $sk('#sukien-sk-thoi-gian');
+              if (dtInput) dtInput.value = '';
+          }
+          $sk('#sukien-sk-error').textContent = ''; // Xóa thông báo lỗi cũ
         }
 
+        // === Sửa hàm skhs_editSuKien ===
         window.skhs_editSuKien = (rowIndex) => {
           const listDiv = $sk('#sukien-sk-list');
-          const eventDiv = listDiv.querySelector(`[onclick="skhs_editSuKien(${rowIndex})"]`);
-          if (!eventDiv) return;
+          // const eventDiv = listDiv.querySelector(`[onclick="skhs_editSuKien(${rowIndex})"]`); // Tìm đúng không cần thiết nữa
+          // if (!eventDiv) return;
 
-          // Tìm data tương ứng (cần fetch lại cho chắc chắn)
           showLoading();
           const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
           getSucKhoeEvents(ma_so_bhxh).then(res => {
@@ -8908,31 +8925,34 @@
               if(res.success && res.data) {
                   const eventData = res.data.find(e => e._rowIndex === rowIndex);
                   if (eventData) {
-                        SKHS.currentSuKienEditing = eventData;
-                        $sk('#sukien-sk-rowindex').value = rowIndex;
-                        $sk('#modalSuKienSKLabel').textContent = `Sửa sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
+                      SKHS.currentSuKienEditing = eventData;
+                      $sk('#sukien-sk-rowindex').value = rowIndex;
+                      $sk('#modalSuKienSKLabel').textContent = `Sửa sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
 
-                        // Populate form
-                        $sk('#sukien-sk-thoi-gian').value = eventData.thoi_gian || '';
-                        $sk('#sukien-sk-chan-doan').value = eventData.chan_doan_ban_dau || ''; // Sửa key
-                        $sk('#sukien-sk-xu-tri').value = eventData.xu_tri_tai_truong || '';   // Sửa key
-                        $sk('#sukien-sk-chuyen-den').value = eventData.chuyen_den || '';
-                        $sk('#sukien-sk-ghi-chu-event').value = eventData.ghi_chu || '';      // Sửa key
+                      // Populate form
+                      $sk('#sukien-sk-thoi-gian').value = eventData.thoi_gian || ''; // Vẫn set value trực tiếp
+                      $sk('#sukien-sk-chan-doan').value = eventData.chan_doan_ban_dau || '';
+                      $sk('#sukien-sk-xu-tri').value = eventData.xu_tri_tai_truong || '';
+                      $sk('#sukien-sk-chuyen-den').value = eventData.chuyen_den || '';
+                      $sk('#sukien-sk-ghi-chu-event').value = eventData.ghi_chu || '';
 
-                        // Cập nhật Flatpickr
-                        const datetimePicker = SKHS.flatpickrInstances.datetime.find(inst => inst.input === $sk('#sukien-sk-thoi-gian'));
-                        datetimePicker?.setDate(eventData.thoi_gian, true);
+                      // Cập nhật Flatpickr instance cụ thể bằng phương thức setDate
+                        if (SKHS.flatpickrInstances.suKienDateTime) {
+                            // Tham số thứ 2 'true' để không trigger event 'onChange' nếu không muốn
+                            // Tham số thứ 3 'd/m/Y H:i' là định dạng của chuỗi ngày giờ đầu vào
+                            SKHS.flatpickrInstances.suKienDateTime.setDate(eventData.thoi_gian, false, "d/m/Y H:i");
+                        }
 
-
+                        $sk('#sukien-sk-error').textContent = ''; // Xóa lỗi cũ
                   } else {
                       showToast("Không tìm thấy dữ liệu sự kiện để sửa.", "warning");
                   }
               } else {
-                    showToast("Lỗi khi tải lại dữ liệu sự kiện.", "danger");
+                  showToast("Lỗi khi tải lại dữ liệu sự kiện.", "danger");
               }
           }).catch(err => {
-                hideLoading();
-                showToast("Lỗi hệ thống khi tải sự kiện.", "danger");
+              hideLoading();
+              showToast("Lỗi hệ thống khi tải sự kiện.", "danger");
           });
         }
 
