@@ -8936,35 +8936,47 @@
           });
         }
 
+        // === Sửa hàm skhs_saveSuKien (thêm ma_truong) ===
         window.skhs_saveSuKien = async () => {
           const form = $sk('#formSuKienSK');
           const errorDiv = $sk('#sukien-sk-error');
           errorDiv.textContent = '';
 
           const eventData = {};
-          const inputs = form.querySelectorAll('input, select, textarea');
-          inputs.forEach(input => {
-                const key = input.id.replace('sukien-sk-', '').replace(/-/g, '_'); // Chuyển id -> key
-                // Ánh xạ key đặc biệt từ form ID sang tên cột sheet
-                const keyMap = {
-                    'chan_doan': 'chan_doan_ban_dau',
-                    'xu_tri': 'xu_tri_tai_truong',
-                    'ghi_chu_event': 'ghi_chu'
-                };
-                const finalKey = keyMap[key] || key;
-                if (finalKey) {
-                    eventData[finalKey] = input.value.trim();
-                }
+          const inputs = form.querySelectorAll('input:not([type=hidden]), select, textarea');
+            inputs.forEach(input => {
+            const key = input.id.replace('sukien-sk-', '').replace(/-/g, '_'); // Chuyển id -> key
+              // Ánh xạ key đặc biệt từ form ID sang tên cột sheet
+              const keyMap = {
+                'chan_doan': 'chan_doan_ban_dau',
+                'xu_tri': 'xu_tri_tai_truong',
+                'ghi_chu_event': 'ghi_chu'
+              };
+            const finalKey = keyMap[key] || key;
+            if (finalKey) {
+                eventData[finalKey] = input.value.trim();
+            }
           });
 
           eventData.ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
           const rowIndex = $sk('#sukien-sk-rowindex').value;
+
+          // --- THÊM DÒNG NÀY ---
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          eventData.ma_truong = user.ma_truong; // Lấy mã trường từ user
+          // ---------------------
 
           // Validation
           if (!eventData.thoi_gian) {
               errorDiv.textContent = "Vui lòng nhập Thời gian.";
               return;
           }
+          // Thêm kiểm tra ma_truong nếu cần
+          if (!eventData.ma_truong) {
+              errorDiv.textContent = "Không thể xác định mã trường.";
+              return;
+          }
+
 
           showLoading();
           try {
@@ -8973,16 +8985,16 @@
                   eventData._rowIndex = rowIndex;
                   res = await updateSucKhoeEvent(eventData);
               } else { // Add new
-                    res = await addSucKhoeEvent(eventData);
+                  res = await addSucKhoeEvent(eventData);
               }
 
-                if (res.success) {
+              if (res.success) {
                   showToast(rowIndex ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện thành công!', 'success');
                   // Reload list trong modal
-                  const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
+                  const ma_so_bhxh_reload = $sk('#sukien-sk-ma-so-bhxh').value; // Lấy lại mã số bhxh
                   const listDiv = $sk('#sukien-sk-list');
                   listDiv.innerHTML = '<div class="text-muted small">Đang tải lại lịch sử...</div>';
-                  const listRes = await getSucKhoeEvents(ma_so_bhxh);
+                  const listRes = await getSucKhoeEvents(ma_so_bhxh_reload); // Dùng biến mới
                     if (listRes.success && listRes.data) {
                         if (listRes.data.length === 0) {
                             listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào.</div>';
@@ -8998,9 +9010,9 @@
                           `).join('');
                         }
                     } else {
-                          listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
+                        listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
                     }
-                    skhs_resetSuKienForm(); // Reset form về trạng thái nhập mới
+                  skhs_resetSuKienForm(); // Reset form về trạng thái nhập mới
               } else {
                   errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
                   showToast(errorDiv.textContent, 'danger');
@@ -9012,7 +9024,6 @@
               hideLoading();
           }
         }
-
         window.skhs_confirmDeleteSuKien = (rowIndex, thoi_gian) => {
           if (!rowIndex) return;
           $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa sự kiện sức khỏe vào lúc <strong>${thoi_gian || 'không rõ'}</strong>?`;
