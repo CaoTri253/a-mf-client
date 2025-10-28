@@ -3556,6 +3556,7 @@
           const user = JSON.parse(localStorage.getItem('user') || '{}');
           const adminMaTruong = user.ma_truong;
           if (!adminMaTruong) throw new Error("Không thể xác định mã trường của Admin.");
+          // Check API functions exist BEFORE calling them
           if (typeof listUsers !== 'function') throw new Error("Hàm 'listUsers' không tồn tại.");
 
           const res = await listUsers();
@@ -3564,104 +3565,416 @@
               u.ma_truong === adminMaTruong && String(u.phan_quyen || '').toLowerCase() === 'giao_vien'
             );
           } else {
-            TEACHERS.all = []; throw new Error(res.message || "Lỗi tải danh sách người dùng.");
+            TEACHERS.all = [];
+            // Use specific error if available, else generic
+            throw new Error(res.message || "Lỗi tải danh sách người dùng.");
           }
-          TEACHERS.page = 1; teachers_applyFiltersAndRender();
+          TEACHERS.page = 1;
+          teachers_applyFiltersAndRender();
         } catch (err) {
-          console.error("Teacher load error:", err); showToast(err.message || 'Lỗi tải danh sách giáo viên', 'danger');
-          const tableBox = $t('#teacher-table-box'); if(tableBox) tableBox.innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
-          const totalEl = $t('#teacher-total'); if(totalEl) totalEl.textContent = '0';
-        } finally { hideLoading(); }
+          console.error("Teacher load error:", err);
+          showToast(err.message || 'Lỗi tải danh sách giáo viên', 'danger');
+          const tableBox = $t('#teacher-table-box');
+          if(tableBox) tableBox.innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
+          const totalEl = $t('#teacher-total');
+          if(totalEl) totalEl.textContent = '0';
+        } finally {
+          hideLoading();
+        }
       }
 
       // === Filter, Sort, Render ===
       function teachers_applyFiltersAndRender() {
-        const searchInput = $t('#teacher-search'); const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
-        TEACHERS.filtered = TEACHERS.all.filter(t => !search || (t.ho_ten || '').toLowerCase().includes(search) || (t.sdt || '').toLowerCase().includes(search) || (t.lop_hoc || '').toLowerCase().includes(search));
-        if (TEACHERS.sortField) { TEACHERS.filtered.sort((a, b) => String(a[TEACHERS.sortField] || '').localeCompare(String(b[TEACHERS.sortField] || ''), 'vi') * TEACHERS.sortDir); }
+        const searchInput = $t('#teacher-search');
+        const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        TEACHERS.filtered = TEACHERS.all.filter(t =>
+          !search ||
+          (t.ho_ten || '').toLowerCase().includes(search) ||
+          (t.sdt || '').toLowerCase().includes(search) ||
+          (t.lop_hoc || '').toLowerCase().includes(search) // Also search class
+        );
+
+        if (TEACHERS.sortField) {
+          TEACHERS.filtered.sort((a, b) =>
+            String(a[TEACHERS.sortField] || '').localeCompare(String(b[TEACHERS.sortField] || ''), 'vi') * TEACHERS.sortDir
+          );
+        }
         teachers_renderTableAndPagination();
       }
+
       function teachers_renderTableAndPagination() {
-        const total = TEACHERS.filtered.length; const totalEl = $t('#teacher-total'); if(totalEl) totalEl.textContent = total.toLocaleString('vi-VN');
-        const start = (TEACHERS.page - 1) * TEACHERS.pageSize; const end = start + TEACHERS.pageSize; const pageData = TEACHERS.filtered.slice(start, end);
-        teachers_renderTable(pageData); teachers_renderPagination(total);
+        const total = TEACHERS.filtered.length;
+        const totalEl = $t('#teacher-total');
+        if(totalEl) totalEl.textContent = total.toLocaleString('vi-VN');
+
+        const start = (TEACHERS.page - 1) * TEACHERS.pageSize;
+        const end = start + TEACHERS.pageSize;
+        const pageData = TEACHERS.filtered.slice(start, end);
+
+        teachers_renderTable(pageData);
+        teachers_renderPagination(total);
       }
-      function teachers_sortIcon(field) { return (TEACHERS.sortField !== field) ? '' : (TEACHERS.sortDir === 1 ? ' <i class="bi bi-sort-alpha-down"></i>' : ' <i class="bi bi-sort-alpha-up"></i>'); }
+
+      function teachers_sortIcon(field) {
+        return (TEACHERS.sortField !== field) ? '' : (TEACHERS.sortDir === 1 ? ' <i class="bi bi-sort-alpha-down"></i>' : ' <i class="bi bi-sort-alpha-up"></i>');
+      }
+
       function teachers_renderTable(data) {
-        const tableContainer = $t('#teacher-table-box'); if (!tableContainer) return;
-        let html = `<table class="table table-hover table-bordered align-middle mb-0"><thead class="table-light"><tr><th style="width: 120px;">Thao tác</th><th class="sortable" data-sort="ho_ten">Họ tên ${teachers_sortIcon('ho_ten')}</th><th class="sortable" data-sort="sdt">Số điện thoại ${teachers_sortIcon('sdt')}</th><th class="sortable" data-sort="lop_hoc">Lớp phụ trách ${teachers_sortIcon('lop_hoc')}</th></tr></thead><tbody id="teacher-table-body">`;
-        if (data.length === 0) { html += '<tr><td colspan="4" class="text-center text-muted py-4">Không tìm thấy giáo viên nào.</td></tr>'; }
-        else { data.forEach(t => { html += `<tr><td class="text-nowrap"><button class="btn btn-sm btn-warning me-1" title="Sửa" onclick="TeachersModule.openEdit('${t.sdt}')"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-danger" title="Xóa" onclick="TeachersModule.confirmDelete('${t.sdt}')"><i class="bi bi-trash"></i></button></td><td>${t.ho_ten || ''}</td><td>${t.sdt || ''}</td><td>${t.lop_hoc || ''}</td></tr>`; }); }
-        html += '</tbody></table>'; tableContainer.innerHTML = html;
-        $$t('#teacher-table-box th.sortable').forEach(th => { th.onclick = () => { const field = th.dataset.sort; if (!field) return; if (TEACHERS.sortField === field) { TEACHERS.sortDir *= -1; } else { TEACHERS.sortField = field; TEACHERS.sortDir = 1; } teachers_applyFiltersAndRender(); }; });
+        const tableContainer = $t('#teacher-table-box');
+        if (!tableContainer) return;
+
+        let html = `<table class="table table-hover table-bordered align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 120px;">Thao tác</th>
+                          <th class="sortable" data-sort="ho_ten">Họ tên ${teachers_sortIcon('ho_ten')}</th>
+                          <th class="sortable" data-sort="sdt">Số điện thoại ${teachers_sortIcon('sdt')}</th>
+                          <th class="sortable" data-sort="lop_hoc">Lớp phụ trách ${teachers_sortIcon('lop_hoc')}</th>
+                        </tr>
+                      </thead>
+                      <tbody id="teacher-table-body">`;
+
+        if (data.length === 0) {
+          html += '<tr><td colspan="4" class="text-center text-muted py-4">Không tìm thấy giáo viên nào.</td></tr>';
+        } else {
+          data.forEach(t => {
+            // Use TeachersModule for event handlers
+            html += `<tr>
+                      <td class="text-nowrap">
+                        <button class="btn btn-sm btn-warning me-1" title="Sửa" onclick="TeachersModule.openEdit('${t.sdt}')"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-danger" title="Xóa" onclick="TeachersModule.confirmDelete('${t.sdt}')"><i class="bi bi-trash"></i></button>
+                      </td>
+                      <td>${t.ho_ten || ''}</td>
+                      <td>${t.sdt || ''}</td>
+                      <td>${t.lop_hoc || ''}</td>
+                    </tr>`;
+          });
+        }
+        html += '</tbody></table>';
+        tableContainer.innerHTML = html;
+
+        // Re-attach sort listeners
+        $$t('#teacher-table-box th.sortable').forEach(th => {
+          // Remove potential old listener first
+          const newTh = th.cloneNode(true);
+          th.parentNode.replaceChild(newTh, th);
+          newTh.onclick = () => {
+            const field = newTh.dataset.sort;
+            if (!field) return;
+            if (TEACHERS.sortField === field) {
+              TEACHERS.sortDir *= -1;
+            } else {
+              TEACHERS.sortField = field;
+              TEACHERS.sortDir = 1;
+            }
+            teachers_applyFiltersAndRender();
+          };
+        });
       }
+
       function teachers_renderPagination(total) {
-        const paginationContainer = $t('#teacher-pagin'); if (!paginationContainer) return; paginationContainer.innerHTML = '';
-        const totalPages = Math.ceil(total / TEACHERS.pageSize); if (totalPages <= 1) return;
-        const createPageItem = (page, label, isActive = false, isDisabled = false) => { const li = document.createElement('li'); li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`; const a = document.createElement('a'); a.className = 'page-link'; a.href = '#'; a.innerHTML = label; if (!isDisabled) { a.onclick = (e) => { e.preventDefault(); TEACHERS.page = page; teachers_renderTableAndPagination(); }; } li.appendChild(a); return li; };
+        const paginationContainer = $t('#teacher-pagin');
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = ''; // Clear old pagination
+
+        const totalPages = Math.ceil(total / TEACHERS.pageSize);
+        if (totalPages <= 1) return; // No need for pagination
+
+        const createPageItem = (page, label, isActive = false, isDisabled = false) => {
+          const li = document.createElement('li');
+          li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+          const a = document.createElement('a');
+          a.className = 'page-link';
+          a.href = '#';
+          a.innerHTML = label;
+          if (!isDisabled) {
+            a.onclick = (e) => {
+              e.preventDefault();
+              TEACHERS.page = page;
+              teachers_renderTableAndPagination(); // Re-render table and pagination
+            };
+          }
+          li.appendChild(a);
+          return li;
+        };
+
+        // Previous button
         paginationContainer.appendChild(createPageItem(TEACHERS.page - 1, 'Trước', false, TEACHERS.page === 1));
-        const maxPagesToShow = 5; let startPage = Math.max(1, TEACHERS.page - Math.floor(maxPagesToShow / 2)); let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1); if (endPage === totalPages) startPage = Math.max(1, endPage - maxPagesToShow + 1);
-        if (startPage > 1) { paginationContainer.appendChild(createPageItem(1, '1')); if (startPage > 2) paginationContainer.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">...</span></li>'); }
-        for (let i = startPage; i <= endPage; i++) paginationContainer.appendChild(createPageItem(i, i.toString(), i === TEACHERS.page));
-        if (endPage < totalPages) { if (endPage < totalPages - 1) paginationContainer.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">...</span></li>'); paginationContainer.appendChild(createPageItem(totalPages, totalPages.toString())); }
+
+        // Page numbers calculation (improved for edge cases)
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, TEACHERS.page - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        // Adjust startPage if endPage hits the limit
+        if (endPage === totalPages) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        // Ellipsis and first page
+        if (startPage > 1) {
+          paginationContainer.appendChild(createPageItem(1, '1'));
+          if (startPage > 2) {
+             paginationContainer.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">...</span></li>');
+          }
+        }
+
+        // Middle page numbers
+        for (let i = startPage; i <= endPage; i++) {
+          paginationContainer.appendChild(createPageItem(i, i.toString(), i === TEACHERS.page));
+        }
+
+        // Ellipsis and last page
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) {
+             paginationContainer.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">...</span></li>');
+          }
+          paginationContainer.appendChild(createPageItem(totalPages, totalPages.toString()));
+        }
+
+        // Next button
         paginationContainer.appendChild(createPageItem(TEACHERS.page + 1, 'Sau', false, TEACHERS.page === totalPages));
       }
 
+
       // === Modal Actions ===
-      function teachers_openAddModal() { const user = JSON.parse(localStorage.getItem('user') || '{}'); const form = $t('#teacher-form-add'); const errDiv = $t('#teacher-add-err'); const maTruongInput = $t('#add-teacher-matruong'); if(form) form.reset(); if(maTruongInput) maTruongInput.value = user.ma_truong || ''; if(errDiv) errDiv.textContent = ''; const modalEl = $t('#teacherModalAdd'); if(modalEl) new bootstrap.Modal(modalEl).show(); }
+      function teachers_openAddModal() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const form = $t('#teacher-form-add');
+        const errDiv = $t('#teacher-add-err');
+        const maTruongInput = $t('#add-teacher-matruong');
+        if(form) form.reset();
+        if(maTruongInput) maTruongInput.value = user.ma_truong || ''; // Pre-fill school code
+        if(errDiv) errDiv.textContent = '';
+        const modalEl = $t('#teacherModalAdd');
+        if(modalEl) new bootstrap.Modal(modalEl).show();
+      }
+
       async function teachers_saveAdd() {
-        const errDiv = $t('#teacher-add-err'); if(errDiv) errDiv.textContent = ''; const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const getVal = id => $t(`#${id}`)?.value.trim() || ''; const teacherData = { ho_ten: getVal('add-teacher-hoten'), sdt: getVal('add-teacher-sdt'), password: $t('#add-teacher-password')?.value || '', lop_hoc: getVal('add-teacher-lop'), ma_truong: user.ma_truong, loai_user: 'giao_vien' };
-        if (!teacherData.ho_ten || !teacherData.sdt || !teacherData.password || !teacherData.ma_truong) { if(errDiv) errDiv.textContent = 'Vui lòng nhập đầy đủ các trường bắt buộc (*).'; return; }
-        if (!/^0\d{9}$/.test(teacherData.sdt)) { if(errDiv) errDiv.textContent = 'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).'; return; }
-        if (teacherData.password.length < 6) { if(errDiv) errDiv.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.'; return; }
-        if (TEACHERS.all.some(t => t.sdt === teacherData.sdt)) { if(errDiv) errDiv.textContent = 'Số điện thoại này đã được đăng ký.'; return; }
-        showLoading(); try { if (typeof register !== 'function') throw new Error("Hàm 'register' không tồn tại."); const res = await register(teacherData); if (res.success) { const modalEl = $t('#teacherModalAdd'); if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide(); showToast('Thêm giáo viên thành công!', 'success'); await teachers_load(); } else { throw new Error(res.message || "Thêm giáo viên thất bại."); } } catch (err) { console.error("Teacher add error:", err); if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống."; showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger'); } finally { hideLoading(); }
+        const errDiv = $t('#teacher-add-err');
+        if(errDiv) errDiv.textContent = ''; // Clear previous errors
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        const getVal = id => $t(`#${id}`)?.value.trim() || '';
+        const teacherData = {
+          ho_ten: getVal('add-teacher-hoten'),
+          sdt: getVal('add-teacher-sdt'),
+          password: $t('#add-teacher-password')?.value || '', // Get raw password
+          lop_hoc: getVal('add-teacher-lop'),
+          ma_truong: user.ma_truong, // Get from logged-in admin
+          phan_quyen: 'giao_vien' // Explicitly set role
+        };
+
+        // Basic Validation
+        if (!teacherData.ho_ten || !teacherData.sdt || !teacherData.password || !teacherData.ma_truong) {
+          if(errDiv) errDiv.textContent = 'Vui lòng nhập đầy đủ các trường bắt buộc (*).';
+          return;
+        }
+        if (!/^0\d{9}$/.test(teacherData.sdt)) {
+          if(errDiv) errDiv.textContent = 'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).';
+          return;
+        }
+        if (teacherData.password.length < 6) {
+          if(errDiv) errDiv.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+          return;
+        }
+        // Check for duplicate phone number BEFORE API call
+        if (TEACHERS.all.some(t => t.sdt === teacherData.sdt)) {
+            if(errDiv) errDiv.textContent = 'Số điện thoại này đã được đăng ký.';
+            return;
+        }
+
+
+        showLoading();
+        try {
+          if (typeof register !== 'function') throw new Error("Hàm 'register' không tồn tại."); // Check API function
+          // Add ten_truong and tinh from admin user to payload if backend expects it
+          teacherData.ten_truong = user.ten_truong || '';
+          teacherData.tinh = user.tinh || '';
+
+          const res = await register(teacherData); // Use register API
+          if (res.success) {
+            const modalEl = $t('#teacherModalAdd');
+            if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+            showToast('Thêm giáo viên thành công!', 'success');
+            await teachers_load(); // Reload the list
+          } else {
+            throw new Error(res.message || "Thêm giáo viên thất bại.");
+          }
+        } catch (err) {
+          console.error("Teacher add error:", err);
+          if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống.";
+          showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger');
+        } finally {
+          hideLoading();
+        }
       }
+
       function teachers_openEditModal(sdtKey) {
-        const teacher = TEACHERS.all.find(t => t.sdt === sdtKey); if (!teacher) { showToast("Không tìm thấy thông tin giáo viên để sửa.", "warning"); return; } TEACHERS.currentEditSdt = sdtKey; const form = $t('#teacher-form-edit'); const errDiv = $t('#teacher-edit-err'); if(form) form.reset();
-        const setVal = (id, value) => { const el = $t(`#${id}`); if(el) el.value = value; }; setVal('edit-teacher-sdt-key', sdtKey); setVal('edit-teacher-hoten', teacher.ho_ten || ''); setVal('edit-teacher-sdt', teacher.sdt || ''); setVal('edit-teacher-password', ''); setVal('edit-teacher-lop', teacher.lop_hoc || ''); setVal('edit-teacher-matruong', teacher.ma_truong || ''); if(errDiv) errDiv.textContent = ''; const modalEl = $t('#teacherModalEdit'); if(modalEl) new bootstrap.Modal(modalEl).show();
+          const teacher = TEACHERS.all.find(t => t.sdt === sdtKey);
+          if (!teacher) {
+              showToast("Không tìm thấy thông tin giáo viên để sửa.", "warning");
+              return;
+          }
+          TEACHERS.currentEditSdt = sdtKey; // Store the original phone number
+
+          const form = $t('#teacher-form-edit');
+          const errDiv = $t('#teacher-edit-err');
+          if(form) form.reset(); // Clear form before populating
+
+          // Helper to set value
+          const setVal = (id, value) => { const el = $t(`#${id}`); if(el) el.value = value; };
+
+          setVal('edit-teacher-sdt-key', sdtKey); // Hidden field with original SDT
+          setVal('edit-teacher-hoten', teacher.ho_ten || '');
+          setVal('edit-teacher-sdt', teacher.sdt || ''); // Current SDT (can be changed)
+          setVal('edit-teacher-password', ''); // Clear password field
+          setVal('edit-teacher-lop', teacher.lop_hoc || '');
+          setVal('edit-teacher-matruong', teacher.ma_truong || ''); // Display but disable
+
+          if(errDiv) errDiv.textContent = ''; // Clear errors
+          const modalEl = $t('#teacherModalEdit');
+          if(modalEl) new bootstrap.Modal(modalEl).show();
       }
+
       async function teachers_saveEdit() {
-        const errDiv = $t('#teacher-edit-err'); if(errDiv) errDiv.textContent = ''; const sdtKey = TEACHERS.currentEditSdt; if (!sdtKey) return;
-        const getVal = id => $t(`#${id}`)?.value.trim() || ''; const updatedData = { sdt_key: sdtKey, ho_ten: getVal('edit-teacher-hoten'), sdt: getVal('edit-teacher-sdt'), password: $t('#edit-teacher-password')?.value || '', lop_hoc: getVal('edit-teacher-lop') };
-        if (!updatedData.ho_ten || !updatedData.sdt) { if(errDiv) errDiv.textContent = 'Họ tên và Số điện thoại là bắt buộc.'; return; }
-        if (!/^0\d{9}$/.test(updatedData.sdt)) { if(errDiv) errDiv.textContent = 'Số điện thoại mới không hợp lệ.'; return; }
-        if (updatedData.password && updatedData.password.length < 6) { if(errDiv) errDiv.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.'; return; }
-        if (updatedData.sdt !== sdtKey && TEACHERS.all.some(t => t.sdt === updatedData.sdt)) { if(errDiv) errDiv.textContent = 'Số điện thoại mới đã tồn tại.'; return; }
-        showLoading(); try { if (typeof updateUser !== 'function') throw new Error('Chức năng updateUser chưa được định nghĩa.'); const res = await updateUser(updatedData); if (res.success) { const modalEl = $t('#teacherModalEdit'); if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide(); showToast('Cập nhật thông tin giáo viên thành công!', 'success'); await teachers_load(); } else { throw new Error(res.message || "Cập nhật thất bại."); } } catch (err) { console.error("Teacher edit error:", err); if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống."; showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger'); } finally { hideLoading(); }
+          const errDiv = $t('#teacher-edit-err');
+          if(errDiv) errDiv.textContent = ''; // Clear previous errors
+          const sdtKey = TEACHERS.currentEditSdt; // Get original SDT
+          if (!sdtKey) return; // Should not happen if modal opened correctly
+
+          const getVal = id => $t(`#${id}`)?.value.trim() || '';
+          const updatedData = {
+              sdt_key: sdtKey, // Original SDT for lookup
+              ho_ten: getVal('edit-teacher-hoten'),
+              sdt: getVal('edit-teacher-sdt'), // Potentially new SDT
+              password: $t('#edit-teacher-password')?.value || '', // New password (empty if no change)
+              lop_hoc: getVal('edit-teacher-lop')
+              // ma_truong is not sent, backend uses sdt_key to find the user
+          };
+
+          // Basic Validation
+          if (!updatedData.ho_ten || !updatedData.sdt) {
+              if(errDiv) errDiv.textContent = 'Họ tên và Số điện thoại là bắt buộc.';
+              return;
+          }
+          if (!/^0\d{9}$/.test(updatedData.sdt)) {
+              if(errDiv) errDiv.textContent = 'Số điện thoại mới không hợp lệ.';
+              return;
+          }
+          if (updatedData.password && updatedData.password.length < 6) {
+              if(errDiv) errDiv.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
+              return;
+          }
+          // Check if NEW phone number conflicts with OTHERS (excluding self)
+          if (updatedData.sdt !== sdtKey && TEACHERS.all.some(t => t.sdt === updatedData.sdt)) {
+              if(errDiv) errDiv.textContent = 'Số điện thoại mới đã tồn tại.';
+              return;
+          }
+
+
+          showLoading();
+          try {
+              if (typeof updateUser !== 'function') throw new Error('Chức năng updateUser chưa được định nghĩa.'); // Check API function
+              const res = await updateUser(updatedData); // Call API
+              if (res.success) {
+                  const modalEl = $t('#teacherModalEdit');
+                  if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+                  showToast('Cập nhật thông tin giáo viên thành công!', 'success');
+                  await teachers_load(); // Reload the list
+              } else {
+                  throw new Error(res.message || "Cập nhật thất bại.");
+              }
+          } catch (err) {
+              console.error("Teacher edit error:", err);
+              if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống.";
+              showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger');
+          } finally {
+              hideLoading();
+          }
       }
+
       function teachers_confirmDelete(sdt) {
-        const teacher = TEACHERS.all.find(t => t.sdt === sdt); if (!teacher) return; const bodyEl = $t('#teacherConfirmBody'); if(bodyEl) bodyEl.innerHTML = `Bạn có chắc chắn muốn xóa giáo viên <strong>${teacher.ho_ten || sdt}</strong>? Hành động này không thể hoàn tác.`; const confirmBtn = $t('#teacherConfirmBtn'); if (!confirmBtn) return;
-        const newConfirmBtn = confirmBtn.cloneNode(true); confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-        newConfirmBtn.onclick = async () => { const modalEl = $t('#teacherModalConfirm'); const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null; modalInstance?.hide(); await teachers_delete(sdt); }; const modalEl = $t('#teacherModalConfirm'); if(modalEl) new bootstrap.Modal(modalEl).show();
+          const teacher = TEACHERS.all.find(t => t.sdt === sdt);
+          if (!teacher) return; // Teacher not found
+
+          const bodyEl = $t('#teacherConfirmBody');
+          if(bodyEl) bodyEl.innerHTML = `Bạn có chắc chắn muốn xóa giáo viên <strong>${teacher.ho_ten || sdt}</strong>? Hành động này không thể hoàn tác.`;
+
+          const confirmBtn = $t('#teacherConfirmBtn');
+          if (!confirmBtn) return; // Button not found
+
+          // Clone and replace button to remove old listeners
+          const newConfirmBtn = confirmBtn.cloneNode(true);
+          confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+          // Add new listener
+          newConfirmBtn.onclick = async () => {
+              const modalEl = $t('#teacherModalConfirm');
+              const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+              modalInstance?.hide(); // Hide modal before async operation
+              await teachers_delete(sdt); // Call the delete function
+          };
+
+          const modalEl = $t('#teacherModalConfirm');
+          if(modalEl) new bootstrap.Modal(modalEl).show(); // Show confirmation
       }
+
       async function teachers_delete(sdt) {
-        showLoading(); try { if (typeof deleteUser !== 'function') throw new Error('Chức năng deleteUser chưa được định nghĩa.'); const res = await deleteUser(sdt); if (res.success) { showToast('Xóa giáo viên thành công!', 'success'); await teachers_load(); } else { throw new Error(res.message || "Xóa giáo viên thất bại."); } } catch (err) { console.error("Teacher delete error:", err); showToast(err.message || "Lỗi hệ thống khi xóa.", 'danger'); } finally { hideLoading(); }
+          showLoading();
+          try {
+              if (typeof deleteUser !== 'function') throw new Error('Chức năng deleteUser chưa được định nghĩa.'); // Check API function
+              const res = await deleteUser(sdt); // Call API
+              if (res.success) {
+                  showToast('Xóa giáo viên thành công!', 'success');
+                  await teachers_load(); // Reload the list
+              } else {
+                  throw new Error(res.message || "Xóa giáo viên thất bại.");
+              }
+          } catch (err) {
+              console.error("Teacher delete error:", err);
+              showToast(err.message || "Lỗi hệ thống khi xóa.", 'danger');
+          } finally {
+              hideLoading();
+          }
       }
 
       // === Wire UI ===
       function teachers_wirePage() {
-        const pageEl = $t('#page-teachers'); if (!pageEl || pageEl.dataset.wired === '1') return; pageEl.dataset.wired = '1';
+        const pageEl = $t('#page-teachers');
+        // Prevent multiple wiring attempts
+        if (!pageEl || pageEl.dataset.wired === '1') return;
+        pageEl.dataset.wired = '1'; // Mark as wired
+
         console.log("Wiring Teachers page...");
-        $t('#teacher-btn-reload')?.addEventListener('click', teachers_load); $t('#teacher-search')?.addEventListener('input', teachers_applyFiltersAndRender); $t('#teacher-btn-add')?.addEventListener('click', teachers_openAddModal); $t('#teacher-btn-add-save')?.addEventListener('click', teachers_saveAdd); $t('#teacher-btn-edit-save')?.addEventListener('click', teachers_saveEdit);
-        window.TeachersModule = { openEdit: teachers_openEditModal, confirmDelete: teachers_confirmDelete };
 
-        // *** EXPOSE HÀM RA GLOBAL SCOPE ***
-        window.teachers_wirePage = teachers_wirePage;
-        window.teachers_load = teachers_load;
-        console.log("Exposed teachers_wirePage and teachers_load to window."); // Log xác nhận
+        // Attach event listeners
+        $t('#teacher-btn-reload')?.addEventListener('click', teachers_load);
+        $t('#teacher-search')?.addEventListener('input', teachers_applyFiltersAndRender);
+        $t('#teacher-btn-add')?.addEventListener('click', teachers_openAddModal);
+        $t('#teacher-btn-add-save')?.addEventListener('click', teachers_saveAdd);
+        $t('#teacher-btn-edit-save')?.addEventListener('click', teachers_saveEdit);
 
-        teachers_load(); // Load lần đầu khi wire
+        // Expose modal functions globally under a namespace
+        window.TeachersModule = {
+            openEdit: teachers_openEditModal,
+            confirmDelete: teachers_confirmDelete
+        };
+
+        teachers_load(); // Initial data load when wiring
       }
 
-      // Trigger wirePage nếu section giáo viên đang active khi load trang
+      // Trigger wirePage if section giáo viên đang active khi load trang
       const teacherPageEl = $t('#page-teachers');
       if (teacherPageEl && !teacherPageEl.classList.contains('d-none')) {
           teachers_wirePage();
       }
 
-    })();
+      // *** EXPOSE HÀM RA GLOBAL SCOPE (Corrected Placement) ***
+      window.teachers_wirePage = teachers_wirePage;
+      window.teachers_load = teachers_load;
+      console.log("Exposed teachers_wirePage and teachers_load to window.");
+
+    })(); // IIFE ends here
     // ===================================
     // ====== /KHỐI GIÁO VIÊN (Admin) ====
     // ===================================
