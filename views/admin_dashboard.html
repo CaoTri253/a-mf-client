@@ -8166,24 +8166,24 @@
 
 
     // === HÀM setActivePage ĐÃ ĐƯỢC CẬP NHẬT (THÊM QL Y TẾ) ===
-    function setActivePage(page){
-      
+    // === HÀM setActivePage ĐÃ ĐƯỢỢC CẬP NHẬT (BAO GỒM QL Y TẾ & GIÁO VIÊN) ===
+    // (Thay thế hoàn toàn hàm setActivePage cũ trong file admin_dashboard.html)
+    function setActivePage(page) {
+
       // Danh sách các trang con Quản lý Bảo hiểm
       const baoHiemSubPages = ['bhyt', 'bhtn', 'stats', 'rewards'];
       const isBaoHiemSubPage = baoHiemSubPages.includes(page);
 
-      // --- MỚI: Danh sách các trang con Quản lý Y tế ---
+      // Danh sách các trang con Quản lý Y tế
       const yTeSubPages = ['qlyte-vbden', 'qlyte-cacloaiso', 'qlyte-kehoach', 'qlyte-baocao'];
       const isYTeSubPage = yTeSubPages.includes(page);
-      
+
       // 1. Xử lý active cho item con (như cũ)
-      $$('#sidebarMenu .nav-item').forEach(el=> {
+      $$('#sidebarMenu .nav-item').forEach(el => {
         el.classList.toggle('active', el.dataset.page === page);
       });
-      
+
       // 2. Xử lý cho các menu cha
-      
-      // --- MỚI: Tìm trigger/collapse của cả 2 menu ---
       const yTeParentTrigger = $('a.nav-item[href="#collapseYTe"]');
       const yTeParentCollapse = $('#collapseYTe');
       const baoHiemParentTrigger = $('a.nav-item[href="#collapseBaoHiem"]');
@@ -8193,41 +8193,59 @@
       $$('#sidebarMenu a.nav-item[data-bs-toggle="collapse"]').forEach(trigger => {
         trigger.classList.remove('active');
         trigger.setAttribute('aria-expanded', 'false');
+        // Đảm bảo collapse cũng đóng nếu không phải trang con tương ứng
+        const targetCollapseId = trigger.getAttribute('href');
+        const targetCollapseEl = $(targetCollapseId);
+        if (targetCollapseEl) {
+             const isTargetYTe = isYTeSubPage && targetCollapseId === '#collapseYTe';
+             const isTargetBH = isBaoHiemSubPage && targetCollapseId === '#collapseBaoHiem';
+             if (!isTargetYTe && !isTargetBH) {
+                 const instance = bootstrap.Collapse.getInstance(targetCollapseEl);
+                 if (instance) instance.hide();
+             }
+        }
       });
 
-      // --- MỚI: Bật active và mở collapse cho menu cha Y Tế ---
+
+      // Bật active và mở collapse cho menu cha Y Tế
       if (isYTeSubPage) {
         if (yTeParentTrigger) {
           yTeParentTrigger.classList.add('active');
           yTeParentTrigger.setAttribute('aria-expanded', 'true');
         }
         if (yTeParentCollapse) {
-          bootstrap.Collapse.getOrCreateInstance(yTeParentCollapse).show();
+          // Chỉ gọi show nếu nó chưa mở
+          if (!yTeParentCollapse.classList.contains('show')) {
+            bootstrap.Collapse.getOrCreateInstance(yTeParentCollapse).show();
+          }
         }
       }
-      
-      // Bật active và mở collapse cho menu cha Bảo Hiểm (như cũ)
+
+      // Bật active và mở collapse cho menu cha Bảo Hiểm
       if (isBaoHiemSubPage) {
         if (baoHiemParentTrigger) {
           baoHiemParentTrigger.classList.add('active');
           baoHiemParentTrigger.setAttribute('aria-expanded', 'true');
         }
         if (baoHiemParentCollapse) {
-          bootstrap.Collapse.getOrCreateInstance(baoHiemParentCollapse).show();
+           // Chỉ gọi show nếu nó chưa mở
+          if (!baoHiemParentCollapse.classList.contains('show')) {
+            bootstrap.Collapse.getOrCreateInstance(baoHiemParentCollapse).show();
+          }
         }
       }
 
       // 3. Hiển thị section nội dung
       $$('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
-      
+
       let sec; // Khai báo biến sec
 
-      // --- MỚI: Xử lý hiển thị trang Y tế và kích hoạt Tab ---
+      // Xử lý hiển thị trang Y tế và kích hoạt Tab
       if (isYTeSubPage) {
         // A. Hiển thị section chung 'page-qlyte'
         sec = $(`#page-qlyte`);
         if (sec) sec.classList.remove('d-none');
-        
+
         // B. Map page_id từ sidebar sang tab_id trong nội dung
         const tabIdMap = {
           'qlyte-vbden': '#tab-vbden-tab',
@@ -8235,66 +8253,114 @@
           'qlyte-kehoach': '#tab-kehoach-tab',
           'qlyte-baocao': '#tab-baocao-tab'
         };
-        
+
         const targetTabTriggerEl = $(tabIdMap[page]);
-        
+
         if (targetTabTriggerEl) {
           // Dùng API của Bootstrap để kích hoạt tab
           const tabInstance = bootstrap.Tab.getOrCreateInstance(targetTabTriggerEl);
-          tabInstance.show();
+          tabInstance.show(); // Gọi show() để kích hoạt tab
         } else {
           // Fallback: Kích hoạt tab đầu tiên nếu không tìm thấy
           const firstTab = $('#qlyteTabs button[data-bs-toggle="tab"]');
           if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
         }
-        
+
       } else {
-        // Logic cũ cho các trang khác (overview, students, profile...)
-        sec = $(`#page-${page}`); 
+        // Logic cũ cho các trang khác (overview, students, teachers, profile...)
+        sec = $(`#page-${page}`);
         if (sec) sec.classList.remove('d-none');
       }
-      // --- KẾT THÚC XỬ LÝ NỘI DUNG Y TẾ ---
 
-
-      // 4. Logic khởi tạo trang (GIỮ NGUYÊN HOÀN TOÀN TỪ FILE GỐC)
-      if (page === 'students') {
-        if (!sec.dataset.wired) {
-          adm_wireStudentsPage();
-          sec.dataset.wired = '1';
+      // 4. Logic khởi tạo/tải lại dữ liệu cho từng trang cụ thể
+      if (sec) { // Chỉ chạy nếu section tồn tại
+        if (page === 'students') {
+          if (!sec.dataset.wired) {
+            if (typeof adm_wireStudentsPage === 'function') adm_wireStudentsPage(); else console.error('adm_wireStudentsPage not found');
+            sec.dataset.wired = '1';
+          }
+          if (typeof adm_reloadStudents === 'function') adm_reloadStudents(); else console.error('adm_reloadStudents not found');
         }
-        adm_reloadStudents();
-      }
-
-      if (page === 'others') {
-        if (!sec.dataset.wired) { others_wirePage(); sec.dataset.wired = '1'; }
-        showLoading();
-        Promise.resolve(window.others_reload?.())
-          .finally(hideLoading);
-      }
-
-      if (page === 'bhyt') {
-        if (!sec.dataset.wired) { bhyt_wirePage(); sec.dataset.wired = '1'; }
-        bhyt_reload();
-      }
-
-      if (page === 'bhtn') {
-        if (!sec.dataset.wired) { sec.dataset.wired = '1'; }
-        showLoading();
-        Promise.resolve(window.bhtn_unpaid_wireTab?.())
-          .finally(hideLoading);
+        else if (page === 'others') {
+          if (!sec.dataset.wired) { if(typeof others_wirePage === 'function') others_wirePage(); else console.error('others_wirePage not found'); sec.dataset.wired = '1'; }
+          showLoading();
+          Promise.resolve(window.others_reload?.())
+            .catch(err => console.error("Error reloading 'others':", err))
+            .finally(hideLoading);
+        }
+        // --- LOGIC MỚI CHO GIÁO VIÊN ---
+        else if (page === 'teachers') {
+          if (!sec.dataset.wired) {
+            if (typeof teachers_wirePage === 'function') teachers_wirePage(); else console.error('teachers_wirePage not found');
+            // dataset.wired được set bên trong teachers_wirePage
+          } else {
+            if (typeof teachers_load === 'function') teachers_load(); else console.error('teachers_load not found');
+          }
+        }
+        // --- KẾT THÚC LOGIC GIÁO VIÊN ---
+        else if (page === 'bhyt') {
+          if (!sec.dataset.wired) { if(typeof bhyt_wirePage === 'function') bhyt_wirePage(); else console.error('bhyt_wirePage not found'); sec.dataset.wired = '1'; }
+          if (typeof bhyt_reload === 'function') bhyt_reload(); else console.error('bhyt_reload not found');
+        }
+        else if (page === 'bhtn') {
+           if (!sec.dataset.wired) { sec.dataset.wired = '1'; /* Wire tự động khi bấm tab */ }
+           showLoading();
+           Promise.resolve(window.bhtn_unpaid_wireTab?.()) // Luôn wire tab đầu tiên khi vào trang BHTN
+             .catch(err => console.error("Error wiring 'bhtn-unpaid':", err))
+             .finally(hideLoading);
+        }
+        else if (page === 'stats') {
+             if (!sec.dataset.wired) {
+               if (typeof stats_initOnce === 'function') {
+                 showLoading(); // Chỉ show loading khi init lần đầu
+                 stats_initOnce().finally(hideLoading);
+               } else {
+                 console.error('stats_initOnce not found');
+               }
+               // dataset.inited được set bên trong stats_initOnce
+             } else {
+               // Nếu đã init, có thể gọi hàm reload nếu cần
+               // if (typeof stats_reload === 'function') stats_reload();
+             }
+        }
+         else if (page === 'rewards') {
+            if (!sec.dataset.wired) {
+                if (typeof rw_initOnce === 'function') {
+                    showLoading(); // Chỉ show loading khi init lần đầu
+                    rw_initOnce().finally(hideLoading);
+                } else {
+                    console.error('rw_initOnce not found');
+                }
+                // RW.inited được set bên trong rw_initOnce
+            } else {
+                // Nếu đã init, có thể gọi hàm reload nếu cần
+                // if (typeof rw_reload === 'function') rw_reload();
+            }
+        }
+        // --- Logic cho Quản lý Y tế (Kích hoạt khi bấm vào tab con) ---
+        else if (isYTeSubPage) {
+          const yTeSec = $('#page-qlyte');
+          if (yTeSec && !yTeSec.dataset.wired) {
+            // Hiện tại wire theo tab, nên không cần làm gì ở đây
+            // yte_wirePage(); // Nếu có hàm khởi tạo chung
+            yTeSec.dataset.wired = '1';
+          }
+          // Gọi hàm tải dữ liệu tương ứng với tab con đang active (page)
+          // Ví dụ: if (page === 'qlyte-vbden' && typeof qlyte_vbden_wireTab === 'function') qlyte_vbden_wireTab();
+          // Hàm qlyte_vbden_wireTab đã được gắn vào sự kiện 'shown.bs.tab' nên sẽ tự chạy khi tab active
+        }
+      } else {
+          console.warn(`Section for page '${page}' not found.`);
       }
       
-      // --- MỚI: Thêm hook (để trống) cho trang y tế nếu sau này bạn cần ---
-      if (isYTeSubPage) {
-        const yTeSec = $('#page-qlyte');
-        if (yTeSec && !yTeSec.dataset.wired) {
-          // Hiện tại chưa cần làm gì, nhưng để sẵn cấu trúc
-          // viDu: yte_wirePage(); 
-          yTeSec.dataset.wired = '1';
-        }
-        // viDu: yte_loadDataForTab(page);
-      }
+      // Đóng sidebar trên mobile sau khi chọn
+       if (window.innerWidth < 992) {
+         toggleSidebar(false);
+       }
     }
+
+    // Ghi đè hàm setActivePage toàn cục (nếu cần thiết, nếu không thì dùng tên khác)
+    window.setActivePage = setActivePage; // Đảm bảo hàm mới được sử dụng
 
 
     function toggleSidebar(open){
