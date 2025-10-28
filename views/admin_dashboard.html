@@ -8130,6 +8130,7 @@
     // === HÀM setActivePage ĐÃ ĐƯỢỢC CẬP NHẬT (BAO GỒM QL Y TẾ & GIÁO VIÊN) ===
     // (Thay thế hoàn toàn hàm setActivePage cũ trong file admin_dashboard.html)
     function setActivePage(page) {
+      console.log(`setActivePage called with page: '${page}'`); // Log khi hàm được gọi
 
       // Danh sách các trang con Quản lý Bảo hiểm
       const baoHiemSubPages = ['bhyt', 'bhtn', 'stats', 'rewards'];
@@ -8161,8 +8162,11 @@
              const isTargetYTe = isYTeSubPage && targetCollapseId === '#collapseYTe';
              const isTargetBH = isBaoHiemSubPage && targetCollapseId === '#collapseBaoHiem';
              if (!isTargetYTe && !isTargetBH) {
-                 const instance = bootstrap.Collapse.getInstance(targetCollapseEl);
-                 if (instance) instance.hide();
+                 // Dùng try...catch để tránh lỗi nếu instance chưa có hoặc đã bị hủy
+                 try {
+                    const instance = bootstrap.Collapse.getInstance(targetCollapseEl);
+                    if (instance) instance.hide();
+                 } catch(e){ console.warn("Error hiding collapse:", targetCollapseId, e); }
              }
         }
       });
@@ -8177,7 +8181,7 @@
         if (yTeParentCollapse) {
           // Chỉ gọi show nếu nó chưa mở
           if (!yTeParentCollapse.classList.contains('show')) {
-            bootstrap.Collapse.getOrCreateInstance(yTeParentCollapse).show();
+             try { bootstrap.Collapse.getOrCreateInstance(yTeParentCollapse).show(); } catch(e){ console.warn("Error showing YTe collapse:", e); }
           }
         }
       }
@@ -8191,7 +8195,7 @@
         if (baoHiemParentCollapse) {
            // Chỉ gọi show nếu nó chưa mở
           if (!baoHiemParentCollapse.classList.contains('show')) {
-            bootstrap.Collapse.getOrCreateInstance(baoHiemParentCollapse).show();
+             try { bootstrap.Collapse.getOrCreateInstance(baoHiemParentCollapse).show(); } catch(e){ console.warn("Error showing BaoHiem collapse:", e); }
           }
         }
       }
@@ -8206,6 +8210,7 @@
         // A. Hiển thị section chung 'page-qlyte'
         sec = $(`#page-qlyte`);
         if (sec) sec.classList.remove('d-none');
+        else console.warn("Section #page-qlyte not found"); // Thêm log
 
         // B. Map page_id từ sidebar sang tab_id trong nội dung
         const tabIdMap = {
@@ -8219,22 +8224,29 @@
 
         if (targetTabTriggerEl) {
           // Dùng API của Bootstrap để kích hoạt tab
-          const tabInstance = bootstrap.Tab.getOrCreateInstance(targetTabTriggerEl);
-          tabInstance.show(); // Gọi show() để kích hoạt tab
+          try {
+            const tabInstance = bootstrap.Tab.getOrCreateInstance(targetTabTriggerEl);
+            tabInstance.show(); // Gọi show() để kích hoạt tab
+          } catch(e) { console.error("Error activating YTe tab:", page, e); }
         } else {
+          console.warn("Target YTe tab trigger not found for page:", page); // Thêm log
           // Fallback: Kích hoạt tab đầu tiên nếu không tìm thấy
           const firstTab = $('#qlyteTabs button[data-bs-toggle="tab"]');
-          if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+          if (firstTab) {
+            try { bootstrap.Tab.getOrCreateInstance(firstTab).show(); } catch(e) { console.error("Error activating fallback YTe tab:", e); }
+          }
         }
 
       } else {
         // Logic cũ cho các trang khác (overview, students, teachers, profile...)
         sec = $(`#page-${page}`);
         if (sec) sec.classList.remove('d-none');
+        else console.warn(`Section #page-${page} not found`); // Thêm log
       }
 
       // 4. Logic khởi tạo/tải lại dữ liệu cho từng trang cụ thể
       if (sec) { // Chỉ chạy nếu section tồn tại
+        console.log(`Processing section for page '${page}'`); // Log section đang xử lý
         if (page === 'students') {
           if (!sec.dataset.wired) {
             if (typeof adm_wireStudentsPage === 'function') adm_wireStudentsPage(); else console.error('adm_wireStudentsPage not found');
@@ -8251,11 +8263,24 @@
         }
         // --- LOGIC MỚI CHO GIÁO VIÊN ---
         else if (page === 'teachers') {
+            console.log("Processing 'teachers' section. Wired:", sec.dataset.wired); // Log chi tiết
+            console.log("Checking for teachers_wirePage:", typeof window.teachers_wirePage); // Log kiểm tra hàm
+            console.log("Checking for teachers_load:", typeof window.teachers_load); // Log kiểm tra hàm
           if (!sec.dataset.wired) {
-            if (typeof teachers_wirePage === 'function') teachers_wirePage(); else console.error('teachers_wirePage not found');
-            // dataset.wired được set bên trong teachers_wirePage
+            if (typeof window.teachers_wirePage === 'function') { // Luôn gọi qua window
+                console.log("Calling window.teachers_wirePage()");
+                window.teachers_wirePage();
+                // dataset.wired được set bên trong teachers_wirePage
+            } else {
+                console.error('window.teachers_wirePage is not defined or not a function!');
+            }
           } else {
-            if (typeof teachers_load === 'function') teachers_load(); else console.error('teachers_load not found');
+            if (typeof window.teachers_load === 'function') { // Luôn gọi qua window
+                console.log("Calling window.teachers_load()");
+                window.teachers_load();
+            } else {
+                console.error('window.teachers_load is not defined or not a function!');
+            }
           }
         }
         // --- KẾT THÚC LOGIC GIÁO VIÊN ---
@@ -8302,26 +8327,26 @@
         else if (isYTeSubPage) {
           const yTeSec = $('#page-qlyte');
           if (yTeSec && !yTeSec.dataset.wired) {
-            // Hiện tại wire theo tab, nên không cần làm gì ở đây
-            // yte_wirePage(); // Nếu có hàm khởi tạo chung
+            // Wire theo tab, không cần làm gì ở đây
             yTeSec.dataset.wired = '1';
+            console.log("Marked #page-qlyte as wired"); // Log
           }
-          // Gọi hàm tải dữ liệu tương ứng với tab con đang active (page)
-          // Ví dụ: if (page === 'qlyte-vbden' && typeof qlyte_vbden_wireTab === 'function') qlyte_vbden_wireTab();
-          // Hàm qlyte_vbden_wireTab đã được gắn vào sự kiện 'shown.bs.tab' nên sẽ tự chạy khi tab active
+          // Các hàm wire tab (vd: qlyte_vbden_wireTab) đã được gắn vào sự kiện 'shown.bs.tab' nên sẽ tự chạy
+          console.log("YTe subpage - letting tab events handle wiring."); // Log
         }
       } else {
-          console.warn(`Section for page '${page}' not found.`);
+          // Log này đã có ở trên, không cần lặp lại
+          // console.warn(`Section for page '${page}' not found.`);
       }
-      
+
       // Đóng sidebar trên mobile sau khi chọn
        if (window.innerWidth < 992) {
          toggleSidebar(false);
        }
     }
 
-    // Ghi đè hàm setActivePage toàn cục (nếu cần thiết, nếu không thì dùng tên khác)
-    window.setActivePage = setActivePage; // Đảm bảo hàm mới được sử dụng
+    // Ghi đè hàm setActivePage toàn cục
+    window.setActivePage = setActivePage;
 
 
     function toggleSidebar(open){
