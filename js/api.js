@@ -473,3 +473,81 @@ async function deleteSucKhoeEvent(rowIndex) {
   return await res.json();
 }
 /* ====== SỨC KHỎE HỌC SINH ====== */
+
+
+
+
+
+
+// --- API cho Quản lý User (Giáo viên) ---
+
+/**
+ * Lấy danh sách tất cả người dùng (sẽ lọc phía client).
+ * @returns {Promise<object>} Kết quả từ backend ({success: boolean, data?: Array}).
+ */
+async function listUsers() {
+  const url = `${API_BASE}?func=ListUsers`; // Hoặc func=UserList tùy theo main.gs
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return await res.json();
+  } catch (error) {
+    console.error("API Error - listUsers:", error);
+    return { success: false, message: "Lỗi kết nối khi lấy danh sách người dùng." };
+  }
+}
+
+
+/**
+ * Cập nhật thông tin người dùng (giáo viên).
+ * @param {object} userData Đối tượng chứa thông tin cập nhật.
+ * Phải bao gồm 'sdt_key' (SĐT hiện tại để tìm user)
+ * và các trường cần đổi: 'ho_ten', 'sdt' (SĐT mới), 'password' (mật khẩu mới, nếu có), 'lop_hoc'.
+ * @returns {Promise<object>} Kết quả từ backend ({success: boolean, message?: string}).
+ */
+async function updateUser(userData) {
+  // Đảm bảo userData có sdt_key
+  if (!userData || !userData.sdt_key) {
+    console.error("updateUser thiếu sdt_key");
+    return { success: false, message: "Thiếu thông tin định danh người dùng." };
+  }
+  const params = Object.entries(userData)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? "")}`) // Gửi cả giá trị rỗng nếu có (vd: password rỗng là không đổi)
+    .join('&');
+  const url = `${API_BASE}?func=UpdateUser&${params}`; // *** Endpoint mới cần tạo: func=UpdateUser ***
+  try {
+    const res = await fetch(url);
+    if (!res.ok) { // Thêm kiểm tra lỗi HTTP
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    return await res.json();
+  } catch (error) {
+    console.error("API Error - updateUser:", error);
+    return { success: false, message: "Lỗi kết nối khi cập nhật người dùng." };
+  }
+}
+
+/**
+ * Xóa người dùng (giáo viên) dựa trên số điện thoại.
+ * @param {string} sdt Số điện thoại của người dùng cần xóa.
+ * @returns {Promise<object>} Kết quả từ backend ({success: boolean, message?: string}).
+ */
+async function deleteUser(sdt) {
+  if (!sdt) {
+     console.error("deleteUser thiếu sdt");
+     return { success: false, message: "Thiếu số điện thoại cần xóa." };
+  }
+  const url = `${API_BASE}?func=DeleteUser&sdt=${encodeURIComponent(sdt)}`; // *** Endpoint mới cần tạo: func=DeleteUser ***
+  try {
+    const res = await fetch(url);
+     if (!res.ok) { // Thêm kiểm tra lỗi HTTP
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    return await res.json();
+  } catch (error) {
+    console.error("API Error - deleteUser:", error);
+    return { success: false, message: "Lỗi kết nối khi xóa người dùng." };
+  }
+}
+
+// Lưu ý: Hàm register() đã có sẵn trong api.js của bạn.
