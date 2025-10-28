@@ -7403,40 +7403,36 @@
       if (!viewer) return;
 
       const fileExtension = fileName.split('.').pop().toLowerCase();
-      // Đường dẫn tương đối đến thư mục chứa file
-      const fullPath = `assets/van_ban_den/${fileName}`; 
 
-      // Xử lý highlight active item trong danh sách
+      // --- SỬA ĐƯỜNG DẪN Ở ĐÂY ---
+      // Đường dẫn tương đối từ views/admin_dashboard.html
+      const fullPath = `../assets/van_ban_den/${encodeURIComponent(fileName)}`;
+      // --- KẾT THÚC SỬA ĐỔI ---
+
+      console.log("iframe src:", fullPath); // Kiểm tra đường dẫn
+
       document.querySelectorAll('#vbden-file-list .list-group-item').forEach(item => {
         item.classList.toggle('active', item.dataset.fileName === fileName);
       });
 
       if (fileExtension === 'pdf') {
-        // 1. PDF: Dùng iframe để nhúng trực tiếp
-        viewer.innerHTML = `<iframe id="vbden-iframe" src="${fullPath}" title="${fileName}"></iframe>`;
-      } 
+        viewer.innerHTML = `<iframe id="vbden-iframe" src="${fullPath}" title="${fileName}" style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 8px;"></iframe>`;
+      }
       else if (fileExtension === 'docx' || fileExtension === 'doc' || fileExtension === 'xlsx' || fileExtension === 'xls') {
-        // 2. WORD/EXCEL: Dùng Google/Microsoft Viewer
-        // YÊU CẦU: File của bạn phải có thể truy cập công khai từ Internet
-        // (ví dụ: https://tenschool.com/assets/van_ban_den/file.docx)
-        
-        // Lấy URL tuyệt đối của file
+        // Đường dẫn công khai vẫn cần là URL tuyệt đối nếu dùng viewer online
+        // Cách tạo URL tuyệt đối từ đường dẫn tương đối (cần server hỗ trợ đúng)
         const publicUrl = new URL(fullPath, window.location.href).href;
-        
-        // Dùng Microsoft Office Viewer
         const msViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(publicUrl)}`;
-        
         viewer.innerHTML = `
-          <iframe id="vbden-iframe" src="${msViewerUrl}" title="${fileName}"></iframe>
+          <iframe id="vbden-iframe" src="${msViewerUrl}" title="${fileName}" style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 8px;"></iframe>
           <div class="alert alert-info mt-2 small">
             <b>Lưu ý:</b> Trình xem file Word/Excel yêu cầu file phải được truy cập công khai từ Internet.
             Nếu file không hiển thị, vui lòng
             <a href="${fullPath}" download><b>nhấp vào đây để tải về</b></a>.
           </div>
         `;
-      } 
+      }
       else {
-        // 3. Các file khác (ảnh, text,...)
         viewer.innerHTML = `
           <div class="alert alert-warning">
             Không hỗ trợ xem trước cho file <code>.${fileExtension}</code>.
