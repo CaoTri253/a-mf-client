@@ -8499,7 +8499,97 @@
         const $sk = (selector) => document.querySelector(selector);
         const $$sk = (selector) => document.querySelectorAll(selector);
         // Sử dụng adm_displayNgay từ khối Học sinh nếu có, hoặc định nghĩa lại
-        const skhs_displayNgay = window.adm_displayNgay || function(raw) { /*...*/ return raw; };
+        const skhs_displayNgay = window.adm_displayNgay || function(raw){
+            if (!raw) return "";
+            if (typeof raw === "number"){ // Excel date number
+                var utc_days = Math.floor(raw - 25569);
+                var date = new Date(utc_days*86400*1000);
+                date.setUTCHours(0,0,0,0);
+                const dd=String(date.getDate()).padStart(2,'0');
+                const mm=String(date.getMonth()+1).padStart(2,'0');
+                const yy=date.getFullYear();
+                return `${dd}/${mm}/${yy}`;
+            }
+            if (/^\d{4}-\d{2}-\d{2}T/.test(raw)){ // ISO string
+                const d=new Date(raw);
+                return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+            }
+             if (/^\d{4}-\d{2}-\d{2}$/.test(raw)){ // YYYY-MM-DD
+                const [y,m,d]=raw.split('-'); return `${d}/${m}/${y}`;
+            }
+             if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)){ // dd/mm/yyyy (already correct)
+                return raw;
+            }
+            return raw; // Fallback
+        };
+
+
+        // =======================================================
+        // ====== BỔ SUNG: TỰ ĐỘNG TÍNH BMI (SKHS) ==========
+        // =======================================================
+
+        /**
+         * Tính toán và cập nhật BMI vào ô output.
+         * @param {string} heightId ID của input chiều cao (mét)
+         * @param {string} weightId ID của input cân nặng (kg)
+         * @param {string} bmiId ID của input BMI (output)
+         */
+        function calculateAndUpdateBMI(heightId, weightId, bmiId) {
+            const heightInput = document.getElementById(heightId);
+            const weightInput = document.getElementById(weightId);
+            const bmiOutput = document.getElementById(bmiId);
+
+            // Kiểm tra element tồn tại
+            if (!heightInput || !weightInput || !bmiOutput) {
+                console.warn(`BMI Calc: Element missing for ${heightId}, ${weightId}, or ${bmiId}`);
+                return;
+            }
+
+            const height = parseFloat(heightInput.value);
+            const weight = parseFloat(weightInput.value);
+
+            // Kiểm tra giá trị hợp lệ (chiều cao > 0, cân nặng >= 0)
+            if (!isNaN(height) && height > 0 && !isNaN(weight) && weight >= 0) {
+                const bmi = weight / (height * height);
+                bmiOutput.value = bmi.toFixed(1); // Làm tròn 1 chữ số thập phân
+            } else {
+                bmiOutput.value = ''; // Xóa giá trị BMI nếu input không hợp lệ
+            }
+        }
+
+        /**
+         * Gắn các event listener để tự động tính BMI khi nhập liệu.
+         */
+        function wireBMICalculationListeners() {
+            const fieldsL1 = { height: 'lan1-chieu-cao-m', weight: 'lan1-can-nang-kg', bmi: 'lan1-bmi' };
+            const fieldsL2 = { height: 'lan2-chieu-cao-m', weight: 'lan2-can-nang-kg', bmi: 'lan2-bmi' };
+
+            // Lắng nghe sự kiện input cho Lần 1
+            const heightL1 = document.getElementById(fieldsL1.height);
+            const weightL1 = document.getElementById(fieldsL1.weight);
+            if (heightL1) {
+                heightL1.addEventListener('input', () => calculateAndUpdateBMI(fieldsL1.height, fieldsL1.weight, fieldsL1.bmi));
+            }
+            if (weightL1) {
+                weightL1.addEventListener('input', () => calculateAndUpdateBMI(fieldsL1.height, fieldsL1.weight, fieldsL1.bmi));
+            }
+
+            // Lắng nghe sự kiện input cho Lần 2
+            const heightL2 = document.getElementById(fieldsL2.height);
+            const weightL2 = document.getElementById(fieldsL2.weight);
+            if (heightL2) {
+                heightL2.addEventListener('input', () => calculateAndUpdateBMI(fieldsL2.height, fieldsL2.weight, fieldsL2.bmi));
+            }
+            if (weightL2) {
+                weightL2.addEventListener('input', () => calculateAndUpdateBMI(fieldsL2.height, fieldsL2.weight, fieldsL2.bmi));
+            }
+            console.log("SKHS: BMI auto-calculation listeners attached."); // Log để kiểm tra
+        }
+
+        // =======================================================
+        // ====== /BỔ SUNG: TỰ ĐỘNG TÍNH BMI (SKHS) =========
+        // =======================================================
+
 
         // === Khởi tạo Flatpickr ===
         function initFlatpickr() {
@@ -8725,6 +8815,10 @@
           $sk('#kham-sk-hs-info').textContent = hs_info;
           $sk('#kham-sk-nam-hoc').value = nam_hoc; // Set năm học
 
+          // Xóa giá trị BMI cũ trước khi mở modal
+          $sk('#lan1-bmi').value = '';
+          $sk('#lan2-bmi').value = '';
+
           if (isEdit) {
             $sk('#modalKhamSKLabel').textContent = "Sửa phiếu khám sức khỏe";
             showLoading();
@@ -8741,11 +8835,19 @@
                         if (input.classList.contains('skhs-flatpickr') && SKHS.flatpickrInstances.date) {
                             SKHS.flatpickrInstances.date.find(inst => inst.input === input)?.setDate(res.data[key], true);
                         } else {
-                            input.value = res.data[key] || '';
+                            // Không ghi đè BMI nếu nó là ô tự tính
+                            if(input.id !== 'lan1-bmi' && input.id !== 'lan2-bmi') {
+                                input.value = res.data[key] || '';
+                            }
                         }
                     }
                 });
                 $sk('#kham-sk-nam-hoc').readOnly = true; // Không cho sửa năm học khi edit
+
+                // TÍNH TOÁN LẠI BMI KHI LOAD DỮ LIỆU SỬA
+                calculateAndUpdateBMI('lan1-chieu-cao-m', 'lan1-can-nang-kg', 'lan1-bmi');
+                calculateAndUpdateBMI('lan2-chieu-cao-m', 'lan2-can-nang-kg', 'lan2-bmi');
+
               } else {
                 errorDiv.textContent = "Không tìm thấy hồ sơ khám của năm học này.";
                 showToast("Chưa có hồ sơ khám của năm học này để sửa.", "warning");
@@ -8778,6 +8880,7 @@
           inputs.forEach(input => {
               const key = input.id.replace(/-/g, '_'); // Chuyển id -> key snake_case
               if (key) {
+                  // Đảm bảo BMI cũng được lấy giá trị (dù là tính tự động)
                   formData[key] = input.value.trim();
               }
           });
@@ -8811,47 +8914,32 @@
 
               if (rowIndex) {
                   // --- CHẾ ĐỘ SỬA ---
-                  // 1. Lấy bản ghi đầy đủ hiện tại từ sheet
-                  const currentRecordRes = await getSucKhoeRecord(ma_so_bhxh, nam_hoc_input); // Dùng năm học trên form
+                  const currentRecordRes = await getSucKhoeRecord(ma_so_bhxh, nam_hoc_input);
                   if (!currentRecordRes.success || !currentRecordRes.data) {
                       throw new Error("Không tìm thấy bản ghi gốc để cập nhật.");
                   }
                   const existingData = currentRecordRes.data;
-
-                  // 2. Merge dữ liệu form mới đè lên dữ liệu cũ
-                  // Giữ lại các trường không có trong form (VD: Tiền sử)
                   payload = { ...existingData, ...formData };
-
-                  // Đảm bảo các key cần thiết không bị ghi đè rỗng (nếu cần)
                   payload.ma_so_bhxh = ma_so_bhxh;
                   payload.nam_hoc = nam_hoc_input;
                   payload.ma_truong = ma_truong;
-                  payload.lop_hoc = lop_hoc || existingData.lop_hoc; // Ưu tiên lớp mới nhất
-
-                  // 3. Gửi đi với _rowIndex
+                  payload.lop_hoc = lop_hoc || existingData.lop_hoc;
                   payload._rowIndex = rowIndex;
                   res = await updateSucKhoeRecord(payload);
 
               } else {
                     // --- CHẾ ĐỘ THÊM MỚI ---
-                    // 1. Kiểm tra xem bản ghi cho năm học này đã tồn tại chưa
                     const existingCheck = await getSucKhoeRecord(ma_so_bhxh, nam_hoc_input);
                     if (existingCheck.success && existingCheck.data) {
                         throw new Error(`Đã tồn tại phiếu khám cho học sinh này trong năm học ${nam_hoc_input}.`);
                     }
-
-                    // 2. Tạo payload mới chỉ chứa các thông tin cần thiết
-                    // (Tiền sử sẽ trống nếu chưa nhập ở đâu đó)
                     payload = {
-                        ...formData, // Dữ liệu từ form
+                        ...formData,
                         ma_so_bhxh: ma_so_bhxh,
                         ma_truong: ma_truong,
                         lop_hoc: lop_hoc,
                         nam_hoc: nam_hoc_input,
-                        // Các trường tiền sử sẽ là undefined/null và backend sẽ ghi rỗng
                     };
-
-                    // 3. Gửi đi để thêm mới
                     res = await addSucKhoeRecord(payload);
               }
 
@@ -8859,7 +8947,6 @@
               if (res.success) {
                   bootstrap.Modal.getInstance($sk('#modalKhamSK')).hide();
                   showToast(rowIndex ? 'Cập nhật phiếu khám thành công!' : 'Thêm phiếu khám thành công!', 'success');
-                  // Không cần reload danh sách HS, chỉ cần cập nhật trạng thái nếu cần
               } else {
                   throw new Error(res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại'));
               }
@@ -8871,6 +8958,7 @@
               hideLoading();
           }
         }
+
         window.skhs_confirmDeleteKham = async (ma_so_bhxh, nam_hoc) => {
           showLoading();
           try {
@@ -8880,7 +8968,6 @@
                   const rowIndex = res.data._rowIndex;
                   $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa phiếu khám sức khỏe năm học <strong>${nam_hoc}</strong> của học sinh này?`;
                   const confirmBtn = $sk('#confirmSKHSBtn');
-                  // Clone để xóa listener cũ
                   const newConfirmBtn = confirmBtn.cloneNode(true);
                   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
@@ -8925,10 +9012,9 @@
           $sk('#sukien-sk-hs-info').textContent = hs_info;
           $sk('#modalSuKienSKLabel').textContent = `Sự kiện sức khỏe: ${hs_info}`;
 
-          // Load danh sách sự kiện cũ
           const listDiv = $sk('#sukien-sk-list');
           listDiv.innerHTML = '<div class="text-muted small">Đang tải lịch sử sự kiện...</div>';
-          modal.show(); // Hiển thị modal trước khi fetch
+          modal.show();
 
           try {
               const res = await getSucKhoeEvents(ma_so_bhxh);
@@ -8938,7 +9024,7 @@
                   } else {
                       listDiv.innerHTML = res.data.map(event => `
                           <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
-                              <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan || 'Chưa rõ CĐ'}
+                              <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan_ban_dau || 'Chưa rõ CĐ'}
                               <span class="float-end">
                                   <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
                                   <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
@@ -8952,35 +9038,25 @@
           } catch (err) {
               listDiv.innerHTML = '<div class="text-danger small">Lỗi hệ thống khi tải sự kiện.</div>';
           }
-          skhs_resetSuKienForm(); // Đảm bảo form ở trạng thái nhập mới
+          skhs_resetSuKienForm();
         }
 
-        // === Sửa hàm skhs_resetSuKienForm ===
         window.skhs_resetSuKienForm = () => {
           SKHS.currentSuKienEditing = null;
           $sk('#sukien-sk-rowindex').value = '';
           $sk('#formSuKienSK').reset();
-          // Cập nhật lại tiêu đề sau khi reset form
           const hsInfo = $sk('#sukien-sk-hs-info') ? $sk('#sukien-sk-hs-info').textContent : 'học sinh';
           $sk('#modalSuKienSKLabel').textContent = `Thêm sự kiện sức khỏe: ${hsInfo}`;
-
-          // Reset flatpickr instance cụ thể
           if (SKHS.flatpickrInstances.suKienDateTime) {
               SKHS.flatpickrInstances.suKienDateTime.clear();
           } else {
-              // Fallback nếu instance không tồn tại (ít khả năng xảy ra nếu init đúng)
               const dtInput = $sk('#sukien-sk-thoi-gian');
               if (dtInput) dtInput.value = '';
           }
-          $sk('#sukien-sk-error').textContent = ''; // Xóa thông báo lỗi cũ
+          $sk('#sukien-sk-error').textContent = '';
         }
 
-        // === Sửa hàm skhs_editSuKien ===
         window.skhs_editSuKien = (rowIndex) => {
-          const listDiv = $sk('#sukien-sk-list');
-          // const eventDiv = listDiv.querySelector(`[onclick="skhs_editSuKien(${rowIndex})"]`); // Tìm đúng không cần thiết nữa
-          // if (!eventDiv) return;
-
           showLoading();
           const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
           getSucKhoeEvents(ma_so_bhxh).then(res => {
@@ -8991,22 +9067,15 @@
                       SKHS.currentSuKienEditing = eventData;
                       $sk('#sukien-sk-rowindex').value = rowIndex;
                       $sk('#modalSuKienSKLabel').textContent = `Sửa sự kiện sức khỏe: ${$sk('#sukien-sk-hs-info').textContent}`;
-
-                      // Populate form
-                      $sk('#sukien-sk-thoi-gian').value = eventData.thoi_gian || ''; // Vẫn set value trực tiếp
+                      $sk('#sukien-sk-thoi-gian').value = eventData.thoi_gian || '';
                       $sk('#sukien-sk-chan-doan').value = eventData.chan_doan_ban_dau || '';
                       $sk('#sukien-sk-xu-tri').value = eventData.xu_tri_tai_truong || '';
                       $sk('#sukien-sk-chuyen-den').value = eventData.chuyen_den || '';
                       $sk('#sukien-sk-ghi-chu-event').value = eventData.ghi_chu || '';
-
-                      // Cập nhật Flatpickr instance cụ thể bằng phương thức setDate
                         if (SKHS.flatpickrInstances.suKienDateTime) {
-                            // Tham số thứ 2 'true' để không trigger event 'onChange' nếu không muốn
-                            // Tham số thứ 3 'd/m/Y H:i' là định dạng của chuỗi ngày giờ đầu vào
                             SKHS.flatpickrInstances.suKienDateTime.setDate(eventData.thoi_gian, false, "d/m/Y H:i");
                         }
-
-                        $sk('#sukien-sk-error').textContent = ''; // Xóa lỗi cũ
+                        $sk('#sukien-sk-error').textContent = '';
                   } else {
                       showToast("Không tìm thấy dữ liệu sự kiện để sửa.", "warning");
                   }
@@ -9019,7 +9088,6 @@
           });
         }
 
-        // === Sửa hàm skhs_saveSuKien (thêm ma_truong) ===
         window.skhs_saveSuKien = async () => {
           const form = $sk('#formSuKienSK');
           const errorDiv = $sk('#sukien-sk-error');
@@ -9028,85 +9096,48 @@
           const eventData = {};
           const inputs = form.querySelectorAll('input:not([type=hidden]), select, textarea');
             inputs.forEach(input => {
-            const key = input.id.replace('sukien-sk-', '').replace(/-/g, '_'); // Chuyển id -> key
-              // Ánh xạ key đặc biệt từ form ID sang tên cột sheet
-              const keyMap = {
-                'chan_doan': 'chan_doan_ban_dau',
-                'xu_tri': 'xu_tri_tai_truong',
-                'ghi_chu_event': 'ghi_chu'
-              };
+            const key = input.id.replace('sukien-sk-', '').replace(/-/g, '_');
+              const keyMap = { 'chan_doan': 'chan_doan_ban_dau', 'xu_tri': 'xu_tri_tai_truong', 'ghi_chu_event': 'ghi_chu' };
             const finalKey = keyMap[key] || key;
-            if (finalKey) {
-                eventData[finalKey] = input.value.trim();
-            }
+            if (finalKey) { eventData[finalKey] = input.value.trim(); }
           });
 
           eventData.ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
           const rowIndex = $sk('#sukien-sk-rowindex').value;
-
-          // --- THÊM DÒNG NÀY ---
           const user = JSON.parse(localStorage.getItem('user') || '{}');
-          eventData.ma_truong = user.ma_truong; // Lấy mã trường từ user
-          // ---------------------
+          eventData.ma_truong = user.ma_truong;
 
-          // Validation
-          if (!eventData.thoi_gian) {
-              errorDiv.textContent = "Vui lòng nhập Thời gian.";
-              return;
-          }
-          // Thêm kiểm tra ma_truong nếu cần
-          if (!eventData.ma_truong) {
-              errorDiv.textContent = "Không thể xác định mã trường.";
-              return;
-          }
-
+          if (!eventData.thoi_gian) { errorDiv.textContent = "Vui lòng nhập Thời gian."; return; }
+          if (!eventData.ma_truong) { errorDiv.textContent = "Không thể xác định mã trường."; return; }
 
           showLoading();
           try {
               let res;
-              if (rowIndex) { // Update
-                  eventData._rowIndex = rowIndex;
-                  res = await updateSucKhoeEvent(eventData);
-              } else { // Add new
-                  res = await addSucKhoeEvent(eventData);
-              }
+              if (rowIndex) { eventData._rowIndex = rowIndex; res = await updateSucKhoeEvent(eventData); }
+              else { res = await addSucKhoeEvent(eventData); }
 
               if (res.success) {
                   showToast(rowIndex ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện thành công!', 'success');
-                  // Reload list trong modal
-                  const ma_so_bhxh_reload = $sk('#sukien-sk-ma-so-bhxh').value; // Lấy lại mã số bhxh
+                  const ma_so_bhxh_reload = $sk('#sukien-sk-ma-so-bhxh').value;
                   const listDiv = $sk('#sukien-sk-list');
                   listDiv.innerHTML = '<div class="text-muted small">Đang tải lại lịch sử...</div>';
-                  const listRes = await getSucKhoeEvents(ma_so_bhxh_reload); // Dùng biến mới
+                  const listRes = await getSucKhoeEvents(ma_so_bhxh_reload);
                     if (listRes.success && listRes.data) {
-                        if (listRes.data.length === 0) {
-                            listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào.</div>';
-                        } else {
-                            listDiv.innerHTML = listRes.data.map(event => `
+                        listDiv.innerHTML = listRes.data.length === 0 ? '<div class="text-muted small">Chưa có sự kiện nào.</div>' : listRes.data.map(event => `
                               <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
                                   <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan_ban_dau || 'Chưa rõ CĐ'}
                                   <span class="float-end">
                                       <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
                                       <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
                                   </span>
-                              </div>
-                          `).join('');
-                        }
-                    } else {
-                        listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
-                    }
-                  skhs_resetSuKienForm(); // Reset form về trạng thái nhập mới
-              } else {
-                  errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
-                  showToast(errorDiv.textContent, 'danger');
-              }
-          } catch (err) {
-              errorDiv.textContent = "Lỗi hệ thống: " + err.message;
-              showToast("Lỗi hệ thống", 'danger');
-          } finally {
-              hideLoading();
-          }
+                              </div>`).join('');
+                    } else { listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>'; }
+                  skhs_resetSuKienForm();
+              } else { errorDiv.textContent = res.message || (rowIndex ? 'Cập nhật thất bại' : 'Thêm mới thất bại'); showToast(errorDiv.textContent, 'danger'); }
+          } catch (err) { errorDiv.textContent = "Lỗi hệ thống: " + err.message; showToast("Lỗi hệ thống", 'danger'); }
+          finally { hideLoading(); }
         }
+
         window.skhs_confirmDeleteSuKien = (rowIndex, thoi_gian) => {
           if (!rowIndex) return;
           $sk('#confirmSKHSBody').innerHTML = `Bạn có chắc muốn xóa sự kiện sức khỏe vào lúc <strong>${thoi_gian || 'không rõ'}</strong>?`;
@@ -9121,37 +9152,24 @@
                   const deleteRes = await deleteSucKhoeEvent(rowIndex);
                   if (deleteRes.success) {
                       showToast('Xóa sự kiện thành công!', 'success');
-                      // Reload list trong modal
                       const ma_so_bhxh = $sk('#sukien-sk-ma-so-bhxh').value;
                       const listDiv = $sk('#sukien-sk-list');
                       listDiv.innerHTML = '<div class="text-muted small">Đang tải lại lịch sử...</div>';
                       const listRes = await getSucKhoeEvents(ma_so_bhxh);
                       if (listRes.success && listRes.data) {
-                          if (listRes.data.length === 0) {
-                              listDiv.innerHTML = '<div class="text-muted small">Chưa có sự kiện nào.</div>';
-                          } else {
-                              listDiv.innerHTML = listRes.data.map(event => `
+                          listDiv.innerHTML = listRes.data.length === 0 ? '<div class="text-muted small">Chưa có sự kiện nào.</div>' : listRes.data.map(event => `
                               <div class="list-group-item list-group-item-action small py-1 px-2 mb-1" style="cursor: pointer;" onclick="skhs_editSuKien(${event._rowIndex})">
                                   <strong>${event.thoi_gian || 'Chưa rõ TG'}</strong>: ${event.chan_doan_ban_dau || 'Chưa rõ CĐ'}
                                   <span class="float-end">
                                       <i class="bi bi-pencil text-warning me-2" title="Sửa"></i>
                                       <i class="bi bi-trash text-danger" title="Xóa" onclick="event.stopPropagation(); skhs_confirmDeleteSuKien(${event._rowIndex}, '${event.thoi_gian || ''}')"></i>
                                   </span>
-                              </div>
-                          `).join('');
-                          }
-                      } else {
-                          listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>';
-                      }
-                      skhs_resetSuKienForm(); // Reset form
-                  } else {
-                      showToast(deleteRes.message || 'Xóa sự kiện thất bại!', 'danger');
-                  }
-              } catch (err) {
-                  showToast("Lỗi hệ thống khi xóa sự kiện!", 'danger');
-              } finally {
-                  hideLoading();
-              }
+                              </div>`).join('');
+                      } else { listDiv.innerHTML = '<div class="text-danger small">Lỗi tải lại lịch sử.</div>'; }
+                      skhs_resetSuKienForm();
+                  } else { showToast(deleteRes.message || 'Xóa sự kiện thất bại!', 'danger'); }
+              } catch (err) { showToast("Lỗi hệ thống khi xóa sự kiện!", 'danger'); }
+              finally { hideLoading(); }
           };
           new bootstrap.Modal($sk('#modalConfirmSKHS')).show();
         }
@@ -9166,6 +9184,9 @@
 
           // Init Flatpickr cho các modals
           initFlatpickr();
+
+          // Gắn listener tính BMI tự động
+          wireBMICalculationListeners();
 
           // Event listeners
           $sk('#skhs-classes').addEventListener('change', skhs_applyFiltersAndRender);
