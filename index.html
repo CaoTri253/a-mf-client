@@ -142,7 +142,7 @@
         if (!hoTen || !sdt || !password || !maTruong) { showModal("Cảnh báo", "Vui lòng nhập đầy đủ thông tin."); return; }
         const phoneRegex = /^[0-9]{9,11}$/; if (!phoneRegex.test(sdt)) { showModal("Cảnh báo", "Số điện thoại không hợp lệ."); return; }
         if (password.length < 6) { showModal("Cảnh báo", "Mật khẩu phải từ 6 ký tự trở lên."); return; }
-        const user = { ho_ten: hoTen, sdt: sdt, password: password, ma_truong: maTruong, loai_user: loaiUser };
+        const user = { ho_ten: hoTen, sdt: sdt, password: password, ma_truong: maTruong, phan_quyen: loaiUser };
         const res = await register(user);
         if (res.success) {
           showLoading(); // <-- Thêm dòng này
