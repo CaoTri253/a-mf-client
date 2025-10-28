@@ -3946,55 +3946,16 @@
           confirmDelete: teachers_confirmDelete
       };
 
+      // *** THÊM 2 DÒNG NÀY ĐỂ EXPOSE HÀM RA GLOBAL SCOPE ***
+      window.teachers_wirePage = teachers_wirePage;
+      window.teachers_load = teachers_load;
+      // ******************************************************
+
       teachers_load(); // Load lần đầu khi wire
     }
 
-    // === Integration with main navigation ===
-    // Cập nhật hàm setActivePage để tích hợp logic wire/reload
-    // Lưu hàm gốc (nếu có)
-    const originalSetActivePage = window.setActivePage;
-
-    window.setActivePage = function(page) {
-        // Gọi hàm gốc để xử lý ẩn/hiện section và active menu
-        if(originalSetActivePage && typeof originalSetActivePage === 'function') {
-            try {
-                originalSetActivePage(page);
-            } catch (e) {
-                console.error("Error calling original setActivePage:", e);
-                // Fallback nếu hàm gốc lỗi
-                $$t('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
-                const currentSec = $t(`#page-${page}`);
-                if (currentSec) currentSec.classList.remove('d-none');
-            }
-        } else {
-            // Fallback nếu hàm gốc không tồn tại
-              $$t('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
-              const currentSec = $t(`#page-${page}`);
-              if (currentSec) currentSec.classList.remove('d-none');
-              // Cần thêm logic active sidebar nếu hàm gốc không có
-        }
-
-        // Xử lý riêng cho trang giáo viên
-        if (page === 'teachers') {
-            const sec = $t('#page-teachers');
-            if (sec) { // Kiểm tra section tồn tại
-                if (!sec.dataset.wired) {
-                    teachers_wirePage(); // Gọi hàm wire khi vào trang lần đầu
-                } else {
-                    // Nếu đã wire trước đó, chỉ cần tải lại dữ liệu khi quay lại trang
-                    teachers_load();
-                }
-            } else {
-                console.warn("Section #page-teachers not found during setActivePage.");
-            }
-        }
-          // Gọi lại logic khởi tạo/reload của các trang khác nếu cần khi chuyển trang
-          // Ví dụ:
-          // if (page === 'students' && typeof adm_reloadStudents === 'function') { adm_reloadStudents(); }
-          // if (page === 'bhyt' && typeof bhyt_reload === 'function') { bhyt_reload(); }
-          // ...
-    };
-
+    // --- PHẦN TÍCH HỢP VỚI setActivePage KHÔNG ĐỔI ---
+    // (Đảm bảo hàm setActivePage bạn đang dùng là phiên bản mới nhất đã cung cấp)
 
     // Trigger wirePage nếu section giáo viên đang active khi load trang
     const teacherPageEl = $t('#page-teachers');
