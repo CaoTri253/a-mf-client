@@ -3584,8 +3584,10 @@
       } catch (err) {
         console.error("Teacher load error:", err);
         showToast(err.message || 'Lỗi tải danh sách giáo viên', 'danger');
-        $t('#teacher-table-box').innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
-        $t('#teacher-total').textContent = '0';
+        const tableBox = $t('#teacher-table-box');
+        if(tableBox) tableBox.innerHTML = '<div class="text-center p-5 text-danger">Lỗi tải dữ liệu.</div>';
+        const totalEl = $t('#teacher-total');
+        if(totalEl) totalEl.textContent = '0';
       } finally {
         hideLoading();
       }
@@ -3593,7 +3595,9 @@
 
     // === Filter, Sort, Render ===
     function teachers_applyFiltersAndRender() {
-      const search = $t('#teacher-search').value.toLowerCase().trim();
+      const searchInput = $t('#teacher-search');
+      const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
 
       TEACHERS.filtered = TEACHERS.all.filter(t => {
         const matchSearch = !search ||
@@ -3618,7 +3622,9 @@
 
     function teachers_renderTableAndPagination() {
       const total = TEACHERS.filtered.length;
-      $t('#teacher-total').textContent = total.toLocaleString('vi-VN');
+      const totalEl = $t('#teacher-total');
+      if(totalEl) totalEl.textContent = total.toLocaleString('vi-VN');
+
 
       const start = (TEACHERS.page - 1) * TEACHERS.pageSize;
       const end = start + TEACHERS.pageSize;
@@ -3635,6 +3641,8 @@
 
     function teachers_renderTable(data) {
       const tableContainer = $t('#teacher-table-box');
+      if (!tableContainer) return; // Add check
+
       let html = `
         <table class="table table-hover table-bordered align-middle mb-0">
           <thead class="table-light">
@@ -3692,6 +3700,7 @@
 
     function teachers_renderPagination(total) {
       const paginationContainer = $t('#teacher-pagin');
+      if (!paginationContainer) return; // Add check
       paginationContainer.innerHTML = '';
       const totalPages = Math.ceil(total / TEACHERS.pageSize);
 
@@ -3722,39 +3731,46 @@
     // === Modal Actions ===
     function teachers_openAddModal() {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      $t('#teacher-form-add').reset();
-      $t('#add-teacher-matruong').value = user.ma_truong || ''; // Set mã trường
-      $t('#teacher-add-err').textContent = '';
-      new bootstrap.Modal($t('#teacherModalAdd')).show();
+      const form = $t('#teacher-form-add');
+      const errDiv = $t('#teacher-add-err');
+      const maTruongInput = $t('#add-teacher-matruong');
+
+      if(form) form.reset();
+      if(maTruongInput) maTruongInput.value = user.ma_truong || ''; // Set mã trường
+      if(errDiv) errDiv.textContent = '';
+
+      const modalEl = $t('#teacherModalAdd');
+      if(modalEl) new bootstrap.Modal(modalEl).show();
     }
 
     async function teachers_saveAdd() {
       const errDiv = $t('#teacher-add-err');
-      errDiv.textContent = '';
+      if(errDiv) errDiv.textContent = '';
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+      const getVal = id => $t(`#${id}`)?.value.trim() || '';
       const teacherData = {
-        ho_ten: $t('#add-teacher-hoten').value.trim(),
-        sdt: $t('#add-teacher-sdt').value.trim(),
-        password: $t('#add-teacher-password').value,
-        lop_hoc: $t('#add-teacher-lop').value.trim(),
+        ho_ten: getVal('add-teacher-hoten'),
+        sdt: getVal('add-teacher-sdt'),
+        password: $t('#add-teacher-password')?.value || '', // Don't trim password
+        lop_hoc: getVal('add-teacher-lop'),
         ma_truong: user.ma_truong, // Lấy mã trường từ admin
         loai_user: 'giao_vien' // Quan trọng: Đặt quyền là giáo viên
       };
 
       // Validation
       if (!teacherData.ho_ten || !teacherData.sdt || !teacherData.password || !teacherData.ma_truong) {
-        errDiv.textContent = 'Vui lòng nhập đầy đủ các trường bắt buộc (*).'; return;
+        if(errDiv) errDiv.textContent = 'Vui lòng nhập đầy đủ các trường bắt buộc (*).'; return;
       }
       if (!/^0\d{9}$/.test(teacherData.sdt)) {
-        errDiv.textContent = 'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).'; return;
+        if(errDiv) errDiv.textContent = 'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).'; return;
       }
       if (teacherData.password.length < 6) {
-        errDiv.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.'; return;
+        if(errDiv) errDiv.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.'; return;
       }
       // Kiểm tra SĐT đã tồn tại chưa (phía client để giảm tải)
       if (TEACHERS.all.some(t => t.sdt === teacherData.sdt)) {
-        errDiv.textContent = 'Số điện thoại này đã được đăng ký.'; return;
+        if(errDiv) errDiv.textContent = 'Số điện thoại này đã được đăng ký.'; return;
       }
 
       showLoading();
@@ -3767,7 +3783,8 @@
         // và tạo user mới với phan_quyen='giao_vien'
         const res = await register(teacherData);
         if (res.success) {
-          bootstrap.Modal.getInstance($t('#teacherModalAdd')).hide();
+          const modalEl = $t('#teacherModalAdd');
+          if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
           showToast('Thêm giáo viên thành công!', 'success');
           await teachers_load(); // Tải lại danh sách
         } else {
@@ -3775,8 +3792,8 @@
         }
       } catch (err) {
         console.error("Teacher add error:", err);
-        errDiv.textContent = err.message || "Lỗi hệ thống.";
-        showToast(errDiv.textContent, 'danger');
+        if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống.";
+        showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger');
       } finally {
         hideLoading();
       }
@@ -3790,46 +3807,52 @@
       }
       TEACHERS.currentEditSdt = sdtKey; // Lưu SĐT gốc
 
-      $t('#teacher-form-edit').reset();
-      $t('#edit-teacher-sdt-key').value = sdtKey;
-      $t('#edit-teacher-hoten').value = teacher.ho_ten || '';
-      $t('#edit-teacher-sdt').value = teacher.sdt || '';
-      $t('#edit-teacher-password').value = ''; // Luôn trống khi mở modal
-      $t('#edit-teacher-lop').value = teacher.lop_hoc || '';
-      $t('#edit-teacher-matruong').value = teacher.ma_truong || ''; // Hiển thị mã trường
-      $t('#teacher-edit-err').textContent = '';
+      const form = $t('#teacher-form-edit');
+      const errDiv = $t('#teacher-edit-err');
+      if(form) form.reset();
 
-      new bootstrap.Modal($t('#teacherModalEdit')).show();
+      const setVal = (id, value) => { const el = $t(`#${id}`); if(el) el.value = value; };
+      setVal('edit-teacher-sdt-key', sdtKey);
+      setVal('edit-teacher-hoten', teacher.ho_ten || '');
+      setVal('edit-teacher-sdt', teacher.sdt || '');
+      setVal('edit-teacher-password', ''); // Luôn trống khi mở modal
+      setVal('edit-teacher-lop', teacher.lop_hoc || '');
+      setVal('edit-teacher-matruong', teacher.ma_truong || ''); // Hiển thị mã trường
+      if(errDiv) errDiv.textContent = '';
+
+      const modalEl = $t('#teacherModalEdit');
+      if(modalEl) new bootstrap.Modal(modalEl).show();
     }
 
     async function teachers_saveEdit() {
       const errDiv = $t('#teacher-edit-err');
-      errDiv.textContent = '';
+      if(errDiv) errDiv.textContent = '';
       const sdtKey = TEACHERS.currentEditSdt; // SĐT gốc để tìm bản ghi
       if (!sdtKey) return;
 
+      const getVal = id => $t(`#${id}`)?.value.trim() || '';
       const updatedData = {
         sdt_key: sdtKey, // Truyền SĐT gốc để backend tìm đúng user
-        ho_ten: $t('#edit-teacher-hoten').value.trim(),
-        sdt: $t('#edit-teacher-sdt').value.trim(), // SĐT mới (có thể giống cũ)
-        password: $t('#edit-teacher-password').value, // Mật khẩu mới (có thể trống)
-        lop_hoc: $t('#edit-teacher-lop').value.trim()
+        ho_ten: getVal('edit-teacher-hoten'),
+        sdt: getVal('edit-teacher-sdt'), // SĐT mới (có thể giống cũ)
+        password: $t('#edit-teacher-password')?.value || '', // Mật khẩu mới (có thể trống), không trim
+        lop_hoc: getVal('edit-teacher-lop')
         // Backend không cần nhận ma_truong vì không cho sửa
       };
 
       // Validation
       if (!updatedData.ho_ten || !updatedData.sdt) {
-        errDiv.textContent = 'Họ tên và Số điện thoại là bắt buộc.'; return;
+        if(errDiv) errDiv.textContent = 'Họ tên và Số điện thoại là bắt buộc.'; return;
       }
       if (!/^0\d{9}$/.test(updatedData.sdt)) {
-        errDiv.textContent = 'Số điện thoại mới không hợp lệ.'; return;
+        if(errDiv) errDiv.textContent = 'Số điện thoại mới không hợp lệ.'; return;
       }
       if (updatedData.password && updatedData.password.length < 6) {
-        errDiv.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.'; return;
+        if(errDiv) errDiv.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.'; return;
       }
       // Kiểm tra nếu đổi SĐT, SĐT mới có bị trùng không (trừ chính user đang sửa)
       if (updatedData.sdt !== sdtKey && TEACHERS.all.some(t => t.sdt === updatedData.sdt)) {
-          errDiv.textContent = 'Số điện thoại mới đã tồn tại.'; return;
+          if(errDiv) errDiv.textContent = 'Số điện thoại mới đã tồn tại.'; return;
       }
 
       showLoading();
@@ -3840,7 +3863,8 @@
           }
         const res = await updateUser(updatedData);
         if (res.success) {
-          bootstrap.Modal.getInstance($t('#teacherModalEdit')).hide();
+          const modalEl = $t('#teacherModalEdit');
+          if(modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
           showToast('Cập nhật thông tin giáo viên thành công!', 'success');
           await teachers_load();
         } else {
@@ -3848,8 +3872,8 @@
         }
       } catch (err) {
         console.error("Teacher edit error:", err);
-        errDiv.textContent = err.message || "Lỗi hệ thống.";
-        showToast(errDiv.textContent, 'danger');
+        if(errDiv) errDiv.textContent = err.message || "Lỗi hệ thống.";
+        showToast(errDiv ? errDiv.textContent : 'Lỗi hệ thống', 'danger');
       } finally {
         hideLoading();
       }
@@ -3859,20 +3883,25 @@
       const teacher = TEACHERS.all.find(t => t.sdt === sdt);
       if (!teacher) return;
 
-      $t('#teacherConfirmBody').innerHTML = `Bạn có chắc chắn muốn xóa giáo viên <strong>${teacher.ho_ten || sdt}</strong>? Hành động này không thể hoàn tác.`;
+      const bodyEl = $t('#teacherConfirmBody');
+      if(bodyEl) bodyEl.innerHTML = `Bạn có chắc chắn muốn xóa giáo viên <strong>${teacher.ho_ten || sdt}</strong>? Hành động này không thể hoàn tác.`;
 
       const confirmBtn = $t('#teacherConfirmBtn');
+      if (!confirmBtn) return; // Add check
+
       // Clone để xóa listener cũ, tránh gọi nhiều lần
       const newConfirmBtn = confirmBtn.cloneNode(true);
       confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
       newConfirmBtn.onclick = async () => {
-        const modalInstance = bootstrap.Modal.getInstance($t('#teacherModalConfirm'));
+        const modalEl = $t('#teacherModalConfirm');
+        const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
         modalInstance?.hide(); // Ẩn modal trước khi xử lý
         await teachers_delete(sdt);
       };
 
-      new bootstrap.Modal($t('#teacherModalConfirm')).show();
+      const modalEl = $t('#teacherModalConfirm');
+      if(modalEl) new bootstrap.Modal(modalEl).show();
     }
 
     async function teachers_delete(sdt) {
@@ -3899,16 +3928,17 @@
 
     // === Wire UI ===
     function teachers_wirePage() {
-      if ($t('#page-teachers').dataset.wired === '1') return; // Chỉ wire 1 lần
-      $t('#page-teachers').dataset.wired = '1';
+      const pageEl = $t('#page-teachers');
+      if (!pageEl || pageEl.dataset.wired === '1') return; // Chỉ wire 1 lần, check existence
+      pageEl.dataset.wired = '1';
 
       console.log("Wiring Teachers page...");
 
-      $t('#teacher-btn-reload').addEventListener('click', teachers_load);
-      $t('#teacher-search').addEventListener('input', teachers_applyFiltersAndRender);
-      $t('#teacher-btn-add').addEventListener('click', teachers_openAddModal);
-      $t('#teacher-btn-add-save').addEventListener('click', teachers_saveAdd);
-      $t('#teacher-btn-edit-save').addEventListener('click', teachers_saveEdit);
+      $t('#teacher-btn-reload')?.addEventListener('click', teachers_load);
+      $t('#teacher-search')?.addEventListener('input', teachers_applyFiltersAndRender);
+      $t('#teacher-btn-add')?.addEventListener('click', teachers_openAddModal);
+      $t('#teacher-btn-add-save')?.addEventListener('click', teachers_saveAdd);
+      $t('#teacher-btn-edit-save')?.addEventListener('click', teachers_saveEdit);
 
       // Export functions ra global để onclick gọi được
       window.TeachersModule = {
@@ -3920,44 +3950,55 @@
     }
 
     // === Integration with main navigation ===
-    // Điều chỉnh trong hàm setActivePage hiện có
-    const originalSetActivePage = window.setActivePage; // Lưu hàm gốc nếu đã có
-      window.setActivePage = function(page) {
-          // Gọi hàm gốc để xử lý ẩn/hiện section và active menu
-          if(originalSetActivePage) {
-              originalSetActivePage(page);
-          } else {
-              // Fallback nếu hàm gốc chưa tồn tại (chạy lần đầu)
+    // Cập nhật hàm setActivePage để tích hợp logic wire/reload
+    // Lưu hàm gốc (nếu có)
+    const originalSetActivePage = window.setActivePage;
+
+    window.setActivePage = function(page) {
+        // Gọi hàm gốc để xử lý ẩn/hiện section và active menu
+        if(originalSetActivePage && typeof originalSetActivePage === 'function') {
+            try {
+                originalSetActivePage(page);
+            } catch (e) {
+                console.error("Error calling original setActivePage:", e);
+                // Fallback nếu hàm gốc lỗi
                 $$t('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
                 const currentSec = $t(`#page-${page}`);
                 if (currentSec) currentSec.classList.remove('d-none');
-                // Cần thêm logic active sidebar nếu hàm gốc không có
-          }
+            }
+        } else {
+            // Fallback nếu hàm gốc không tồn tại
+              $$t('[id^="page-"]').forEach(sec => sec.classList.add('d-none'));
+              const currentSec = $t(`#page-${page}`);
+              if (currentSec) currentSec.classList.remove('d-none');
+              // Cần thêm logic active sidebar nếu hàm gốc không có
+        }
 
-          // Xử lý riêng cho trang giáo viên
-          if (page === 'teachers') {
-              const sec = $t('#page-teachers');
-              if (sec) { // Kiểm tra section tồn tại
-                  if (!sec.dataset.wired) {
-                      teachers_wirePage(); // Gọi hàm wire khi vào trang lần đầu
-                  } else {
-                      // Nếu đã wire trước đó, chỉ cần tải lại dữ liệu khi quay lại trang
-                      // (Hoặc có thể bỏ qua nếu bạn muốn giữ nguyên trạng thái cũ)
-                      teachers_load();
-                  }
-              }
-          }
-            // Gọi lại logic khởi tạo của các trang khác nếu cần khi chuyển trang
-            // Ví dụ:
-            // if (page === 'students') { adm_reloadStudents(); } // Hàm này đã có sẵn
-            // if (page === 'bhyt') { bhyt_reload(); } // Hàm này đã có sẵn
-            // ...
-      };
+        // Xử lý riêng cho trang giáo viên
+        if (page === 'teachers') {
+            const sec = $t('#page-teachers');
+            if (sec) { // Kiểm tra section tồn tại
+                if (!sec.dataset.wired) {
+                    teachers_wirePage(); // Gọi hàm wire khi vào trang lần đầu
+                } else {
+                    // Nếu đã wire trước đó, chỉ cần tải lại dữ liệu khi quay lại trang
+                    teachers_load();
+                }
+            } else {
+                console.warn("Section #page-teachers not found during setActivePage.");
+            }
+        }
+          // Gọi lại logic khởi tạo/reload của các trang khác nếu cần khi chuyển trang
+          // Ví dụ:
+          // if (page === 'students' && typeof adm_reloadStudents === 'function') { adm_reloadStudents(); }
+          // if (page === 'bhyt' && typeof bhyt_reload === 'function') { bhyt_reload(); }
+          // ...
+    };
 
 
     // Trigger wirePage nếu section giáo viên đang active khi load trang
-    // (Ví dụ: nếu người dùng bookmark hoặc refresh trang này)
-    if (!$t('#page-teachers').classList.contains('d-none')) {
+    const teacherPageEl = $t('#page-teachers');
+    if (teacherPageEl && !teacherPageEl.classList.contains('d-none')) {
         teachers_wirePage();
     }
 
