@@ -7398,42 +7398,58 @@
     }
     
     // --- BƯỚC 2: HÀM HIỂN THỊ NỘI DUNG FILE ---
+    /**
+     * =============================================
+     * KHỐI MÃ MỚI CHO TAB QUẢN LÝ Y TẾ - VĂN BẢN ĐẾN (ĐÃ SỬA)
+     * =============================================
+     */
+    
+    // --- Hàm hiển thị nội dung file (Sửa đổi để dùng iframe) ---
     function qlyte_displayFile(fileName) {
-      const viewer = document.getElementById('vbden-file-viewer');
-      if (!viewer) return;
+      const viewerContainer = document.getElementById('vbden-file-viewer');
+      if (!viewerContainer) return;
 
+      // Xóa nội dung cũ (thông báo "Vui lòng chọn...")
+      viewerContainer.innerHTML = ''; 
+      
       const fileExtension = fileName.split('.').pop().toLowerCase();
+      
+      // Đường dẫn tuyệt đối từ gốc website (Quan trọng!)
+      const basePath = '/assets/van_ban_den/'; 
+      const fullPath = basePath + encodeURIComponent(fileName);
 
-      // --- SỬA ĐƯỜNG DẪN Ở ĐÂY ---
-      // Đường dẫn tương đối từ views/admin_dashboard.html
-      const fullPath = `../assets/van_ban_den/${encodeURIComponent(fileName)}`;
-      // --- KẾT THÚC SỬA ĐỔI ---
-
-      console.log("iframe src:", fullPath); // Kiểm tra đường dẫn
-
+      // Đánh dấu mục đang active trong danh sách
       document.querySelectorAll('#vbden-file-list .list-group-item').forEach(item => {
         item.classList.toggle('active', item.dataset.fileName === fileName);
       });
 
+      // Tạo iframe để hiển thị
+      const iframe = document.createElement('iframe');
+      iframe.id = 'vbden-iframe'; // Giữ ID cũ nếu CSS cần
+      iframe.style.width = '100%';
+      iframe.style.height = '700px'; // Chiều cao cố định như CSS cũ
+      iframe.style.border = '1px solid #ddd';
+      iframe.style.borderRadius = '8px';
+      iframe.title = fileName;
+
+      // Xử lý các loại file khác nhau
       if (fileExtension === 'pdf') {
-        viewer.innerHTML = `<iframe id="vbden-iframe" src="${fullPath}" title="${fileName}" style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 8px;"></iframe>`;
-      }
-      else if (fileExtension === 'docx' || fileExtension === 'doc' || fileExtension === 'xlsx' || fileExtension === 'xls') {
-        // Đường dẫn công khai vẫn cần là URL tuyệt đối nếu dùng viewer online
-        // Cách tạo URL tuyệt đối từ đường dẫn tương đối (cần server hỗ trợ đúng)
-        const publicUrl = new URL(fullPath, window.location.href).href;
-        const msViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(publicUrl)}`;
-        viewer.innerHTML = `
-          <iframe id="vbden-iframe" src="${msViewerUrl}" title="${fileName}" style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 8px;"></iframe>
-          <div class="alert alert-info mt-2 small">
-            <b>Lưu ý:</b> Trình xem file Word/Excel yêu cầu file phải được truy cập công khai từ Internet.
-            Nếu file không hiển thị, vui lòng
-            <a href="${fullPath}" download><b>nhấp vào đây để tải về</b></a>.
-          </div>
-        `;
-      }
-      else {
-        viewer.innerHTML = `
+        iframe.src = fullPath;
+        viewerContainer.appendChild(iframe);
+      } else if (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(fileExtension)) {
+        // Dùng Microsoft Office viewer
+        const msViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + fullPath)}`;
+        iframe.src = msViewerUrl;
+        viewerContainer.appendChild(iframe);
+        
+        // Thêm thông báo và link tải về
+        const note = document.createElement('div');
+        note.className = 'alert alert-info mt-2 small';
+        note.innerHTML = `<b>Lưu ý:</b> Trình xem file Office yêu cầu truy cập công khai. Nếu không hiển thị, <a href="${fullPath}" download><b>tải file về tại đây</b></a>.`;
+        viewerContainer.appendChild(note);
+      } else {
+        // Các loại file khác không hỗ trợ xem trước
+         viewerContainer.innerHTML = `
           <div class="alert alert-warning">
             Không hỗ trợ xem trước cho file <code>.${fileExtension}</code>.
             <a href="${fullPath}" download><b>Nhấp vào đây để tải file về</b></a>.
@@ -7442,8 +7458,7 @@
       }
     }
 
-    // --- BƯỚC 3: HÀM KHỞI TẠO TAB VĂN BẢN ĐẾN ---
-    // (Hàm này sẽ tải danh sách file và gắn sự kiện click)
+    // --- Hàm khởi tạo tab Văn bản đến (Sửa đổi để đọc JSON) ---
     async function qlyte_vbden_wireTab() {
       const listContainer = document.getElementById('vbden-file-list');
       // Chỉ chạy 1 lần duy nhất
@@ -7452,48 +7467,100 @@
       }
       listContainer.dataset.wired = '1'; // Đánh dấu đã khởi tạo
       listContainer.innerHTML = '<p class="text-muted small">Đang tải danh sách...</p>';
+      
+      // Đường dẫn đến file JSON và thư mục văn bản (Tuyệt đối từ gốc)
+      const jsonPath = '/assets/van_ban_den/documents.json';
+      const basePath = '/assets/van_ban_den/';
+      let currentActiveLink = null; // Theo dõi mục đang active
 
       try {
-        // GỌI API TẠI ĐÂY (đang dùng hàm giả lập)
-        const fileList = await mock_getVanBanDenList(); 
+        const response = await fetch(jsonPath);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const documents = await response.json(); 
         
-        if (!fileList || fileList.length === 0) {
-          listContainer.innerHTML = '<p class="text-muted small">Không tìm thấy văn bản nào.</p>';
+        if (!documents || documents.length === 0) {
+          listContainer.innerHTML = '<p class="text-muted small">Không tìm thấy văn bản nào trong file JSON.</p>';
+          // Xóa nội dung khung xem trước nếu không có file nào
+          const viewerContainer = document.getElementById('vbden-file-viewer');
+          if (viewerContainer) {
+              viewerContainer.innerHTML = '<p class="text-muted">Không có văn bản nào để hiển thị.</p>';
+          }
           return;
         }
 
         listContainer.innerHTML = ''; // Xóa chữ "Đang tải"
         
-        fileList.forEach(fileName => {
+        documents.forEach((doc, index) => {
+          const fileName = doc.fileName;
+          const title = doc.title || fileName; // Ưu tiên title, fallback về tên file
           const fileExtension = fileName.split('.').pop().toLowerCase();
+          
           let iconClass = 'bi-file-earmark'; // icon mặc định
           if (fileExtension === 'pdf') iconClass = 'bi-filetype-pdf text-danger';
-          if (fileExtension === 'doc' || fileExtension === 'docx') iconClass = 'bi-filetype-doc text-primary';
-          if (fileExtension === 'xls' || fileExtension === 'xlsx') iconClass = 'bi-filetype-xls text-success';
-          if (fileExtension === 'png' || fileExtension === 'jpg') iconClass = 'bi-filetype-image';
+          if (['doc', 'docx'].includes(fileExtension)) iconClass = 'bi-filetype-doc text-primary';
+          if (['xls', 'xlsx'].includes(fileExtension)) iconClass = 'bi-filetype-xls text-success';
+          if (['png', 'jpg', 'jpeg', 'gif'].includes(fileExtension)) iconClass = 'bi-filetype-image';
 
           const item = document.createElement('a');
           item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2';
           item.href = '#'; // Ngăn trình duyệt nhảy trang
           item.dataset.fileName = fileName; // Lưu tên file để xử lý click
-          item.innerHTML = `<i class="bi ${iconClass} fs-5"></i> <span>${fileName}</span>`;
+          item.innerHTML = `<i class="bi ${iconClass} fs-5"></i> <span>${title}</span>`; // Hiển thị title
           
           item.onclick = (e) => {
             e.preventDefault();
             qlyte_displayFile(fileName);
+
+            // Cập nhật trạng thái active
+            if (currentActiveLink) {
+                currentActiveLink.classList.remove('active');
+            }
+            item.classList.add('active');
+            currentActiveLink = item;
           };
           
           listContainer.appendChild(item);
+
+          // Tự động hiển thị file đầu tiên
+          if (index === 0) {
+            // Dùng setTimeout nhỏ để đảm bảo DOM đã render trước khi gọi click
+            setTimeout(() => item.click(), 50); 
+          }
         });
         
       } catch (error) {
-        console.error("Lỗi khi tải danh sách văn bản:", error);
-        listContainer.innerHTML = '<p class="text-danger small">Không thể tải danh sách file. Vui lòng kiểm tra API.</p>';
+        console.error("Lỗi khi tải hoặc xử lý documents.json:", error);
+        listContainer.innerHTML = '<p class="text-danger small">Lỗi! Không thể tải danh sách file từ JSON.</p>';
+        const viewerContainer = document.getElementById('vbden-file-viewer');
+        if (viewerContainer) {
+             viewerContainer.innerHTML = '<p class="text-danger">Lỗi tải danh sách.</p>';
+        }
       }
     }
+    
+    // --- Gắn hàm wireTab vào sự kiện 'shown.bs.tab' cho tab Văn bản đến ---
+    const vbdenTabTrigger = document.getElementById('tab-vbden-tab');
+    if (vbdenTabTrigger) {
+        vbdenTabTrigger.addEventListener('shown.bs.tab', qlyte_vbden_wireTab);
+    } else {
+        console.warn("Không tìm thấy trigger cho tab Văn bản đến (#tab-vbden-tab)");
+    }
+    
+    // --- Tùy chọn: Nếu muốn tab Văn bản đến được load ngay khi vào trang Quản lý y tế ---
+    // (Bỏ comment nếu cần, nhưng thường chỉ cần load khi user bấm vào tab)
+    // const qlyteSection = document.getElementById('page-qlyte');
+    // if (qlyteSection && !qlyteSection.classList.contains('d-none')) {
+    //   // Kiểm tra xem tab vbden có đang active không (nếu có logic lưu trạng thái tab)
+    //   if (vbdenTabTrigger && vbdenTabTrigger.classList.contains('active')) {
+    //      qlyte_vbden_wireTab();
+    //   }
+    // }
+
     /**
      * =============================================
-     * KHỐI MÃ MỚI CHO TAB QUẢN LÝ Y TẾ - VĂN BẢN ĐẾN
+     * /KHỐI MÃ MỚI CHO TAB QUẢN LÝ Y TẾ - VĂN BẢN ĐẾN (ĐÃ SỬA)
      * =============================================
      */
 
